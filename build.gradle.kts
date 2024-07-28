@@ -26,6 +26,14 @@ tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
     archiveClassifier.set("")
 }
 
+tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
+    doFirst {
+        manifest {
+            attributes["Main-Class"] = ""
+        }
+    }
+}
+
 tasks.test {
     useJUnitPlatform()
 }
