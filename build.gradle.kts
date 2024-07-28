@@ -2,8 +2,8 @@ plugins {
     kotlin("jvm") version "2.0.0"
     id("io.ktor.plugin") version "2.3.4"
     kotlin("plugin.serialization") version "1.8.20"
-    id("com.github.johnrengelman.shadow") version "7.0.0"
     `maven-publish`
+    application
 }
 
 repositories {
@@ -22,16 +22,9 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:1.4.12")
 }
 
-tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
-    archiveClassifier.set("")
-}
 
-tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
-    doFirst {
-        manifest {
-            attributes["Main-Class"] = ""
-        }
-    }
+application {
+    mainClass.set("kokonut.Main")
 }
 
 tasks.test {
