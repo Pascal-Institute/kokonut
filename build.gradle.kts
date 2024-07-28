@@ -23,9 +23,7 @@ dependencies {
 }
 
 tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
-    manifest {
-        attributes(mapOf("Main-Class" to ""))
-    }
+    archiveClassifier.set("")
 }
 
 tasks.test {
@@ -39,7 +37,7 @@ kotlin {
 publishing {
     publications {
         create<MavenPublication>("maven") {
-            groupId = "com.pascal.institute" //Navigate beyond computing oceans.
+            groupId = "com.pascal.institute" //Navigate beyond computing oceans
             artifactId = "kokonut"
 
             version = "1.0.0"
