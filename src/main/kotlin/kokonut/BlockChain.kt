@@ -10,7 +10,7 @@ import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 
-class Kokonut {
+class BlockChain {
 
     val chain: MutableList<Block>
     private val ticker = "KNT"
