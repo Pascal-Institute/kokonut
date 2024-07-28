@@ -2,6 +2,7 @@ plugins {
     kotlin("jvm") version "2.0.0"
     id("io.ktor.plugin") version "2.3.4"
     kotlin("plugin.serialization") version "1.8.20"
+    id("com.github.johnrengelman.shadow") version "7.0.0"
     `maven-publish`
 }
 
@@ -19,6 +20,12 @@ dependencies {
     implementation("io.ktor:ktor-client-content-negotiation:2.3.4")
     implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:2.3.4")
     implementation("ch.qos.logback:logback-classic:1.4.12")
+}
+
+tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
+    manifest {
+        attributes(mapOf("Main-Class" to ""))
+    }
 }
 
 tasks.test {
