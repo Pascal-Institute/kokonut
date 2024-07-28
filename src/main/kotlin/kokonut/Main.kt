@@ -1,4 +1,0 @@
-package kokonut
-
-fun main() {
-}

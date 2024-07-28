@@ -1,9 +1,10 @@
+import org.jetbrains.kotlin.storage.CacheResetOnProcessCanceled.enabled
+
 plugins {
     kotlin("jvm") version "2.0.0"
-    id("io.ktor.plugin") version "2.3.4"
+    //id("io.ktor.plugin") version "2.3.4" this is the problem for shadowJar
     kotlin("plugin.serialization") version "1.8.20"
     `maven-publish`
-    application
 }
 
 repositories {
@@ -20,11 +21,6 @@ dependencies {
     implementation("io.ktor:ktor-client-content-negotiation:2.3.4")
     implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:2.3.4")
     implementation("ch.qos.logback:logback-classic:1.4.12")
-}
-
-
-application {
-    mainClass.set("kokonut.Main")
 }
 
 tasks.test {
