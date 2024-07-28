@@ -26,7 +26,7 @@ class Kokonut {
             }
         }
 
-        val repoUrl = "https://api.github.com/repos/Pascal-Institute/kokonut_storage/contents/"
+        val repoUrl = "https://api.github.com/repos/Pascal-Institute/kokonut-storage/contents/"
 
         try {
             // 저장소 파일 목록 요청
@@ -34,32 +34,25 @@ class Kokonut {
 
             // JSON 파일 URL 리스트를 생성
             val jsonUrls = files.filter { it.type == "file" && it.name.endsWith(".json") }
-                .map { "https://raw.githubusercontent.com/Pascal-Institute/kokonut_storage/main/${it.path}" }
+                .map { "https://raw.githubusercontent.com/Pascal-Institute/kokonut-storage/main/${it.path}" }
 
             // JSON 파일 읽기 및 처리
             for (url in jsonUrls) {
                 val response: HttpResponse = client.get(url)
-                val responseBody = response.bodyAsText() // 응답을 문자열로 읽기
+                val responseBody = response.bodyAsText()
                 try {
-                    val block : Block = Json.decodeFromString(responseBody) // 문자열을 JSON으로 파싱
+                    val block : Block = Json.decodeFromString(responseBody)
                     chain.add(block)
                 } catch (e: Exception) {
-                    println("응답을 JSON으로 파싱하는 중 오류 발생: ${e.message}")
+                    println("JSON Passer Error: ${e.message}")
                 }
             }
 
         } catch (e: Exception) {
-            println("오류 발생: ${e.message}")
+            println("Error! : ${e.message}")
         } finally {
             client.close()
         }
-    }
-
-    private fun createGenesisBlock(): Block {
-        return Block(0, "0", System.currentTimeMillis(),
-            ticker,
-            BlockData("Navigate beyond computing oceans"), 0.0,
-            Block.calculateHash(0, "0", System.currentTimeMillis(), ticker ,0.0, BlockData("Navigate beyond computing oceans")))
     }
 
     fun getLastBlock(): Block {
@@ -86,7 +79,7 @@ class Kokonut {
             val currentBlock = chain[i]
             val previousBlock = chain[i - 1]
 
-            if (currentBlock.hash != Block.calculateHash(currentBlock.index, currentBlock.previousHash, currentBlock.timestamp, ticker, currentBlock.nonce, currentBlock.data)) {
+            if (currentBlock.hash != Block.calculateHash(currentBlock.index, currentBlock.previousHash, currentBlock.timestamp, currentBlock.ticker, currentBlock.nonce, currentBlock.data)) {
                 return false
             }
 
