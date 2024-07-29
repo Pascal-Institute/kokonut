@@ -7,13 +7,19 @@ import io.ktor.client.request.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
+import kokonut.Block.Companion.calculateHash
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+import kotlin.math.max
 
 class BlockChain {
 
     val chain: MutableList<Block>
+    private val difficultyAdjustInterval = 2024
+    private val targetBlockTime = 10 * 60 * 1000L
+    private val version = 1
     private val ticker = "KNT"
+    private val minimumDifficulty = 8
 
     init {
         chain = mutableListOf()
@@ -59,19 +65,43 @@ class BlockChain {
         return chain.last()
     }
 
-    fun addBlock(data: BlockData) {
-        val previousBlock = getLastBlock()
-        val newBlock = Block(
-            previousBlock.index + 1,
-            previousBlock.hash,
-            System.currentTimeMillis(),
-            ticker,
-            data,
-           0.0,
-            Block.calculateHash(previousBlock.index + 1, previousBlock.hash, System.currentTimeMillis(), ticker, previousBlock.nonce, data)
-        )
+    fun addBlock(block: Block) : Boolean{
 
-        chain.add(newBlock)
+        //Proven Of Work
+        if(block.version != version){
+            return false
+        }
+
+        if(block.index != getLastBlock().index + 1){
+            return false
+        }
+
+        if(block.previousHash != getLastBlock().hash){
+            return false
+        }
+
+        if(block.ticker != ticker){
+            return false
+        }
+
+        val calculatedHash =  calculateHash(block.version, block.index, block.previousHash, block.timestamp, block.ticker, block.data, block.difficulty, block.nonce)
+        if(block.hash != calculatedHash){
+            return false
+        }
+
+        //Proven done!
+
+        //Send Http Post
+        chain.add(block)
+        return true
+    }
+
+    fun calculateTargetDifficulty(currentIndex: Int): Int {
+        val lastAdjustmentBlock = chain.getOrNull(currentIndex - difficultyAdjustInterval) ?: return 8
+        val timeTaken = System.currentTimeMillis() - lastAdjustmentBlock.timestamp
+        val difficultyFactor = timeTaken / targetBlockTime
+        val targetDifficulty = max(minimumDifficulty, 16 - difficultyFactor.toInt())
+        return targetDifficulty
     }
 
     fun isValidChain(): Boolean {
@@ -79,7 +109,7 @@ class BlockChain {
             val currentBlock = chain[i]
             val previousBlock = chain[i - 1]
 
-            if (currentBlock.hash != Block.calculateHash(currentBlock.index, currentBlock.previousHash, currentBlock.timestamp, currentBlock.ticker, currentBlock.nonce, currentBlock.data)) {
+            if (currentBlock.hash != calculateHash(currentBlock.version, currentBlock.index, currentBlock.previousHash, currentBlock.timestamp, currentBlock.ticker, currentBlock.data, currentBlock.difficulty, currentBlock.nonce)) {
                 return false
             }
 
