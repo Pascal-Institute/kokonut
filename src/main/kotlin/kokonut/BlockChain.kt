@@ -84,7 +84,7 @@ class BlockChain {
         }
 
         return Block(version,getLastBlock().index + 1, getLastBlock().hash, timestamp,ticker,
-            BlockData("success"), getLastBlock().difficulty, nonce, miningHash)
+            BlockData("d","success"), getLastBlock().difficulty, nonce, miningHash)
     }
 
     fun countLeadingZeros(hash: String): Int {
