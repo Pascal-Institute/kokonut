@@ -1,8 +1,11 @@
+import kokonut.Block
 import kokonut.BlockChain
 import kokonut.Utility.Companion.sendHttpGetRequest
 import kokonut.Utility.Companion.sendHttpPostRequest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.encodeToJsonElement
 
 val blockChain = BlockChain()
 
@@ -16,5 +19,8 @@ fun main(): Unit = runBlocking{
     // 데이터 로딩이 완료될 때까지 기다리기
     job.join()
 
-    blockChain.mine()
+    val newBlock : Block = blockChain.mine()
+    var json = Json.encodeToJsonElement(newBlock)
+    sendHttpPostRequest("http://127.0.0.1:8080/addBlock", json)
+
 }

@@ -2,6 +2,7 @@ package kokonut
 
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
@@ -50,6 +51,35 @@ class Utility {
             println("Response: $response")
 
             connection.disconnect()
+        }
+        fun sendHttpPostRequest(urlString: String, jsonElement: JsonElement) {
+            val url = URL(urlString)
+            val connection = url.openConnection() as HttpURLConnection
+            try {
+                connection.requestMethod = "POST"
+                connection.doOutput = true
+                connection.setRequestProperty("Content-Type", "application/json; utf-8")
+                connection.setRequestProperty("Accept", "application/json")
+
+                // Convert JsonElement to String
+                val jsonString = jsonElement.toString()
+
+                // Write JSON string to the output stream
+                connection.outputStream.use { os ->
+                    val input = jsonString.toByteArray(Charsets.UTF_8)
+                    os.write(input, 0, input.size)
+                }
+
+                // Check response
+                val responseCode = connection.responseCode
+                println("Response Code: $responseCode")
+                connection.inputStream.bufferedReader().use { reader ->
+                    val response = reader.readText()
+                    println("Response: $response")
+                }
+            } finally {
+                connection.disconnect()
+            }
         }
     }
 }

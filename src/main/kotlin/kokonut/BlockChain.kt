@@ -22,7 +22,7 @@ class BlockChain {
     private val targetBlockTime = 10 * 60 * 1000L
     private val version = 1
     private val ticker = "KNT"
-    private val minimumDifficulty = 3
+    private val minimumDifficulty = 1
 
     init {
         chain = mutableListOf()
@@ -38,10 +38,8 @@ class BlockChain {
         val repoUrl = "https://api.github.com/repos/Pascal-Institute/kokonut-storage/contents/"
 
         try {
-            // 저장소 파일 목록 요청
             val files: List<GitHubFile> = client.get(repoUrl).body()
 
-            // JSON 파일 URL 리스트를 생성
             val jsonUrls = files.filter { it.type == "file" && it.name.endsWith(".json") }
                 .map { "https://raw.githubusercontent.com/Pascal-Institute/kokonut-storage/main/${it.path}" }
 
@@ -53,7 +51,7 @@ class BlockChain {
                     val block : Block = Json.decodeFromString(responseBody)
                     val updatedBlock = block.copy(
                         version = block.version ?: 1,
-                        difficulty = block.difficulty ?: 8  // city가 null인 경우 기본값 "Unknown" 설정
+                        difficulty = block.difficulty ?: minimumDifficulty
                     )
 
                     chain.add(updatedBlock)
@@ -73,7 +71,7 @@ class BlockChain {
         return chain.last()
     }
 
-    fun mine() : String {
+    fun mine() : Block {
         var nonce : Long = 0
         var timestamp = System.currentTimeMillis()
         var miningHash = getLastBlock().calculateHash(timestamp, nonce)
@@ -85,7 +83,8 @@ class BlockChain {
             println("Nonce : $nonce")
         }
 
-        return miningHash
+        return Block(version,getLastBlock().index + 1, getLastBlock().hash, timestamp,ticker,
+            BlockData("success"), getLastBlock().difficulty, nonce, miningHash)
     }
 
     fun countLeadingZeros(hash: String): Int {
