@@ -10,7 +10,7 @@
     "comment": "When something is important enough, you do it even if the odds are not in your favor."
   },
   "difficulty": 8,
-  "nonce": 12.124,
+  "nonce": 12123345,
   "hash": "000000000000000000000000000038a5bf10897e309c984402d1b8132faaaa"
 }
 ```
