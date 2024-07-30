@@ -22,7 +22,7 @@ class BlockChain {
     private val targetBlockTime = 10 * 60 * 1000L
     private val version = 1
     private val ticker = "KNT"
-    private val minimumDifficulty = 1
+    private val minimumDifficulty = 3
 
     init {
         chain = mutableListOf()
@@ -116,8 +116,6 @@ class BlockChain {
         }
 
         //Proven done!
-
-        //Send Http Post
         chain.add(block)
         return true
     }
