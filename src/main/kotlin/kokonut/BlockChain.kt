@@ -22,7 +22,7 @@ class BlockChain {
     private val targetBlockTime = 10 * 60 * 1000L
     private val version = 1
     private val ticker = "KNT"
-    private val minimumDifficulty = 4
+    private val minimumDifficulty = 3
 
     init {
         chain = mutableListOf()
@@ -127,7 +127,7 @@ class BlockChain {
         val lastAdjustmentBlock = chain.getOrNull(currentIndex - difficultyAdjustInterval) ?: return 8
         val timeTaken = System.currentTimeMillis() - lastAdjustmentBlock.timestamp
         val difficultyFactor = timeTaken / targetBlockTime
-        val targetDifficulty = max(minimumDifficulty, 16 - difficultyFactor.toInt())
+        val targetDifficulty = max(minimumDifficulty, 8 - difficultyFactor.toInt())
         return targetDifficulty
     }
 
