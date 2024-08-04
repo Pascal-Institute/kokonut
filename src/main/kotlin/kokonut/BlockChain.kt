@@ -79,12 +79,11 @@ class BlockChain {
             timestamp = System.currentTimeMillis()
             nonce++
             miningHash = getLastBlock().calculateHash(timestamp, nonce)
-            println("Minining Hash : $miningHash")
             println("Nonce : $nonce")
         }
 
         return Block(version,getLastBlock().index + 1, getLastBlock().hash, timestamp,ticker,
-            BlockData("d","success"), getLastBlock().difficulty, nonce, miningHash)
+            BlockData("","mining succeed...!"), getLastBlock().difficulty, nonce, miningHash)
     }
 
     fun countLeadingZeros(hash: String): Int {
