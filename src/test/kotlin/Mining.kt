@@ -1,6 +1,5 @@
 import kokonut.Block
 import kokonut.BlockChain
-import kokonut.Utility.Companion.sendHttpGetRequest
 import kokonut.Utility.Companion.sendHttpPostRequest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
