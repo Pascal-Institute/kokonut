@@ -6,13 +6,10 @@ import io.ktor.client.engine.cio.*
 import io.ktor.client.request.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.statement.*
-import io.ktor.http.cio.*
 import io.ktor.serialization.kotlinx.json.*
 import kokonut.Block.Companion.calculateHash
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
-import java.math.BigDecimal
-import java.math.BigInteger
 import kotlin.math.max
 
 class BlockChain {
@@ -22,7 +19,7 @@ class BlockChain {
     private val targetBlockTime = 10 * 60 * 1000L
     private val version = 1
     private val ticker = "KNT"
-    private val minimumDifficulty = 3
+    private val minimumDifficulty = 2
 
     init {
         chain = mutableListOf()

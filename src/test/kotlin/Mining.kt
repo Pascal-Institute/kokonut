@@ -20,6 +20,6 @@ fun main(): Unit = runBlocking{
 
     val newBlock : Block = blockChain.mine()
     var json = Json.encodeToJsonElement(newBlock)
-    sendHttpPostRequest("http://127.0.0.1:8080/addBlock", json)
+    sendHttpPostRequest("http://kokonut.iptime.org:2030/addBlock", json)
 
 }
