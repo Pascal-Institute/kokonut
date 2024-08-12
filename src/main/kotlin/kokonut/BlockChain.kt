@@ -21,6 +21,8 @@ class BlockChain {
     private val version = 1
     private val ticker = "KNT"
     private val minimumDifficulty = 4
+    private val genesisBlockDifficulty = 32
+    private val genesisVersion = 0
 
     init {
         chain = mutableListOf()
@@ -47,10 +49,13 @@ class BlockChain {
                 val responseBody = response.bodyAsText()
                 try {
                     val block : Block = Json.decodeFromString(responseBody)
-                    val updatedBlock = block.copy(
-                        version = block.version ?: 1,
-                        difficulty = block.difficulty ?: 1
-                    )
+                    val updatedBlock = if(block.index.toInt() == 0)
+                    {block.copy(
+                        version = block.version ?: genesisVersion,
+                        difficulty = block.difficulty ?: genesisBlockDifficulty
+                    )}else{
+                        block
+                    }
 
                     chain.add(updatedBlock)
                 } catch (e: Exception) {
