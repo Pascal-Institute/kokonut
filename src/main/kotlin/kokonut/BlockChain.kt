@@ -19,7 +19,7 @@ class BlockChain {
     private val targetBlockTime = 10 * 60 * 1000L
     private val version = 1
     private val ticker = "KNT"
-    private val minimumDifficulty = 2
+    private val minimumDifficulty = 4
 
     init {
         chain = mutableListOf()
@@ -57,11 +57,17 @@ class BlockChain {
                 }
             }
 
+            sortChainByIndex()
+
         } catch (e: Exception) {
             println("Error! : ${e.message}")
         } finally {
             client.close()
         }
+    }
+
+    fun sortChainByIndex() {
+        chain.sortBy { it.index }
     }
 
     fun getLastBlock(): Block {
@@ -80,7 +86,7 @@ class BlockChain {
         }
 
         return Block(version,getLastBlock().index + 1, getLastBlock().hash, timestamp,ticker,
-            BlockData("","mining succeed...!"), getLastBlock().difficulty, nonce, miningHash)
+            BlockData("","This is official Second Block"), getLastBlock().difficulty, nonce, miningHash)
     }
 
     fun countLeadingZeros(hash: String): Int {
