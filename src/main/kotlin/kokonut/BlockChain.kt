@@ -8,6 +8,7 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
 import kokonut.Block.Companion.calculateHash
+import kokonut.Utility.Companion.difficulty
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlin.math.max
@@ -78,7 +79,7 @@ class BlockChain {
         var nonce : Long = 0
         var timestamp = System.currentTimeMillis()
         var miningHash = getLastBlock().calculateHash(timestamp, nonce)
-        while(getLastBlock().difficulty!! > countLeadingZeros(miningHash)){
+        while(difficulty > countLeadingZeros(miningHash)){
             timestamp = System.currentTimeMillis()
             nonce++
             miningHash = getLastBlock().calculateHash(timestamp, nonce)
@@ -86,7 +87,7 @@ class BlockChain {
         }
 
         return Block(version,getLastBlock().index + 1, getLastBlock().hash, timestamp,ticker,
-            BlockData("","This is official Second Block"), getLastBlock().difficulty, nonce, miningHash)
+            BlockData("","This is official Second Block"), difficulty, nonce, miningHash)
     }
 
     fun countLeadingZeros(hash: String): Int {

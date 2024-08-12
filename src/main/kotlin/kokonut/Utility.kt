@@ -18,6 +18,8 @@ import javax.crypto.Cipher
 class Utility {
     companion object {
 
+        val difficulty = 4
+
         fun generateKey(): KeyPair {
             val keyPairGenerator = KeyPairGenerator.getInstance("RSA")
             keyPairGenerator.initialize(2048)
