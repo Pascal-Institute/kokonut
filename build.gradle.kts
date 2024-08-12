@@ -35,7 +35,7 @@ publishing {
             groupId = "com.pascal.institute" //Navigate beyond computing oceans
             artifactId = "kokonut"
 
-            version = "1.0.2"
+            version = "1.0.3"
 
             from(components["java"])
         }

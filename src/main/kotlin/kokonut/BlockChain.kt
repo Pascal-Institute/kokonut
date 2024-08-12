@@ -49,7 +49,7 @@ class BlockChain {
                     val block : Block = Json.decodeFromString(responseBody)
                     val updatedBlock = block.copy(
                         version = block.version ?: 1,
-                        difficulty = block.difficulty ?: minimumDifficulty
+                        difficulty = block.difficulty ?: 1
                     )
 
                     chain.add(updatedBlock)
@@ -136,7 +136,7 @@ class BlockChain {
             val currentBlock = chain[i]
             val previousBlock = chain[i - 1]
 
-            if (currentBlock.hash != calculateHash(currentBlock.version!!, currentBlock.index, currentBlock.previousHash, currentBlock.timestamp, currentBlock.ticker, currentBlock.data, currentBlock.difficulty!!, currentBlock.nonce)) {
+            if (currentBlock.hash != calculateHash(previousBlock.version!!, previousBlock.index, previousBlock.previousHash, previousBlock.timestamp, previousBlock.ticker, previousBlock.data, previousBlock.difficulty!!, previousBlock.nonce)) {
                 return false
             }
 
