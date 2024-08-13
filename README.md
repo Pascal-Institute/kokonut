@@ -1,3 +1,7 @@
+## full node
+
+- http://kokonut.iptime.org:2030/
+
 ## protocol version 1
 ```json
 {
