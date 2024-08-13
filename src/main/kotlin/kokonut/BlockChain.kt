@@ -29,6 +29,9 @@ class BlockChain {
     }
 
     suspend fun loadChainFromNetwork() = runBlocking {
+
+        chain.clear()
+
         val client = HttpClient(CIO) {
             install(ContentNegotiation) {
                 json(Json { ignoreUnknownKeys = true })
@@ -38,6 +41,7 @@ class BlockChain {
         val repoUrl = "https://api.github.com/repos/Pascal-Institute/kokonut-storage/contents/"
 
         try {
+
             val files: List<GitHubFile> = client.get(repoUrl).body()
 
             val jsonUrls = files.filter { it.type == "file" && it.name.endsWith(".json") }
@@ -80,7 +84,12 @@ class BlockChain {
         return chain.last()
     }
 
+
     fun mine() : Block {
+       return mine(BlockData("", "Dummy"))
+    }
+
+    fun mine(blockData: BlockData) : Block {
         var nonce : Long = 0
         var timestamp = System.currentTimeMillis()
         var miningHash = getLastBlock().calculateHash(timestamp, nonce)
@@ -91,8 +100,8 @@ class BlockChain {
             println("Nonce : $nonce")
         }
 
-        return Block(version,getLastBlock().index + 1, getLastBlock().hash, timestamp,ticker,
-            BlockData("","This is official Second Block"), difficulty, nonce, miningHash)
+        return Block(version,getLastBlock().index + 1, getLastBlock().hash, timestamp, ticker,
+            blockData, difficulty, nonce, miningHash)
     }
 
     fun countLeadingZeros(hash: String): Int {
@@ -136,12 +145,22 @@ class BlockChain {
         return targetDifficulty
     }
 
-    fun isValidChain(): Boolean {
-        for (i in 1 until chain.size) {
+    fun isValid(): Boolean {
+        for (i in chain.size - 1 downTo  1) {
             val currentBlock = chain[i]
             val previousBlock = chain[i - 1]
+            val calculatedHash = Block.calculateHash(
+                previousBlock.version!!,
+                previousBlock.index,
+                previousBlock.previousHash,
+                currentBlock.timestamp,
+                previousBlock.ticker,
+                previousBlock.data,
+                previousBlock.difficulty!!,
+                currentBlock.nonce
+            )
 
-            if (currentBlock.hash != calculateHash(previousBlock.version!!, previousBlock.index, previousBlock.previousHash, previousBlock.timestamp, previousBlock.ticker, previousBlock.data, previousBlock.difficulty!!, previousBlock.nonce)) {
+            if (currentBlock.hash != calculatedHash) {
                 return false
             }
 
@@ -150,5 +169,10 @@ class BlockChain {
             }
         }
         return true
+    }
+
+    @Deprecated("Depracted from 1.0.5 use isValid() instead of", ReplaceWith("isValid()"))
+    fun isValidChain(): Boolean {
+        return isValid()
     }
 }
