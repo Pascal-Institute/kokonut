@@ -18,7 +18,7 @@ import javax.crypto.Cipher
 class Utility {
     companion object {
 
-        var difficulty = 5
+        var difficulty = 6
 
         fun generateKey(): KeyPair {
             val keyPairGenerator = KeyPairGenerator.getInstance("RSA")
