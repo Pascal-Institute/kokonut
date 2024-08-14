@@ -23,6 +23,6 @@ fun main(): Unit = runBlocking{
     val newBlock : Block = blockChain.mine(BlockData(miner.address, "Mining Kokonut"))
 
     var json = Json.encodeToJsonElement(newBlock)
-    sendHttpPostRequest("http://kokonut.iptime.org:2030/addBlock", json)
+    sendHttpPostRequest("http://kokonut.iptime.org/addBlock", json)
 
 }
