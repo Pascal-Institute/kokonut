@@ -1,6 +1,5 @@
 import kokonut.*
 import kokonut.Utility.Companion.sendHttpPostRequest
-import kokonut.Utility.Companion.sendHttpPostRequestWithFile
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
@@ -21,5 +20,5 @@ fun main(): Unit = runBlocking{
     val miner = Miner(address)
     val newBlock : Block = blockChain.mine(BlockData(miner.address, "Mining Kokonut"))
     var json = Json.encodeToJsonElement(newBlock)
-    sendHttpPostRequestWithFile("http://kokonut.iptime.org/addBlock", json, file)
+    sendHttpPostRequest("http://kokonut.iptime.org/addBlock", json, file)
 }
