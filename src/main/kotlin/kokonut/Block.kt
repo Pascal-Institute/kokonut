@@ -14,7 +14,8 @@ data class Block(
     val data: BlockData,
     val difficulty : Int ? = null,
     val nonce: Long,
-    val hash: String
+    val hash: String,
+    val reward : Double ? = 0.000000
 ) {
     companion object {
 
