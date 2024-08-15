@@ -15,6 +15,7 @@ fun main(): Unit = runBlocking{
     }
 
     job.join()
+
     val file = File("C:\\Users\\public\\public_key.pem")
     val address = Utility.calculateHash(Utility.loadPublicKey(file.path))
     val miner = Miner(address)

@@ -1,7 +1,5 @@
 package kokonut
 
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import java.io.*
 import java.net.HttpURLConnection
@@ -139,12 +137,12 @@ class Utility {
             val url = URL(urlString)
             val boundary = "Boundary-${System.currentTimeMillis()}"
             val connection = url.openConnection() as HttpURLConnection
-            try {
-                connection.requestMethod = "POST"
-                connection.doOutput = true
-                connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
-                connection.setRequestProperty("Accept", "application/json")
+            connection.requestMethod = "POST"
+            connection.doOutput = true
+            connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
+            connection.setRequestProperty("Accept", "application/json")
 
+            try {
                 connection.outputStream.use { os ->
                     // Write JSON part
                     writePart(os, boundary, "json", "application/json; charset=UTF-8", jsonElement.toString().toByteArray(Charsets.UTF_8))
@@ -158,11 +156,20 @@ class Utility {
 
                 // Check response
                 val responseCode = connection.responseCode
-                println("Response Code: $responseCode")
-                connection.inputStream.bufferedReader().use { reader ->
-                    val response = reader.readText()
-                    println("Response: $response")
+                if (responseCode in 200..299) {
+                    connection.inputStream.bufferedReader().use { reader ->
+                        val response = reader.readText()
+                        println("Response: $response")
+                    }
+                } else {
+                    println("Failed with HTTP error code: $responseCode")
+                    connection.errorStream?.bufferedReader()?.use { reader ->
+                        val errorResponse = reader.readText()
+                        println("Error Response: $errorResponse")
+                    }
                 }
+            } catch (e: IOException) {
+                e.printStackTrace()
             } finally {
                 connection.disconnect()
             }
