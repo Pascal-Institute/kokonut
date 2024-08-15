@@ -1,12 +1,11 @@
-import kokonut.Block
-import kokonut.BlockChain
-import kokonut.BlockData
-import kokonut.Miner
+import kokonut.*
 import kokonut.Utility.Companion.sendHttpPostRequest
+import kokonut.Utility.Companion.sendHttpPostRequestWithFile
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToJsonElement
+import java.io.File
 
 val blockChain = BlockChain()
 
@@ -17,12 +16,10 @@ fun main(): Unit = runBlocking{
     }
 
     job.join()
-
-    val miner = Miner("6c60b7550766d5ae24ccc3327f0e47fbaa51e599172795bb9ad06ac82784a92d")
-
+    val file = File("C:\\Users\\public\\public_key.pem")
+    val address = Utility.calculateHash(Utility.loadPublicKey(file.path))
+    val miner = Miner(address)
     val newBlock : Block = blockChain.mine(BlockData(miner.address, "Mining Kokonut"))
-
     var json = Json.encodeToJsonElement(newBlock)
-    sendHttpPostRequest("http://kokonut.iptime.org/addBlock", json)
-
+    sendHttpPostRequestWithFile("http://kokonut.iptime.org/addBlock", json, file)
 }

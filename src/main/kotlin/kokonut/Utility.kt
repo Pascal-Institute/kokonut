@@ -3,12 +3,10 @@ package kokonut
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
-import java.io.BufferedReader
-import java.io.File
-import java.io.InputStreamReader
-import java.io.OutputStreamWriter
+import java.io.*
 import java.net.HttpURLConnection
 import java.net.URL
+import java.nio.file.Files
 import java.security.*
 import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
@@ -105,28 +103,7 @@ class Utility {
             }
         }
 
-        fun sendHttpPostRequest(url: String) {
-            val url = URL(url)
-            val connection = url.openConnection() as HttpURLConnection
-
-            connection.requestMethod = "POST"
-            connection.doOutput = true
-            connection.setRequestProperty("Content-Type", "application/json")
-
-            // JSON Serialization
-            val data = BlockData(miner = "d", comment = "Pascal Institute")
-            val json = Json.encodeToString(data)
-
-            // Write JSON data to the request body.
-            OutputStreamWriter(connection.outputStream).use { it.write(json) }
-
-            // Read response
-            val response = connection.inputStream.bufferedReader().readText()
-            println("Response: $response")
-
-            connection.disconnect()
-        }
-
+        @Deprecated("This function is deprecated from 1.0.6")
         fun sendHttpPostRequest(urlString: String, jsonElement: JsonElement) {
             val url = URL(urlString)
             val connection = url.openConnection() as HttpURLConnection
@@ -155,6 +132,56 @@ class Utility {
             } finally {
                 connection.disconnect()
             }
+        }
+
+
+        fun sendHttpPostRequest(urlString: String, jsonElement: JsonElement, publicKeyFile: File) {
+            val url = URL(urlString)
+            val boundary = "Boundary-${System.currentTimeMillis()}"
+            val connection = url.openConnection() as HttpURLConnection
+            try {
+                connection.requestMethod = "POST"
+                connection.doOutput = true
+                connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
+                connection.setRequestProperty("Accept", "application/json")
+
+                connection.outputStream.use { os ->
+                    // Write JSON part
+                    writePart(os, boundary, "json", "application/json; charset=UTF-8", jsonElement.toString().toByteArray(Charsets.UTF_8))
+
+                    // Write file part
+                    writeFilePart(os, boundary, "public_key", "application/x-pem-file", publicKeyFile)
+
+                    // End of multipart
+                    os.write("--$boundary--\r\n".toByteArray(Charsets.UTF_8))
+                }
+
+                // Check response
+                val responseCode = connection.responseCode
+                println("Response Code: $responseCode")
+                connection.inputStream.bufferedReader().use { reader ->
+                    val response = reader.readText()
+                    println("Response: $response")
+                }
+            } finally {
+                connection.disconnect()
+            }
+        }
+
+        private fun writePart(outputStream: OutputStream, boundary: String, name: String, contentType: String, content: ByteArray) {
+            outputStream.write("--$boundary\r\n".toByteArray(Charsets.UTF_8))
+            outputStream.write("Content-Disposition: form-data; name=\"$name\"\r\n".toByteArray(Charsets.UTF_8))
+            outputStream.write("Content-Type: $contentType\r\n\r\n".toByteArray(Charsets.UTF_8))
+            outputStream.write(content)
+            outputStream.write("\r\n".toByteArray(Charsets.UTF_8))
+        }
+
+        private fun writeFilePart(outputStream: OutputStream, boundary: String, name: String, contentType: String, file: File) {
+            outputStream.write("--$boundary\r\n".toByteArray(Charsets.UTF_8))
+            outputStream.write("Content-Disposition: form-data; name=\"$name\"; filename=\"${file.name}\"\r\n".toByteArray(Charsets.UTF_8))
+            outputStream.write("Content-Type: $contentType\r\n\r\n".toByteArray(Charsets.UTF_8))
+            Files.copy(file.toPath(), outputStream)
+            outputStream.write("\r\n".toByteArray(Charsets.UTF_8))
         }
     }
 }
