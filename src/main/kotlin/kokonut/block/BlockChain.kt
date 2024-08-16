@@ -14,6 +14,7 @@ import kokonut.URL.FULL_STORAGE
 import kokonut.Utility
 import kokonut.block.Block.Companion.calculateHash
 import kokonut.Utility.Companion.difficulty
+import kokonut.Utility.Companion.sendHttpGetPolicy
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlin.math.max
@@ -92,13 +93,16 @@ class BlockChain {
     }
 
     fun mine(blockData: BlockData) : Block {
+
+        val policy = sendHttpGetPolicy(FUEL_NODE)
         var nonce : Long = 0
         var timestamp = System.currentTimeMillis()
-        var miningHash = getLastBlock().calculateHash(timestamp, nonce)
-        while(difficulty > countLeadingZeros(miningHash)){
+        var miningHash = getLastBlock().calculateHash(timestamp, nonce, policy.reward)
+
+        while(policy.difficulty > countLeadingZeros(miningHash)){
             timestamp = System.currentTimeMillis()
             nonce++
-            miningHash = getLastBlock().calculateHash(timestamp, nonce)
+            miningHash = getLastBlock().calculateHash(timestamp, nonce, policy.reward)
             println("Nonce : $nonce")
         }
 

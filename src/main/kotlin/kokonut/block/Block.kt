@@ -57,7 +57,12 @@ data class Block(
         }
     }
 
+    @Deprecated("until kokonut 1.0.7")
     fun calculateHash(timestamp: Long, nonce: Long): String {
+        return calculateHash(version!!, index, previousHash, timestamp, ticker, data, difficulty!!, nonce)
+    }
+
+    fun calculateHash(timestamp: Long, nonce: Long, reward: Double): String {
         return calculateHash(version!!, index, previousHash, timestamp, ticker, data, difficulty!!, nonce)
     }
 
