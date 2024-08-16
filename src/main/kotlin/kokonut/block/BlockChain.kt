@@ -21,9 +21,8 @@ class BlockChain {
     val chain: MutableList<Block>
     private val difficultyAdjustInterval = 2024
     private val targetBlockTime = 10 * 60 * 1000L
-    private val version = 1
+    private val version = 2
     private val ticker = "KNT"
-    private val minimumDifficulty = 4
     private val genesisBlockDifficulty = 32
     private val genesisVersion = 0
 
@@ -136,14 +135,6 @@ class BlockChain {
         //Proven done!
         chain.add(block)
         return true
-    }
-
-    fun calculateTargetDifficulty(currentIndex: Int): Int {
-        val lastAdjustmentBlock = chain.getOrNull(currentIndex - difficultyAdjustInterval) ?: return 8
-        val timeTaken = System.currentTimeMillis() - lastAdjustmentBlock.timestamp
-        val difficultyFactor = timeTaken / targetBlockTime
-        val targetDifficulty = max(minimumDifficulty, 8 - difficultyFactor.toInt())
-        return targetDifficulty
     }
 
     fun isValid(): Boolean {
