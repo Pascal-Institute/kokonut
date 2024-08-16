@@ -1,3 +1,6 @@
+[![](https://jitpack.io/v/Pascal-Institute/kokonut.svg)](https://jitpack.io/#Pascal-Institute/kokonut)
+[![](https://jitpack.io/v/Pascal-Institute/kokonut/month.svg)](https://jitpack.io/#Pascal-Institute/kokonut)
+
 # What is Kokonut...?
 
 ## Block Chain Framework powered by Kotlin
