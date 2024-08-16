@@ -63,7 +63,7 @@ data class Block(
     }
 
     fun calculateHash(timestamp: Long, nonce: Long, reward: Double): String {
-        return calculateHash(version!!, index, previousHash, timestamp, ticker, data, difficulty!!, nonce)
+        return calculateHash(version!!, index, previousHash, timestamp, ticker, data, difficulty!!, nonce, reward)
     }
 
     fun isValid(): Boolean {

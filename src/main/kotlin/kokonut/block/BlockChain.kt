@@ -12,13 +12,10 @@ import kokonut.Policy
 import kokonut.URL.FUEL_NODE
 import kokonut.URL.FULL_RAW_STORAGE
 import kokonut.URL.FULL_STORAGE
-import kokonut.Utility
 import kokonut.block.Block.Companion.calculateHash
-import kokonut.Utility.Companion.difficulty
 import kokonut.Utility.Companion.sendHttpGetPolicy
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
-import kotlin.math.max
 
 class BlockChain {
 
@@ -104,7 +101,7 @@ class BlockChain {
         }
 
         return Block(policy.version,getLastBlock().index + 1, getLastBlock().hash, timestamp, ticker,
-            blockData, difficulty, nonce, miningHash, policy.reward)
+            blockData, policy.difficulty, nonce, miningHash, policy.reward)
     }
 
     private fun countLeadingZeros(hash: String): Int {
