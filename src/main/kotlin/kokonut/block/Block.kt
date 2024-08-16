@@ -1,7 +1,6 @@
-package kokonut
+package kokonut.block
 
 import kotlinx.serialization.Serializable
-import java.math.BigInteger
 import java.security.MessageDigest
 
 @Serializable

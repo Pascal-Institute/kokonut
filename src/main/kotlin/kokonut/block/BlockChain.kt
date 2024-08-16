@@ -1,4 +1,4 @@
-package kokonut
+package kokonut.block
 
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -7,7 +7,8 @@ import io.ktor.client.request.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
-import kokonut.Block.Companion.calculateHash
+import kokonut.GitHubFile
+import kokonut.block.Block.Companion.calculateHash
 import kokonut.Utility.Companion.difficulty
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json

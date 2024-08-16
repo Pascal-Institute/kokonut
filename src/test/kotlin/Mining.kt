@@ -1,5 +1,8 @@
 import kokonut.*
 import kokonut.Utility.Companion.sendHttpPostRequest
+import kokonut.block.Block
+import kokonut.block.BlockChain
+import kokonut.block.BlockData
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
