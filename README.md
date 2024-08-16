@@ -1,9 +1,24 @@
+# What is Kokonut...?
+
+## Block Chain Framework powered by Kotlin
+
+# Node
+
 ## Fuel Node
 
+It supplies important informations to cross validation between full & light node
 
+https://pascal-institute.github.io/kokonut-oil-station/
 
 ## Full Node
+
+Validate Block and Add to Chain. powered by kokonut
+
 http://kokonut.iptime.org/
+
+## Light Node
+
+Mining Block. powered by kokonut
 
 # Kokonut Protocol 
 
@@ -18,14 +33,14 @@ Proven Of Work is executed at least 1 full node
 ```json
 {
   "version": 1,
-  "index": 1,
+  "index": 0,
   "previousHash": "00000000000000000000000000000000bf10897e359e874402dbb8132faaaa",
   "timestamp": 1722064910519,
   "ticker": "KNT",
   "data": {
     "comment": "When something is important enough, you do it even if the odds are not in your favor."
   },
-  "difficulty": 8,
+  "difficulty": 32,
   "nonce": 12123345,
   "hash": "000000000000000000000000000038a5bf10897e309c984402d1b8132faaaa"
 }
@@ -60,7 +75,7 @@ val calculatedHash = Block.calculateHash(
 ### Abstract
 
 - Proven Of Work is executed at least 1 full node
-- Miner(64 address of public_key.pem) added to data block
+- Miner(64 digit hex string converted by public_key.pem) added to data block
 - Reward added for miner(KNT) (Unfortunately, version 2 reward is Invalid)
 
 ### Block Structure
