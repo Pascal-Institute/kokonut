@@ -8,6 +8,8 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
 import kokonut.GitHubFile
+import kokonut.URL.FULL_RAW_STORAGE
+import kokonut.URL.FULL_STORAGE
 import kokonut.block.Block.Companion.calculateHash
 import kokonut.Utility.Companion.difficulty
 import kotlinx.coroutines.runBlocking
@@ -39,14 +41,12 @@ class BlockChain {
             }
         }
 
-        val repoUrl = "https://api.github.com/repos/Pascal-Institute/kokonut-storage/contents/"
-
         try {
 
-            val files: List<GitHubFile> = client.get(repoUrl).body()
+            val files: List<GitHubFile> = client.get(FULL_STORAGE).body()
 
             val jsonUrls = files.filter { it.type == "file" && it.name.endsWith(".json") }
-                .map { "https://raw.githubusercontent.com/Pascal-Institute/kokonut-storage/main/${it.path}" }
+                .map { "${FULL_RAW_STORAGE}${it.path}" }
 
             // JSON 파일 읽기 및 처리
             for (url in jsonUrls) {

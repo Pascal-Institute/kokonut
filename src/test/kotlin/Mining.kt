@@ -1,4 +1,5 @@
 import kokonut.*
+import kokonut.URL.FULL_NODE_0
 import kokonut.Utility.Companion.sendHttpPostRequest
 import kokonut.block.Block
 import kokonut.block.BlockChain
@@ -23,6 +24,7 @@ fun main(): Unit = runBlocking{
     val address = Utility.calculateHash(Utility.loadPublicKey(file.path))
     val miner = Miner(address)
     val newBlock : Block = blockChain.mine(BlockData(miner.address, "Mining Kokonut"))
-    var json = Json.encodeToJsonElement(newBlock)
-    sendHttpPostRequest("http://kokonut.iptime.org/addBlock", json, file)
+    val json = Json.encodeToJsonElement(newBlock)
+
+    sendHttpPostRequest("${FULL_NODE_0}/addBlock", json, file)
 }
