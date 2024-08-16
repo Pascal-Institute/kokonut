@@ -15,7 +15,9 @@
 
 ## Full Node
 
-- URL : http://kokonut.iptime.org/
+- URL :
+  - https://kokonut.koyeb.app/ 
+  - http://kokonut.iptime.org/
 - Validate Block and Add to Chain. powered by kokonut
 - Check Chain is valid
 
