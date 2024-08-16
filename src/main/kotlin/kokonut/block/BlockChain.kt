@@ -8,8 +8,10 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
 import kokonut.GitHubFile
+import kokonut.URL.FUEL_NODE
 import kokonut.URL.FULL_RAW_STORAGE
 import kokonut.URL.FULL_STORAGE
+import kokonut.Utility
 import kokonut.block.Block.Companion.calculateHash
 import kokonut.Utility.Companion.difficulty
 import kotlinx.coroutines.runBlocking
@@ -139,18 +141,53 @@ class BlockChain {
 
     fun isValid(): Boolean {
         for (i in chain.size - 1 downTo  1) {
+
             val currentBlock = chain[i]
             val previousBlock = chain[i - 1]
-            val calculatedHash = Block.calculateHash(
-                previousBlock.version!!,
-                previousBlock.index,
-                previousBlock.previousHash,
-                currentBlock.timestamp,
-                previousBlock.ticker,
-                previousBlock.data,
-                previousBlock.difficulty!!,
-                currentBlock.nonce
-            )
+
+            val calculatedHash : String = when (currentBlock.version) {
+                1 -> {
+                    calculateHash(
+                        previousBlock.version!!,
+                        previousBlock.index,
+                        previousBlock.previousHash,
+                        currentBlock.timestamp,
+                        previousBlock.ticker,
+                        previousBlock.data,
+                        previousBlock.difficulty!!,
+                        currentBlock.nonce
+                    )
+                }
+
+                2 -> {
+                        calculateHash(
+                        previousBlock.version!!,
+                        previousBlock.index,
+                        previousBlock.previousHash,
+                        currentBlock.timestamp,
+                        previousBlock.ticker,
+                        previousBlock.data,
+                        previousBlock.difficulty!!,
+                        currentBlock.nonce
+                    )
+                }
+
+                else -> {
+                    calculateHash(
+                        previousBlock.version!!,
+                        previousBlock.index,
+                        previousBlock.previousHash,
+                        currentBlock.timestamp,
+                        previousBlock.ticker,
+                        previousBlock.data,
+                        previousBlock.difficulty!!,
+                        currentBlock.nonce,
+                        currentBlock.reward!!
+                    )
+                }
+            }
+
+
 
             if (currentBlock.hash != calculatedHash) {
                 return false
