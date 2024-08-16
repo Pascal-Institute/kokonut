@@ -107,10 +107,10 @@ class BlockChain {
         }
 
         return Block(version,getLastBlock().index + 1, getLastBlock().hash, timestamp, ticker,
-            blockData, difficulty, nonce, miningHash)
+            blockData, difficulty, nonce, miningHash, policy.reward)
     }
 
-    fun countLeadingZeros(hash: String): Int {
+    private fun countLeadingZeros(hash: String): Int {
         return hash.takeWhile { it == '0' }.length
     }
 
@@ -133,7 +133,7 @@ class BlockChain {
             return false
         }
 
-        val calculatedHash =  calculateHash(block.version, block.index, block.previousHash, block.timestamp, block.ticker, block.data, block.difficulty!!, block.nonce)
+        val calculatedHash =  calculateHash(block.version, block.index, block.previousHash, block.timestamp, block.ticker, block.data, block.difficulty!!, block.nonce, block.reward!!)
         if(block.hash != calculatedHash){
             return false
         }
