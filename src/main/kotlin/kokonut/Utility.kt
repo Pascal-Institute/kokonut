@@ -1,6 +1,8 @@
 package kokonut
 
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import sun.security.pkcs.ParsingException
 import java.io.*
 import java.net.HttpURLConnection
 import java.net.URL
@@ -100,6 +102,53 @@ class Utility {
                 println("GET request failed: $responseCode")
             }
         }
+
+        fun sendHttpGetPolicy(urlString: String?): Policy {
+            if (urlString == null) {
+                throw IllegalArgumentException("URL string cannot be null")
+            }
+
+            val url = URL(urlString)
+            val conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+
+            val responseCode = conn.responseCode
+            if (responseCode == 200) {
+                val `in` = BufferedReader(InputStreamReader(conn.inputStream))
+                val response = StringBuffer()
+
+                var inputLine: String?
+                while (`in`.readLine().also { inputLine = it } != null) {
+                    response.append(inputLine)
+                }
+                `in`.close()
+
+                val html = response.toString()
+
+                // Extract values using regular expressions
+                val versionRegex = Regex("Minimum Protocol Version for which reward is valid : (\\d+)")
+                val difficultyRegex = Regex("Mining Difficulty: (\\d+)")
+                val rewardRegex = Regex("Mining Reward \\(KNT\\): (\\d+\\.\\d+)")
+
+                val versionMatch = versionRegex.find(html)
+                val difficultyMatch = difficultyRegex.find(html)
+                val rewardMatch = rewardRegex.find(html)
+
+                // Check if matches are found and extract values
+                val version = versionMatch?.groups?.get(1)?.value?.toIntOrNull()
+                    ?: throw IOException("Failed to parse the protocol version")
+                val difficulty = difficultyMatch?.groups?.get(1)?.value?.toIntOrNull()
+                    ?: throw IOException("Failed to parse the mining difficulty")
+                val reward = rewardMatch?.groups?.get(1)?.value?.toDoubleOrNull()
+                    ?: throw IOException("Failed to parse the mining reward")
+
+                // Create Policy data class instance
+                return Policy(version, difficulty, reward)
+            } else {
+                throw IOException("GET request failed with response code: $responseCode")
+            }
+        }
+
 
         @Deprecated("This function is deprecated from 1.0.6")
         fun sendHttpPostRequest(urlString: String, jsonElement: JsonElement) {
