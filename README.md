@@ -6,19 +6,21 @@
 
 ## Fuel Node
 
-It supplies important informations to cross validation between full & light node
-
-https://pascal-institute.github.io/kokonut-oil-station/
+- URL : https://pascal-institute.github.io/kokonut-oil-station/
+- Synchronize full nodes.
+- Supplies important information to cross validation between full & light node
 
 ## Full Node
 
-Validate Block and Add to Chain. powered by kokonut
+- URL : http://kokonut.iptime.org/
+- Validate Block and Add to Chain. powered by kokonut
+- Check Chain is valid
 
-http://kokonut.iptime.org/
 
 ## Light Node
 
-Mining Block. powered by kokonut
+- Mine Block. powered by kokonut
+- Check Chain is valid
 
 # Kokonut Protocol 
 
