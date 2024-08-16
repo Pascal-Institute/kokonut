@@ -1,8 +1,38 @@
-## full node
+## Fuel Node
 
-- http://kokonut.iptime.org/
 
-## proven of work
+
+## Full Node
+http://kokonut.iptime.org/
+
+# Kokonut Protocol 
+
+## Version 1 (until kokonut 1.0.5)
+
+### Abstract
+
+Proven Of Work is executed at least 1 full node
+
+### Block Structure
+
+```json
+{
+  "version": 1,
+  "index": 1,
+  "previousHash": "00000000000000000000000000000000bf10897e359e874402dbb8132faaaa",
+  "timestamp": 1722064910519,
+  "ticker": "KNT",
+  "data": {
+    "comment": "When something is important enough, you do it even if the odds are not in your favor."
+  },
+  "difficulty": 8,
+  "nonce": 12123345,
+  "hash": "000000000000000000000000000038a5bf10897e309c984402d1b8132faaaa"
+}
+```
+
+### Proven Of Work
+
 ```
 val calculatedHash = Block.calculateHash(
   previousBlock.version,
@@ -23,26 +53,17 @@ val calculatedHash = Block.calculateHash(
   }
 ```
 
-## protocol version 1 (until kokonut 1.0.5)
-```json
-{
-  "version": 1,
-  "index": 1,
-  "previousHash": "00000000000000000000000000000000bf10897e359e874402dbb8132faaaa",
-  "timestamp": 1722064910519,
-  "ticker": "KNT",
-  "data": {
-    "comment": "When something is important enough, you do it even if the odds are not in your favor."
-  },
-  "difficulty": 8,
-  "nonce": 12123345,
-  "hash": "000000000000000000000000000038a5bf10897e309c984402d1b8132faaaa"
-}
-```
+---
 
-## protocol version 2
-- miner added to data block
-- reward added for miner(KNT)
+## Version 2 (until kokonut 1.0.7)
+
+### Abstract
+
+- Proven Of Work is executed at least 1 full node
+- Miner(64 address of public_key.pem) added to data block
+- Reward added for miner(KNT) (Unfortunately, version 2 reward is Invalid)
+
+### Block Structure
 
 ```json
 {
@@ -61,3 +82,5 @@ val calculatedHash = Block.calculateHash(
   "reward": 50.0
 }
 ```
+
+### Proven Of Work (Same to Version 1)
