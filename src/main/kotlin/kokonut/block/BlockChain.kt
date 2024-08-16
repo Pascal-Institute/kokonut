@@ -8,6 +8,7 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
 import kokonut.GitHubFile
+import kokonut.Policy
 import kokonut.URL.FUEL_NODE
 import kokonut.URL.FULL_RAW_STORAGE
 import kokonut.URL.FULL_STORAGE
@@ -22,9 +23,6 @@ import kotlin.math.max
 class BlockChain {
 
     val chain: MutableList<Block>
-    private val difficultyAdjustInterval = 2024
-    private val targetBlockTime = 10 * 60 * 1000L
-    private val version = 2
     private val ticker = "KNT"
     private val genesisBlockDifficulty = 32
     private val genesisVersion = 0
@@ -50,7 +48,6 @@ class BlockChain {
             val jsonUrls = files.filter { it.type == "file" && it.name.endsWith(".json") }
                 .map { "${FULL_RAW_STORAGE}${it.path}" }
 
-            // JSON 파일 읽기 및 처리
             for (url in jsonUrls) {
                 val response: HttpResponse = client.get(url)
                 val responseBody = response.bodyAsText()
@@ -106,7 +103,7 @@ class BlockChain {
             println("Nonce : $nonce")
         }
 
-        return Block(version,getLastBlock().index + 1, getLastBlock().hash, timestamp, ticker,
+        return Block(policy.version,getLastBlock().index + 1, getLastBlock().hash, timestamp, ticker,
             blockData, difficulty, nonce, miningHash, policy.reward)
     }
 
@@ -114,10 +111,10 @@ class BlockChain {
         return hash.takeWhile { it == '0' }.length
     }
 
-    fun addBlock(block: Block) : Boolean{
+    fun addBlock(policy: Policy, block: Block) : Boolean{
 
         //Proven Of Work
-        if(block.version != version){
+        if(block.version != policy.version){
             return false
         }
 
