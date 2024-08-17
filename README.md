@@ -10,14 +10,14 @@
 ## Fuel Node
 
 - URL : https://pascal-institute.github.io/kokonut-oil-station/
-- Synchronize full nodes.
+- Synchronize full nodes
 - Supplies important information to cross validation between full & light node
 
 ## Full Node
 
 - URL :
-  - https://kokonut.koyeb.app/ 
-  - http://kokonut.iptime.org/
+  - node 0 : https://kokonut.koyeb.app/ 
+  - node 1 : http://kokonut.iptime.org/
 - Validate Block and Add to Chain. powered by kokonut
 - Check Chain is valid
 
