@@ -96,9 +96,10 @@ class Utility {
 
             return try {
                 val response: HttpResponse = client.get(url)
-                response.status.isSuccess() // 2xx 상태 코드 확인
+                println("Node is healthy : ${response.status}")
+                response.status.isSuccess()
             } catch (e: Exception) {
-                println("Full Node is shutdown: ${e.message}")
+                println("Node is sick: ${e.message}")
                 false
             } finally {
                 client.close()
