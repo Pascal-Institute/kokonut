@@ -8,6 +8,7 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
 import kokonut.GitHubFile
+import kokonut.Identity.name
 import kokonut.Identity.ticker
 import kokonut.Policy
 import kokonut.URL.FUEL_NODE
@@ -23,6 +24,12 @@ class BlockChain {
     private val chain: MutableList<Block> = mutableListOf()
     private val genesisBlockDifficulty = 32
     private val genesisVersion = 0
+
+    init {
+        //MUST TO DO : Injection Identity
+        name = "Kokonut"
+        ticker = "KNT"
+    }
 
     suspend fun loadChainFromNetwork() = runBlocking {
 
