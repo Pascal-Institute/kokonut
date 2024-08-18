@@ -1,5 +1,7 @@
 import kokonut.*
 import kokonut.URL.FULL_NODE_0
+import kokonut.URL.FULL_NODE_1
+import kokonut.Utility.Companion.isNodeHealthy
 import kokonut.Utility.Companion.sendHttpPostRequest
 import kokonut.block.Block
 import kokonut.block.BlockChain
@@ -23,8 +25,10 @@ fun main(): Unit = runBlocking{
     val file = File("C:\\Users\\public\\public_key.pem")
     val address = Utility.calculateHash(Utility.loadPublicKey(file.path))
     val miner = Miner(address)
-    val newBlock : Block = blockChain.mine(BlockData(miner.address, "Mining Kokonut"))
-    val json = Json.encodeToJsonElement(newBlock)
 
-    sendHttpPostRequest("${FULL_NODE_0}/addBlock", json, file)
+    if(isNodeHealthy(FULL_NODE_0)){
+        val newBlock : Block = blockChain.mine(BlockData(miner.address, "Finale FIN?"))
+        val json = Json.encodeToJsonElement(newBlock)
+        sendHttpPostRequest("${FULL_NODE_0}/addBlock", json, file)
+    }
 }
