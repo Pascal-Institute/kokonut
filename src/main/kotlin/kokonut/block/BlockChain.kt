@@ -8,6 +8,7 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
 import kokonut.GitHubFile
+import kokonut.Identity.ticker
 import kokonut.Policy
 import kokonut.URL.FUEL_NODE
 import kokonut.URL.FULL_RAW_STORAGE
@@ -19,14 +20,9 @@ import kotlinx.serialization.json.Json
 
 class BlockChain {
 
-    val chain: MutableList<Block>
-    private val ticker = "KNT"
+    private val chain: MutableList<Block> = mutableListOf()
     private val genesisBlockDifficulty = 32
     private val genesisVersion = 0
-
-    init {
-        chain = mutableListOf()
-    }
 
     suspend fun loadChainFromNetwork() = runBlocking {
 
