@@ -1,5 +1,11 @@
 package kokonut
 
+import io.ktor.client.*
+import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import sun.security.pkcs.ParsingException
@@ -78,6 +84,25 @@ class Utility {
             return MessageDigest.getInstance("SHA-256")
                 .digest(input.toByteArray())
                 .fold("") { str, it -> str + "%02x".format(it) }
+        }
+
+        suspend fun isNodeHealthy(url: String): Boolean {
+            val client = HttpClient(CIO) {
+                install(HttpTimeout) {
+                    requestTimeoutMillis = 5000
+                }
+                expectSuccess = false
+            }
+
+            return try {
+                val response: HttpResponse = client.get(url)
+                response.status.isSuccess() // 2xx 상태 코드 확인
+            } catch (e: Exception) {
+                println("Full Node is shutdown: ${e.message}")
+                false
+            } finally {
+                client.close()
+            }
         }
 
         fun sendHttpGetRequest(urlString: String?) {
