@@ -67,7 +67,7 @@ class BlockChain {
                 }
             }
 
-            sortChainByIndex()
+            sortByIndex()
 
         } catch (e: Exception) {
             println("Error! : ${e.message}")
@@ -76,7 +76,7 @@ class BlockChain {
         }
     }
 
-    fun sortChainByIndex() {
+    private fun sortByIndex() {
         chain.sortBy { it.index }
     }
 
@@ -84,6 +84,18 @@ class BlockChain {
         return chain.last()
     }
 
+    fun getTotalCurrencyVolume() : Double {
+
+        var totalCurrencyVolume = 0.0
+
+        chain.forEach {
+            if(it.version!!>= 3){
+                totalCurrencyVolume += it.reward!!
+            }
+        }
+
+        return totalCurrencyVolume
+    }
 
     fun mine() : Block {
        return mine(BlockData("", "Dummy"))

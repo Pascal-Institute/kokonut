@@ -12,9 +12,9 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToJsonElement
 import java.io.File
 
-val blockChain = BlockChain()
-
 fun main(): Unit = runBlocking{
+
+    val blockChain = BlockChain()
 
     val job = launch {
         blockChain.loadChainFromNetwork()
@@ -27,7 +27,7 @@ fun main(): Unit = runBlocking{
     val miner = Miner(address)
 
     if(isNodeHealthy(FULL_NODE_0)){
-        val newBlock : Block = blockChain.mine(BlockData(miner.address, "Finale FIN?"))
+        val newBlock : Block = blockChain.mine(BlockData(miner.address, "My challenge is 2 steps forward, 1 step back"))
         val json = Json.encodeToJsonElement(newBlock)
         sendHttpPostRequest("${FULL_NODE_0}/addBlock", json, file)
     }
