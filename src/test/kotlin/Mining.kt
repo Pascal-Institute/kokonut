@@ -22,13 +22,14 @@ fun main(): Unit = runBlocking{
 
     job.join()
 
-    val file = File("C:\\Users\\public\\public_key.pem")
-    val address = Utility.calculateHash(Utility.loadPublicKey(file.path))
-    val miner = Miner(address)
+    val wallet = Wallet(
+        File("C:\\Users\\public\\public_key.pem"),
+        File("C:\\Users\\public\\private_key.pem")
+    )
 
     if(isNodeHealthy(FULL_NODE_0)){
-        val newBlock : Block = blockChain.mine(BlockData(miner.address, "My challenge is 2 steps forward, 1 step back"))
+        val newBlock : Block = blockChain.mine(BlockData(wallet.miner, "Wonderful?"))
         val json = Json.encodeToJsonElement(newBlock)
-        sendHttpPostRequest("${FULL_NODE_0}/addBlock", json, file)
+        sendHttpPostRequest("${FULL_NODE_0}/addBlock", json, wallet.publicKeyFile)
     }
 }

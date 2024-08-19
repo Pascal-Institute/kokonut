@@ -6,6 +6,8 @@ import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import kokonut.block.BlockChain
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonElement
 import java.io.*
 import java.net.HttpURLConnection
@@ -23,36 +25,29 @@ class Utility {
             val keyPairGenerator = KeyPairGenerator.getInstance("RSA")
             keyPairGenerator.initialize(2048)
             val keyPair: KeyPair = keyPairGenerator.generateKeyPair()
-
-            try {
-
-                val publicKey: PublicKey = keyPair.public
-                val privateKey: PrivateKey = keyPair.private
-
-                //val dataToEncrypt = "Hello, World!"
-                val dataToEncrypt = "000000000000000000000000000038a5bf10897e309c984402d1b8132faaaa"
-
-                val cipher = Cipher.getInstance("RSA")
-                cipher.init(Cipher.ENCRYPT_MODE, publicKey)
-                val encryptedData = cipher.doFinal(dataToEncrypt.toByteArray())
-                val encryptedDataBase64 = Base64.getEncoder().encodeToString(encryptedData)
-                println("Encrypted Data: $encryptedDataBase64")
-
-                cipher.init(Cipher.DECRYPT_MODE, privateKey)
-                val decryptedData = cipher.doFinal(Base64.getDecoder().decode(encryptedDataBase64))
-                println("Decrypted Data: ${String(decryptedData)}")
-
-
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
             return keyPair
+        }
+
+        fun signData(data: ByteArray, privateKey: PrivateKey): ByteArray {
+            val signature = Signature.getInstance("SHA256withRSA")
+            signature.initSign(privateKey)
+            signature.update(data)
+            return signature.sign()
+        }
+
+        fun verifySignature(data: ByteArray, signatureBytes: ByteArray, publicKey: PublicKey): Boolean {
+            val signature = Signature.getInstance("SHA256withRSA")
+            signature.initVerify(publicKey)
+            signature.update(data)
+            return signature.verify(signatureBytes)
         }
 
         fun readPemFile(filePath: String): String {
             return File(filePath).readText()
                 .replace("-----BEGIN PUBLIC KEY-----", "")
                 .replace("-----END PUBLIC KEY-----", "")
+                .replace("-----BEGIN PRIVATE KEY-----", "")
+                .replace("-----END PRIVATE KEY-----", "")
                 .replace("\n", "")
         }
 
