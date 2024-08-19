@@ -7,7 +7,6 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonElement
 import java.io.*
 import java.net.HttpURLConnection
@@ -45,17 +44,6 @@ class Utility {
         }
 
         suspend fun sendHttpGetRequest(urlString: String?) {
-
-            runBlocking {
-                launch {
-                    if (!isNodeHealthy(urlString!!)) {
-                        throw Exception("Node is unhealthy")
-                    } else {
-                        println("Node is healthy")
-                    }
-                }
-            }
-
             val url = URL(urlString)
             val conn = url.openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
@@ -76,17 +64,6 @@ class Utility {
         }
 
         fun sendHttpGetPolicy(urlString: String): Policy {
-
-            runBlocking {
-                launch {
-                    if (!isNodeHealthy(urlString)) {
-                        throw Exception("Node is unhealthy")
-                    } else {
-                        println("Node is healthy")
-                    }
-                }
-            }
-
             val url = URL(urlString)
             val conn = url.openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
@@ -130,17 +107,6 @@ class Utility {
 
 
         fun sendHttpPostRequest(urlString: String, jsonElement: JsonElement, publicKeyFile: File) {
-
-            runBlocking {
-                launch {
-                    if (!isNodeHealthy(urlString)) {
-                        throw Exception("Node is unhealthy")
-                    } else {
-                        println("Node is healthy")
-                    }
-                }
-            }
-
             val url = URL(urlString)
             val boundary = "Boundary-${System.currentTimeMillis()}"
             val connection = url.openConnection() as HttpURLConnection
