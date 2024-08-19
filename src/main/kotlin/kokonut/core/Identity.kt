@@ -1,4 +1,4 @@
-package kokonut
+package kokonut.core
 
 //Represent unique properties of block
 object Identity {

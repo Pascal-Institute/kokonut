@@ -1,4 +1,4 @@
-package kokonut.block
+package kokonut.core
 
 import kotlinx.serialization.Serializable
 

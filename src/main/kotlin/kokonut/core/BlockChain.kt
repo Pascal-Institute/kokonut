@@ -1,4 +1,4 @@
-package kokonut.block
+package kokonut.core
 
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -8,14 +8,15 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
 import kokonut.GitHubFile
-import kokonut.Identity.name
-import kokonut.Identity.ticker
+import kokonut.core.Identity.name
+import kokonut.core.Identity.ticker
 import kokonut.Policy
 import kokonut.URL.FUEL_NODE
 import kokonut.URL.FULL_RAW_STORAGE
 import kokonut.URL.FULL_STORAGE
-import kokonut.block.Block.Companion.calculateHash
+import kokonut.core.Block.Companion.calculateHash
 import kokonut.Utility.Companion.sendHttpGetPolicy
+import kotlinx.coroutines.processNextEventInCurrentThread
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 
@@ -29,9 +30,13 @@ class BlockChain {
         //MUST TO DO : Injection Identity
         name = "Kokonut"
         ticker = "KNT"
+
+        loadChainFromNetwork()
+
+        println("Block Chain validity : ${isValid()}")
     }
 
-    suspend fun loadChainFromNetwork() = runBlocking {
+    fun loadChainFromNetwork() = runBlocking {
 
         chain.clear()
 
@@ -81,12 +86,10 @@ class BlockChain {
     }
 
     fun getGenesisBlock(): Block {
-        sortByIndex()
         return chain.first()
     }
 
     fun getLastBlock(): Block {
-        sortByIndex()
         return chain.last()
     }
 
@@ -101,10 +104,6 @@ class BlockChain {
         }
 
         return totalCurrencyVolume
-    }
-
-    fun mine() : Block {
-       return mine(BlockData("", "Dummy"))
     }
 
     fun mine(blockData: BlockData) : Block {

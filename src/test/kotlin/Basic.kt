@@ -1,5 +1,5 @@
 import kokonut.Wallet
-import kokonut.block.BlockChain
+import kokonut.core.BlockChain
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.io.File
@@ -7,12 +7,6 @@ import java.io.File
 fun main(): Unit = runBlocking{
 
     val blockChain = BlockChain()
-
-    val job = launch {
-        blockChain.loadChainFromNetwork()
-    }
-
-    job.join()
 
    //getLastBlock
    println(blockChain.getLastBlock())

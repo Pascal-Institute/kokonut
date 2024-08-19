@@ -6,73 +6,17 @@ import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import kokonut.block.BlockChain
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonElement
 import java.io.*
 import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.file.Files
 import java.security.*
-import java.security.spec.PKCS8EncodedKeySpec
-import java.security.spec.X509EncodedKeySpec
-import java.util.*
-import javax.crypto.Cipher
 
 class Utility {
     companion object {
-        fun generateKey(): KeyPair {
-            val keyPairGenerator = KeyPairGenerator.getInstance("RSA")
-            keyPairGenerator.initialize(2048)
-            val keyPair: KeyPair = keyPairGenerator.generateKeyPair()
-            return keyPair
-        }
-
-        fun signData(data: ByteArray, privateKey: PrivateKey): ByteArray {
-            val signature = Signature.getInstance("SHA256withRSA")
-            signature.initSign(privateKey)
-            signature.update(data)
-            return signature.sign()
-        }
-
-        fun verifySignature(data: ByteArray, signatureBytes: ByteArray, publicKey: PublicKey): Boolean {
-            val signature = Signature.getInstance("SHA256withRSA")
-            signature.initVerify(publicKey)
-            signature.update(data)
-            return signature.verify(signatureBytes)
-        }
-
-        fun readPemFile(filePath: String): String {
-            return File(filePath).readText()
-                .replace("-----BEGIN PUBLIC KEY-----", "")
-                .replace("-----END PUBLIC KEY-----", "")
-                .replace("-----BEGIN PRIVATE KEY-----", "")
-                .replace("-----END PRIVATE KEY-----", "")
-                .replace("\n", "")
-        }
-
-        fun loadPublicKey(pemPath: String): PublicKey {
-            val publicKeyPEM = readPemFile(pemPath)
-            val keyFactory = KeyFactory.getInstance("RSA")
-            val keySpec = X509EncodedKeySpec(Base64.getDecoder().decode(publicKeyPEM))
-            return keyFactory.generatePublic(keySpec)
-        }
-
-        fun loadPrivateKey(pemPath: String): PrivateKey {
-            val privateKeyPEM = readPemFile(pemPath)
-            val keyFactory = KeyFactory.getInstance("RSA")
-            val keySpec = PKCS8EncodedKeySpec(Base64.getDecoder().decode(privateKeyPEM))
-            return keyFactory.generatePrivate(keySpec)
-        }
-
-        fun saveKeyPairToFile(keyPair: KeyPair, privateKeyFilePath: String, publicKeyFilePath: String) {
-            val publicKeyEncoded = Base64.getEncoder().encodeToString(keyPair.public.encoded)
-            File(publicKeyFilePath).writeText("-----BEGIN PUBLIC KEY-----\n$publicKeyEncoded\n-----END PUBLIC KEY-----")
-
-            val privateKeyEncoded = Base64.getEncoder().encodeToString(keyPair.private.encoded)
-            File(privateKeyFilePath).writeText("-----BEGIN PRIVATE KEY-----\n$privateKeyEncoded\n-----END PRIVATE KEY-----")
-        }
-
         fun calculateHash(publicKey: PublicKey): String {
             val input = "$publicKey"
             return MessageDigest.getInstance("SHA-256")
@@ -83,7 +27,7 @@ class Utility {
         suspend fun isNodeHealthy(url: String): Boolean {
             val client = HttpClient(CIO) {
                 install(HttpTimeout) {
-                    requestTimeoutMillis = 5000
+                    requestTimeoutMillis = 3000
                 }
                 expectSuccess = false
             }
@@ -93,14 +37,25 @@ class Utility {
                 println("Node is healthy : ${response.status}")
                 response.status.isSuccess()
             } catch (e: Exception) {
-                println("Node is sick: ${e.message}")
+                println(e.message)
                 false
             } finally {
                 client.close()
             }
         }
 
-        fun sendHttpGetRequest(urlString: String?) {
+        suspend fun sendHttpGetRequest(urlString: String?) {
+
+            runBlocking {
+                launch {
+                    if (!isNodeHealthy(urlString!!)) {
+                        throw Exception("Node is unhealthy")
+                    } else {
+                        println("Node is healthy")
+                    }
+                }
+            }
+
             val url = URL(urlString)
             val conn = url.openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
@@ -120,9 +75,16 @@ class Utility {
             }
         }
 
-        fun sendHttpGetPolicy(urlString: String?): Policy {
-            if (urlString == null) {
-                throw IllegalArgumentException("URL string cannot be null")
+        fun sendHttpGetPolicy(urlString: String): Policy {
+
+            runBlocking {
+                launch {
+                    if (!isNodeHealthy(urlString)) {
+                        throw Exception("Node is unhealthy")
+                    } else {
+                        println("Node is healthy")
+                    }
+                }
             }
 
             val url = URL(urlString)
@@ -167,39 +129,18 @@ class Utility {
         }
 
 
-        @Deprecated("This function is deprecated from 1.0.6")
-        fun sendHttpPostRequest(urlString: String, jsonElement: JsonElement) {
-            val url = URL(urlString)
-            val connection = url.openConnection() as HttpURLConnection
-            try {
-                connection.requestMethod = "POST"
-                connection.doOutput = true
-                connection.setRequestProperty("Content-Type", "application/json; utf-8")
-                connection.setRequestProperty("Accept", "application/json")
-
-                // Convert JsonElement to String
-                val jsonString = jsonElement.toString()
-
-                // Write JSON string to the output stream
-                connection.outputStream.use { os ->
-                    val input = jsonString.toByteArray(Charsets.UTF_8)
-                    os.write(input, 0, input.size)
-                }
-
-                // Check response
-                val responseCode = connection.responseCode
-                println("Response Code: $responseCode")
-                connection.inputStream.bufferedReader().use { reader ->
-                    val response = reader.readText()
-                    println("Response: $response")
-                }
-            } finally {
-                connection.disconnect()
-            }
-        }
-
-
         fun sendHttpPostRequest(urlString: String, jsonElement: JsonElement, publicKeyFile: File) {
+
+            runBlocking {
+                launch {
+                    if (!isNodeHealthy(urlString)) {
+                        throw Exception("Node is unhealthy")
+                    } else {
+                        println("Node is healthy")
+                    }
+                }
+            }
+
             val url = URL(urlString)
             val boundary = "Boundary-${System.currentTimeMillis()}"
             val connection = url.openConnection() as HttpURLConnection
@@ -211,7 +152,13 @@ class Utility {
             try {
                 connection.outputStream.use { os ->
                     // Write JSON part
-                    writePart(os, boundary, "json", "application/json; charset=UTF-8", jsonElement.toString().toByteArray(Charsets.UTF_8))
+                    writePart(
+                        os,
+                        boundary,
+                        "json",
+                        "application/json; charset=UTF-8",
+                        jsonElement.toString().toByteArray(Charsets.UTF_8)
+                    )
 
                     // Write file part
                     writeFilePart(os, boundary, "public_key", "application/x-pem-file", publicKeyFile)
@@ -241,7 +188,13 @@ class Utility {
             }
         }
 
-        private fun writePart(outputStream: OutputStream, boundary: String, name: String, contentType: String, content: ByteArray) {
+        private fun writePart(
+            outputStream: OutputStream,
+            boundary: String,
+            name: String,
+            contentType: String,
+            content: ByteArray
+        ) {
             outputStream.write("--$boundary\r\n".toByteArray(Charsets.UTF_8))
             outputStream.write("Content-Disposition: form-data; name=\"$name\"\r\n".toByteArray(Charsets.UTF_8))
             outputStream.write("Content-Type: $contentType\r\n\r\n".toByteArray(Charsets.UTF_8))
@@ -249,9 +202,19 @@ class Utility {
             outputStream.write("\r\n".toByteArray(Charsets.UTF_8))
         }
 
-        private fun writeFilePart(outputStream: OutputStream, boundary: String, name: String, contentType: String, file: File) {
+        private fun writeFilePart(
+            outputStream: OutputStream,
+            boundary: String,
+            name: String,
+            contentType: String,
+            file: File
+        ) {
             outputStream.write("--$boundary\r\n".toByteArray(Charsets.UTF_8))
-            outputStream.write("Content-Disposition: form-data; name=\"$name\"; filename=\"${file.name}\"\r\n".toByteArray(Charsets.UTF_8))
+            outputStream.write(
+                "Content-Disposition: form-data; name=\"$name\"; filename=\"${file.name}\"\r\n".toByteArray(
+                    Charsets.UTF_8
+                )
+            )
             outputStream.write("Content-Type: $contentType\r\n\r\n".toByteArray(Charsets.UTF_8))
             Files.copy(file.toPath(), outputStream)
             outputStream.write("\r\n".toByteArray(Charsets.UTF_8))
