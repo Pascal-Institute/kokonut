@@ -80,7 +80,13 @@ class BlockChain {
         chain.sortBy { it.index }
     }
 
+    fun getGenesisBlock(): Block {
+        sortByIndex()
+        return chain.first()
+    }
+
     fun getLastBlock(): Block {
+        sortByIndex()
         return chain.last()
     }
 
