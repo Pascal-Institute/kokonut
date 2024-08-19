@@ -147,9 +147,9 @@ class Utility {
                 val html = response.toString()
 
                 // Extract values using regular expressions
-                val versionRegex = Regex("Minimum Protocol Version for which reward is valid : (\\d+)")
-                val difficultyRegex = Regex("Mining Difficulty: (\\d+)")
-                val rewardRegex = Regex("Mining Reward \\(KNT\\): (\\d+\\.\\d+)")
+                val versionRegex = Regex("version : (\\d+)")
+                val difficultyRegex = Regex("difficulty : (\\d+)")
+                val rewardRegex = Regex("reward : (\\d+\\.\\d+)")
 
                 val versionMatch = versionRegex.find(html)
                 val difficultyMatch = difficultyRegex.find(html)
