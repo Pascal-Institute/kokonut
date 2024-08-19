@@ -29,7 +29,8 @@ class Utility {
                 val publicKey: PublicKey = keyPair.public
                 val privateKey: PrivateKey = keyPair.private
 
-                val dataToEncrypt = "Hello, World!"
+                //val dataToEncrypt = "Hello, World!"
+                val dataToEncrypt = "000000000000000000000000000038a5bf10897e309c984402d1b8132faaaa"
 
                 val cipher = Cipher.getInstance("RSA")
                 cipher.init(Cipher.ENCRYPT_MODE, publicKey)
