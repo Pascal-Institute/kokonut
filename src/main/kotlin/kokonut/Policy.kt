@@ -1,6 +1,6 @@
 package kokonut
 
-import kokonut.block.Block
+import kokonut.core.Block
 import kotlinx.serialization.Serializable
 
 @Serializable

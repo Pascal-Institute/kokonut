@@ -1,4 +1,4 @@
-package kokonut.block
+package kokonut.core
 
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -8,27 +8,35 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
 import kokonut.GitHubFile
+import kokonut.core.Identity.name
+import kokonut.core.Identity.ticker
 import kokonut.Policy
 import kokonut.URL.FUEL_NODE
 import kokonut.URL.FULL_RAW_STORAGE
 import kokonut.URL.FULL_STORAGE
-import kokonut.block.Block.Companion.calculateHash
+import kokonut.core.Block.Companion.calculateHash
 import kokonut.Utility.Companion.sendHttpGetPolicy
+import kotlinx.coroutines.processNextEventInCurrentThread
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 
 class BlockChain {
 
-    val chain: MutableList<Block>
-    private val ticker = "KNT"
+    private val chain: MutableList<Block> = mutableListOf()
     private val genesisBlockDifficulty = 32
     private val genesisVersion = 0
 
     init {
-        chain = mutableListOf()
+        //MUST TO DO : Injection Identity
+        name = "Kokonut"
+        ticker = "KNT"
+
+        loadChainFromNetwork()
+
+        println("Block Chain validity : ${isValid()}")
     }
 
-    suspend fun loadChainFromNetwork() = runBlocking {
+    fun loadChainFromNetwork() = runBlocking {
 
         chain.clear()
 
@@ -64,7 +72,7 @@ class BlockChain {
                 }
             }
 
-            sortChainByIndex()
+            sortByIndex()
 
         } catch (e: Exception) {
             println("Error! : ${e.message}")
@@ -73,17 +81,29 @@ class BlockChain {
         }
     }
 
-    fun sortChainByIndex() {
+    private fun sortByIndex() {
         chain.sortBy { it.index }
+    }
+
+    fun getGenesisBlock(): Block {
+        return chain.first()
     }
 
     fun getLastBlock(): Block {
         return chain.last()
     }
 
+    fun getTotalCurrencyVolume() : Double {
 
-    fun mine() : Block {
-       return mine(BlockData("", "Dummy"))
+        var totalCurrencyVolume = 0.0
+
+        chain.forEach {
+            if(it.version!!>= 3){
+                totalCurrencyVolume += it.reward!!
+            }
+        }
+
+        return totalCurrencyVolume
     }
 
     fun mine(blockData: BlockData) : Block {

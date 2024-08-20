@@ -1,4 +1,4 @@
-package kokonut.block
+package kokonut.core
 
 import kokonut.URL.FUEL_NODE
 import kokonut.Utility
@@ -67,7 +67,6 @@ data class Block(
     }
 
     fun isValid(): Boolean {
-
         val policy = Utility.sendHttpGetPolicy(FUEL_NODE)
         if (policy.version != this.version ||
             policy.difficulty != this.difficulty ||

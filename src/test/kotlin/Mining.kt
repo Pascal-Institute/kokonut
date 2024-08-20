@@ -1,30 +1,27 @@
 import kokonut.*
 import kokonut.URL.FULL_NODE_0
+import kokonut.Utility.Companion.isNodeHealthy
 import kokonut.Utility.Companion.sendHttpPostRequest
-import kokonut.block.Block
-import kokonut.block.BlockChain
-import kokonut.block.BlockData
-import kotlinx.coroutines.launch
+import kokonut.core.Block
+import kokonut.core.BlockChain
+import kokonut.core.BlockData
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToJsonElement
 import java.io.File
 
-val blockChain = BlockChain()
-
 fun main(): Unit = runBlocking{
 
-    val job = launch {
-        blockChain.loadChainFromNetwork()
+    val blockChain = BlockChain()
+
+    val wallet = Wallet(
+        File("C:\\Users\\public\\private_key.pem"),
+        File("C:\\Users\\public\\public_key.pem")
+    )
+
+    if(blockChain.isValid() && wallet.isValid() && isNodeHealthy(FULL_NODE_0)){
+        val newBlock : Block = blockChain.mine(BlockData(wallet.miner, "Wonderful?"))
+        val json = Json.encodeToJsonElement(newBlock)
+        sendHttpPostRequest("${FULL_NODE_0}/addBlock", json, wallet.publicKeyFile)
     }
-
-    job.join()
-
-    val file = File("C:\\Users\\public\\public_key.pem")
-    val address = Utility.calculateHash(Utility.loadPublicKey(file.path))
-    val miner = Miner(address)
-    val newBlock : Block = blockChain.mine(BlockData(miner.address, "Mining Kokonut"))
-    val json = Json.encodeToJsonElement(newBlock)
-
-    sendHttpPostRequest("${FULL_NODE_0}/addBlock", json, file)
 }
