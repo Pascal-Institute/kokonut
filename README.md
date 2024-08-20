@@ -28,6 +28,13 @@
 
 # Kokonut Protocol 
 
+## Definition
+
+### Genesis Block
+
+The block is 0 index of chain which has nonce : 0 & previous hash : "0"
+Any blocks can't be added before genesis block
+
 ## Version 1 (until kokonut 1.0.5)
 
 ### Abstract
