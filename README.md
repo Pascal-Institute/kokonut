@@ -88,7 +88,7 @@ val calculatedHash = Block.calculateHash(
 
 ### Abstract
 
-- Proven Of Work is executed at least 1 full node
+- Inherit abstract of version 2
 - Miner(64 digit hex string converted by public_key.pem) added to data block
 - Reward added for miner(KNT) (Unfortunately, version 2 reward is Invalid)
 - The minimum unit of reward is 0.000001
@@ -121,9 +121,10 @@ val calculatedHash = Block.calculateHash(
 
 ### Abstract
 
+- Inherit abstract of version 3
 - Proven Of Work is executed at least 1 full node
 - Reward is valid (It is valuable)
-- protocol version <= 2 blocks use proven of work of version 2 
+- Protocol version smaller or equal to 2 blocks use version 2's proven of work 
 
 ### Block Structure (Same as Version 2)
 
@@ -156,14 +157,18 @@ val calculatedHash = Block.calculateHash(
 
 ### Abstract
 
-- Transaction is available.
-  1. sender request transaction to fuel node with public key & signed data
-  2. transaction is added to transaction pool with state PENDING
-  3. fuel node execute validation using public key & signed data
-  4. if transaction is valid, transaction state changes to READY
-  5. else if it is invalid, state is INVALID
-  6. miner picks transaction, state is RESERVED
-  7. mine is done, state is EXECUTED and it is recorded to Block
-  8. sender cancels transaction, state is CANCELED
-  9. miner drops out mining, state RESERVED to READY
+- Inherit abstract of version 3
+
+![image](https://github.com/user-attachments/assets/e089f975-1ee9-42f3-8b38-e7d8f5ff6be6)
+
+- KNT Transaction is available.
+  1. Sender request transaction to fuel node with public key & signed data
+  2. Transaction is added to transaction pool with state PENDING
+  3. Fuel node execute validation using public key & signed data
+  4. If transaction is valid, transaction state changes to READY
+  5. Else if it is invalid, state is INVALID
+  6. Miner picks transaction, state is RESERVED
+  7. Mine is done, state is EXECUTED and it is recorded to Block
+  8. Sender cancels transaction, state is CANCELED
+  9. Miner drops out mining, state RESERVED to READY
   
