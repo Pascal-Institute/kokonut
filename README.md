@@ -159,7 +159,7 @@ val calculatedHash = Block.calculateHash(
 
 - Inherit abstract of version 3
 
-![image](https://github.com/user-attachments/assets/e089f975-1ee9-42f3-8b38-e7d8f5ff6be6)
+![image](https://github.com/user-attachments/assets/9650ce7a-817b-4bc2-ba35-0bb458b8df27)
 
 - KNT Transaction is available.
   1. Sender request transaction to fuel node with public key & signed data
