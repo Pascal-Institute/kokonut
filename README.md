@@ -30,6 +30,14 @@
 
 ## Definition
 
+### Block
+
+The block has unique has unique 64-digit hex string hash
+
+Block file format is JSON
+
+Block file name is [hash].json for example, 000000000000000000000000000038a5bf10897e309c984402d1b8132faaaa.json
+
 ### Genesis Block
 
 The block is 0 index of chain which has nonce : 0 & previous hash : "0"
