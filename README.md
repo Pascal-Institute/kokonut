@@ -156,11 +156,14 @@ val calculatedHash = Block.calculateHash(
 
 ### Abstract
 
-- Transaction is available
-- 1. sender request transaction to fuel node with public key & signed data
-- 2. transaction is added to transaction pool with state PENDING
-- 3. fuel node execute validation using public key & signed data
-- 4. if transaction is valid, transaction state changes to READY
-- 5. else if it is invalid, state is INVALID
-- 6. miner picks 
-
+- Transaction is available.
+  1. sender request transaction to fuel node with public key & signed data
+  2. transaction is added to transaction pool with state PENDING
+  3. fuel node execute validation using public key & signed data
+  4. if transaction is valid, transaction state changes to READY
+  5. else if it is invalid, state is INVALID
+  6. miner picks transaction, state is RESERVED
+  7. mine is done, state is EXECUTED and it is recorded to Block
+  8. sender cancels transaction, state is CANCELED
+  9. miner drops out mining, state RESERVED to READY
+  
