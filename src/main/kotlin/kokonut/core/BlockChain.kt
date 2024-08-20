@@ -55,9 +55,8 @@ class BlockChain {
 
             for (url in jsonUrls) {
                 val response: HttpResponse = client.get(url)
-                val responseBody = response.bodyAsText()
                 try {
-                    val block : Block = Json.decodeFromString(responseBody)
+                    val block : Block = Json.decodeFromString(response.body())
                     val updatedBlock = if(block.index.toInt() == 0)
                     {block.copy(
                         version = block.version ?: genesisVersion,
