@@ -149,3 +149,18 @@ val calculatedHash = Block.calculateHash(
       .fold("") { str, it -> str + "%02x".format(it) }
   }
 ```
+
+---
+
+## Version 4
+
+### Abstract
+
+- Transaction is available
+- 1. sender request transaction to fuel node with public key & signed data
+- 2. transaction is added to transaction pool with state PENDING
+- 3. fuel node execute validation using public key & signed data
+- 4. if transaction is valid, transaction state changes to READY
+- 5. else if it is invalid, state is INVALID
+- 6. miner picks 
+
