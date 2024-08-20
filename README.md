@@ -169,7 +169,9 @@ val calculatedHash = Block.calculateHash(
 
 - KNT Transaction is available it is added to block
 - Transaction Validation
- -- Sender and Receiver must be same
+  - Verify signed data with public key
+  - Sender retention is bigger or equal than remittance
+  - Sender and Receiver must be diffierent
 - Tansaction State Diagram
   ![image](https://github.com/user-attachments/assets/9650ce7a-817b-4bc2-ba35-0bb458b8df27)
   1. Sender request transaction to fuel node with public key & signed data
