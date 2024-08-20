@@ -33,6 +33,7 @@
 ### Genesis Block
 
 The block is 0 index of chain which has nonce : 0 & previous hash : "0"
+
 Any blocks can't be added before genesis block
 
 ## Version 1 (until kokonut 1.0.5)
@@ -90,6 +91,7 @@ val calculatedHash = Block.calculateHash(
 - Proven Of Work is executed at least 1 full node
 - Miner(64 digit hex string converted by public_key.pem) added to data block
 - Reward added for miner(KNT) (Unfortunately, version 2 reward is Invalid)
+- The minimum unit of reward is 0.000001
 
 ### Block Structure
 
