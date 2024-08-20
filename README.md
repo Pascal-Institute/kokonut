@@ -198,7 +198,7 @@ val calculatedHash = Block.calculateHash(
     "comment":"Mining Kokonut"
     "transaction": [
       {
-        "id": "123e4567-e89b-12d3-a456-426614174000",
+        "uid": "123e4567-e89b-12d3-a456-426614174000",
         "sender": "6c60b7550766d5ae24ccc3327f0e47fbaa51e599172795bb9ad06ac82784a92d",
         "receiver": "0000003564fa1117c925342d2570700c9e2574bcbc5777db5d045b601d8dfe9a",
         "remittance": 1.0  
