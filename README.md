@@ -89,7 +89,7 @@ val calculatedHash = Block.calculateHash(
 ### Abstract
 
 - Inherit abstract of version 2
-- Miner(64 digit hex string converted by public_key.pem) added to data block
+- Miner(64 digit hex string converted by public_key.pem) added to block
 - Reward added for miner(KNT) (Unfortunately, version 2 reward is Invalid)
 - The minimum unit of reward is 0.000001
 
@@ -121,7 +121,7 @@ val calculatedHash = Block.calculateHash(
 
 ### Abstract
 
-- Inherit abstract of version 3
+- Inherit abstract of version 2
 - Proven Of Work is executed at least 1 full node
 - Reward is valid (It is valuable)
 - Protocol version smaller or equal to 2 blocks use version 2's proven of work 
@@ -159,9 +159,11 @@ val calculatedHash = Block.calculateHash(
 
 - Inherit abstract of version 3
 
-![image](https://github.com/user-attachments/assets/9650ce7a-817b-4bc2-ba35-0bb458b8df27)
-
-- KNT Transaction is available.
+- KNT Transaction is available it is added to block
+- Transaction Validation
+ -- Sender and Receiver must be same
+- Tansaction State Diagram
+  ![image](https://github.com/user-attachments/assets/9650ce7a-817b-4bc2-ba35-0bb458b8df27)
   1. Sender request transaction to fuel node with public key & signed data
   2. Transaction is added to transaction pool with state PENDING
   3. Fuel node execute validation using public key & signed data
@@ -172,3 +174,31 @@ val calculatedHash = Block.calculateHash(
   8. Sender cancels transaction, state is CANCELED
   9. Miner drops out mining, state RESERVED to READY
   
+### Block Structure
+
+```json
+{
+  "version":4,
+  "index":15,
+  "previousHash":"000000187dcf778ee1661b74744ab5b2fada3e4771a410f47624a2de63a4b60e",
+  "timestamp":1723758087785,
+  "ticker":"KNT",
+  "data": {
+    "miner":"6c60b7550766d5ae24ccc3327f0e47fbaa51e599172795bb9ad06ac82784a92d",
+    "comment":"Mining Kokonut"
+    "transaction": [
+      {
+        "id": "123e4567-e89b-12d3-a456-426614174000",
+        "sender": "6c60b7550766d5ae24ccc3327f0e47fbaa51e599172795bb9ad06ac82784a92d",
+        "receiver": "0000003564fa1117c925342d2570700c9e2574bcbc5777db5d045b601d8dfe9a",
+        "remittance": 1.0  
+        "currency": "KNT"
+      },
+]
+  },
+  "difficulty":6,
+  "nonce":11602138,
+  "hash":"0000003564fa78d7c925342d2570700c9e2574bcbc5777db5d045b601d8dfe9a",
+  "reward":50.0
+}
+```
