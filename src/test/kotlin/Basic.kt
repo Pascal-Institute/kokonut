@@ -1,17 +1,17 @@
 import kokonut.Wallet
 import kokonut.core.BlockChain
+import kokonut.core.Identity
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.io.File
 
 fun main(): Unit = runBlocking{
+   val blockChain = BlockChain()
 
-    val blockChain = BlockChain()
+   println(Identity.version)
 
-   //getLastBlock
    println(blockChain.getLastBlock())
 
-   //getTotalCurrencyVolume
    println(blockChain.getTotalCurrencyVolume())
 
    val wallet = Wallet(
