@@ -130,7 +130,6 @@ val calculatedHash = Block.calculateHash(
 ### Abstract
 
 - Inherit abstract of version 2
-- Proven Of Work is executed at least 1 full node
 - Reward is valid (It is valuable)
 - Protocol version smaller or equal to 2 blocks use version 2's proven of work 
 
