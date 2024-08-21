@@ -181,6 +181,8 @@ val calculatedHash = Block.calculateHash(
 
 Added :
 
+- All blocks are fully integrity guranteed (prevent modulation)
+
 Modified :
 
 - Duty : The minor number of kokonut framework is same to kokonut protocol version (for example kokonut:1.3.0 framework uses kokonut protocol version 3)
@@ -217,8 +219,9 @@ Modified :
   "timestamp":1723758087785,
   "ticker":"KNT",
   "data": {
+    "reward":50.0,
     "miner":"6c60b7550766d5ae24ccc3327f0e47fbaa51e599172795bb9ad06ac82784a92d",
-    "comment":"Mining Kokonut"
+    "comment":"Mining Kokonut",
     "transaction": [
       {
         "uid": "123e4567-e89b-12d3-a456-426614174000",
@@ -231,8 +234,7 @@ Modified :
   },
   "difficulty":6,
   "nonce":11602138,
-  "hash":"0000003564fa78d7c925342d2570700c9e2574bcbc5777db5d045b601d8dfe9a",
-  "reward":50.0
+  "hash":"0000003564fa78d7c925342d2570700c9e2574bcbc5777db5d045b601d8dfe9a"
 }
 ```
 
@@ -241,18 +243,17 @@ Modified :
 ```kotlin
 val calculatedHash = Block.calculateHash(
   currentBlock.version,
-  previousBlock.index,
-  previousBlock.previousHash,
+  currentBlock.index,
+  currentBlock.previousHash,
   currentBlock.timestamp,
-  previousBlock.ticker,
-  previousBlock.data,
-  previousBlock.difficulty,
-  currentBlock.nonce,
-  currentBlock.reward  
+  currentBlock.ticker,
+  currentBlock.data,
+  currentBlock.difficulty,
+  currentBlock.nonce
   )
 
-  fun calculateHash(version : Int, index: Long, previousHash: String, timestamp: Long, ticker: String, data: BlockData, difficulty: Int, nonce : Long, reward : Double): String {
-    val input = "$version$index$previousHash$timestamp$ticker$data$difficulty$nonce$reward"
+  fun calculateHash(version : Int, index: Long, previousHash: String, timestamp: Long, ticker: String, data: BlockData, difficulty: Int, nonce : Long): String {
+    val input = "$version$index$previousHash$timestamp$ticker$data$difficulty$nonce"
       return MessageDigest.getInstance("SHA-256")
       .digest(input.toByteArray())
       .fold("") { str, it -> str + "%02x".format(it) }
