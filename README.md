@@ -34,6 +34,8 @@
 
 The block has unique 64-digit hex string hash
 
+The version(it means protocol version) of next block is greater or equals to last block
+
 Block file format is JSON
 
 Block file name is [hash].json for example, 000000000000000000000000000038a5bf10897e309c984402d1b8132faaaa.json
