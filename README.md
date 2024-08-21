@@ -54,6 +54,8 @@ Any blocks can't be added before genesis block
 
 ### Abstract
 
+Added : 
+
 Proven Of Work is executed at least 1 full node
 
 ### Block Structure
@@ -102,7 +104,9 @@ val calculatedHash = Block.calculateHash(
 
 ### Abstract
 
-- Inherit abstract of version 2
+#### Inherit abstract of version 1
+
+Added :
 - Miner(64 digit hex string converted by public_key.pem) added to block
 - Reward added for miner(KNT) (Unfortunately, version 2 reward is Invalid)
 - The minimum unit of reward is 0.000001
@@ -131,13 +135,16 @@ val calculatedHash = Block.calculateHash(
 
 ---
 
-## Version 3
+## Version 3 (cont'd)
 
 ### Abstract
 
-- Inherit abstract of version 2
+#### Inherit abstract of version 2
+
+Added : 
 - Reward is valid (It is valuable)
-- Protocol version smaller or equal to 2 blocks use version 2's proven of work 
+- Optional : The minor number of kokonut framework is same to kokonut protocol version (for example kokonut:1.3.0 framework uses kokonut protocol version 3)
+- Protocol version smaller or equal to 2 blocks use version 2's proven of work
 
 ### Block Structure (Same as Version 2)
 
@@ -170,8 +177,14 @@ val calculatedHash = Block.calculateHash(
 
 ### Abstract
 
-- Inherit abstract of version 3
+#### Patial Inherit abstract of version 3
 
+Added :
+
+Modified :
+
+- Duty : The minor number of kokonut framework is same to kokonut protocol version (for example kokonut:1.3.0 framework uses kokonut protocol version 3)
+  
 #### Genesis Block
 
 - miner is "0000000000000000000000000000000000000000000000000000000000000000"
