@@ -16,6 +16,14 @@ import java.security.*
 
 class Utility {
     companion object {
+
+        fun calculateHash(timestamp : Long): String {
+            val input = "$timestamp"
+            return MessageDigest.getInstance("SHA-256")
+                .digest(input.toByteArray())
+                .fold("") { str, it -> str + "%02x".format(it) }
+        }
+
         fun calculateHash(publicKey: PublicKey): String {
             val input = "$publicKey"
             return MessageDigest.getInstance("SHA-256")
