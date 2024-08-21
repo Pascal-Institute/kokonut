@@ -8,7 +8,6 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
 import kokonut.GitHubFile
-import kokonut.core.Identity.name
 import kokonut.core.Identity.ticker
 import kokonut.Policy
 import kokonut.URL.FUEL_NODE
@@ -27,10 +26,6 @@ class BlockChain {
     private val genesisVersion = 0
 
     init {
-        //MUST TO DO : Injection Identity
-        name = "Kokonut"
-        ticker = "KNT"
-
         loadChainFromNetwork()
 
         println("Block Chain validity : ${isValid()}")
