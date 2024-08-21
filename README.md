@@ -36,6 +36,8 @@ The block has unique 64-digit hex string hash
 
 The version(it means protocol version) of next block is greater or equals to last block
 
+The nonce means times of 1 cycle of proven of work
+
 Block file format is JSON
 
 Block file name is [hash].json for example, 000000000000000000000000000038a5bf10897e309c984402d1b8132faaaa.json
@@ -170,6 +172,11 @@ val calculatedHash = Block.calculateHash(
 
 - Inherit abstract of version 3
 
+#### Genesis Block
+
+- miner is "0000000000000000000000000000000000000000000000000000000000000000"
+- reward is 0.0
+
 - KNT Transaction is available it is added to block
 - Transaction Validation
   - Verify signed data with public key
@@ -204,9 +211,9 @@ val calculatedHash = Block.calculateHash(
         "uid": "123e4567-e89b-12d3-a456-426614174000",
         "sender": "6c60b7550766d5ae24ccc3327f0e47fbaa51e599172795bb9ad06ac82784a92d",
         "receiver": "0000003564fa1117c925342d2570700c9e2574bcbc5777db5d045b601d8dfe9a",
-        "remittance": 1.0  
+        "remittance": 1.0,  
         "currency": "KNT"
-      },
+      }
 ]
   },
   "difficulty":6,
@@ -214,4 +221,27 @@ val calculatedHash = Block.calculateHash(
   "hash":"0000003564fa78d7c925342d2570700c9e2574bcbc5777db5d045b601d8dfe9a",
   "reward":50.0
 }
+```
+
+### Proven Of Work
+
+```kotlin
+val calculatedHash = Block.calculateHash(
+  currentBlock.version,
+  previousBlock.index,
+  previousBlock.previousHash,
+  currentBlock.timestamp,
+  previousBlock.ticker,
+  previousBlock.data,
+  previousBlock.difficulty,
+  currentBlock.nonce,
+  currentBlock.reward  
+  )
+
+  fun calculateHash(version : Int, index: Long, previousHash: String, timestamp: Long, ticker: String, data: BlockData, difficulty: Int, nonce : Long, reward : Double): String {
+    val input = "$version$index$previousHash$timestamp$ticker$data$difficulty$nonce$reward"
+      return MessageDigest.getInstance("SHA-256")
+      .digest(input.toByteArray())
+      .fold("") { str, it -> str + "%02x".format(it) }
+  }
 ```
