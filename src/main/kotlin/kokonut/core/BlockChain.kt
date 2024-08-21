@@ -151,6 +151,10 @@ class BlockChain {
             return false
         }
 
+        if(block.data.reward != policy.reward){
+            return false
+        }
+
         val calculatedHash = block.calculateHash()
         if(block.hash != calculatedHash){
             return false
