@@ -5,6 +5,7 @@ import kokonut.Utility.Companion.sendHttpPostRequest
 import kokonut.core.Block
 import kokonut.core.BlockChain
 import kokonut.core.BlockData
+import kokonut.core.Identity
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToJsonElement
@@ -20,7 +21,7 @@ fun main(): Unit = runBlocking{
     )
 
     if(blockChain.isValid() && wallet.isValid() && isNodeHealthy(FULL_NODE_0)){
-        val newBlock : Block = blockChain.mine(BlockData(wallet.miner, "Wonderful?"))
+        val newBlock : Block = blockChain.mine(BlockData(0.0, Identity.ticker, wallet.miner, "Wonderful?"))
         val json = Json.encodeToJsonElement(newBlock)
         sendHttpPostRequest("${FULL_NODE_0}/addBlock", json, wallet.publicKeyFile)
     }

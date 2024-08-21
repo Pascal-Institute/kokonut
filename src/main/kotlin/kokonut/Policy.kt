@@ -10,6 +10,6 @@ data class Policy(
     val reward: Double,
 ) {
     fun isValid(block: Block): Boolean {
-        return (version == block.version) && (difficulty == block.difficulty) && (reward == block.reward)
+        return (version == block.version) && (difficulty == block.difficulty) && (reward == block.data.reward)
     }
 }

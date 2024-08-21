@@ -8,7 +8,8 @@ import java.io.File
 
 fun main() {
 
-    val version = 3
+    val version = 4
+    val reward = 0.0
     val hex = "123456789abcdef"
     val ticker = Identity.ticker
     val difficulty = 32
@@ -20,6 +21,8 @@ fun main() {
 
 
     val blockData = BlockData(
+        reward = reward,
+        ticker = ticker,
         miner = miner,
         comment = comment
     )
@@ -29,12 +32,10 @@ fun main() {
         index = 0,
         previousHash = "0",
         timestamp = timeStamp,
-        ticker=ticker,
         data = blockData,
         difficulty = 0,
         nonce = 0,
         hash = hash,
-        reward = 0.0
     )
 
 

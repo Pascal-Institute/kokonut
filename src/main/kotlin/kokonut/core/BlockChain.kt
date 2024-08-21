@@ -93,7 +93,7 @@ class BlockChain {
 
         chain.forEach {
             if(it.version!!>= 3){
-                totalCurrencyVolume += it.reward!!
+                totalCurrencyVolume += it.data.reward
             }
         }
 
@@ -103,19 +103,41 @@ class BlockChain {
     fun mine(blockData: BlockData) : Block {
 
         val policy = sendHttpGetPolicy(FUEL_NODE)
-        var nonce : Long = 0
+
+        val lastBlock = getLastBlock()
+
+        val version = Identity.version
+        val index =  lastBlock.index + 1
+        val previousHash = lastBlock.hash
         var timestamp = System.currentTimeMillis()
-        var miningHash = getLastBlock().calculateHash(timestamp, nonce, policy.reward)
+        val data = blockData
+        val difficulty = policy.difficulty
+        var nonce : Long = 0
+
+        var miningBlock = Block(
+            version = version,
+            index = index,
+            previousHash = lastBlock.hash,
+            timestamp=timestamp,
+            data = blockData,
+            difficulty = difficulty,
+            nonce = nonce,
+            hash = ""
+        )
+        var miningHash = miningBlock.calculateHash()
 
         while(policy.difficulty > countLeadingZeros(miningHash)){
             timestamp = System.currentTimeMillis()
             nonce++
-            miningHash = getLastBlock().calculateHash(timestamp, nonce, policy.reward)
+
+            miningBlock.timestamp = timestamp
+            miningBlock.nonce = nonce
+            miningHash = miningBlock.calculateHash()
+
             println("Nonce : $nonce")
         }
 
-        return Block(policy.version,getLastBlock().index + 1, getLastBlock().hash, timestamp, ticker,
-            blockData, policy.difficulty, nonce, miningHash, policy.reward)
+        return miningBlock
     }
 
     private fun countLeadingZeros(hash: String): Int {
@@ -129,19 +151,7 @@ class BlockChain {
             return false
         }
 
-        if(block.index != getLastBlock().index + 1){
-            return false
-        }
-
-        if(block.previousHash != getLastBlock().hash){
-            return false
-        }
-
-        if(block.ticker != ticker){
-            return false
-        }
-
-        val calculatedHash =  calculateHash(block.version, block.index, block.previousHash, block.timestamp, block.ticker, block.data, block.difficulty!!, block.nonce, block.reward!!)
+        val calculatedHash = block.calculateHash()
         if(block.hash != calculatedHash){
             return false
         }
@@ -164,7 +174,7 @@ class BlockChain {
                         previousBlock.index,
                         previousBlock.previousHash,
                         currentBlock.timestamp,
-                        previousBlock.ticker,
+                        previousBlock.data.ticker,
                         previousBlock.data,
                         previousBlock.difficulty!!,
                         currentBlock.nonce
@@ -177,25 +187,29 @@ class BlockChain {
                         previousBlock.index,
                         previousBlock.previousHash,
                         currentBlock.timestamp,
-                        previousBlock.ticker,
+                        previousBlock.data.ticker,
                         previousBlock.data,
                         previousBlock.difficulty!!,
                         currentBlock.nonce
                     )
                 }
 
-                else -> {
+                3 -> {
                     calculateHash(
                         previousBlock.version!!,
                         previousBlock.index,
                         previousBlock.previousHash,
                         currentBlock.timestamp,
-                        previousBlock.ticker,
+                        previousBlock.data.ticker,
                         previousBlock.data,
                         previousBlock.difficulty!!,
                         currentBlock.nonce,
-                        currentBlock.reward!!
+                        currentBlock.data.reward
                     )
+                }
+
+                else -> {
+                    currentBlock.calculateHash()
                 }
             }
 

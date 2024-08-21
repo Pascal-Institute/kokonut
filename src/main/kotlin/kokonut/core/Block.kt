@@ -10,15 +10,17 @@ data class Block(
     val version: Int? = null,
     val index: Long,
     val previousHash: String,
-    val timestamp: Long,
-    val ticker: String,
+    var timestamp: Long,
     val data: BlockData,
     val difficulty: Int? = null,
-    val nonce: Long,
-    val hash: String,
-    val reward: Double? = 0.000000
+    var nonce: Long,
+    var hash: String,
 ) {
     companion object {
+
+        fun calculateHash(block: Block) : String {
+            return block.calculateHash()
+        }
 
         /**
          * Only valid for version <=2.
@@ -59,18 +61,27 @@ data class Block(
 
     @Deprecated("until kokonut 1.0.7")
     fun calculateHash(timestamp: Long, nonce: Long): String {
-        return calculateHash(version!!, index, previousHash, timestamp, ticker, data, difficulty!!, nonce)
+        return calculateHash(version!!, index, previousHash, timestamp, data.ticker, data, difficulty!!, nonce)
     }
 
+    @Deprecated("until kokonut 1.3.0")
     fun calculateHash(timestamp: Long, nonce: Long, reward: Double): String {
-        return calculateHash(version!!, index, previousHash, timestamp, ticker, data, difficulty!!, nonce, reward)
+        return calculateHash(version!!, index, previousHash, timestamp, data.ticker, data, difficulty!!, nonce, reward)
+    }
+
+    fun calculateHash(): String {
+        val input = "$version$index$previousHash$timestamp$data$difficulty$nonce"
+        hash = MessageDigest.getInstance("SHA-256")
+            .digest(input.toByteArray())
+            .fold("") { str, it -> str + "%02x".format(it) }
+        return hash
     }
 
     fun isValid(): Boolean {
         val policy = Utility.sendHttpGetPolicy(FUEL_NODE)
         if (policy.version != this.version ||
             policy.difficulty != this.difficulty ||
-            policy.reward != this.reward
+            policy.reward != data.reward
         ) {
             return false
         }
