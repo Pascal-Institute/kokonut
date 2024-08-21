@@ -32,7 +32,7 @@
 
 ### Block
 
-The block has unique has unique 64-digit hex string hash
+The block has unique 64-digit hex string hash
 
 Block file format is JSON
 
