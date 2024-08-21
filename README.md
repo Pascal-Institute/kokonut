@@ -181,7 +181,9 @@ val calculatedHash = Block.calculateHash(
 
 Added :
 
+- Version 1, 2 and 3 are prohibited exist with version 4 in one block chain
 - All blocks are fully integrity guranteed (prevent modulation)
+
 
 Modified :
 
