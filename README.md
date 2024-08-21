@@ -42,6 +42,8 @@ Block file name is [hash].json for example, 000000000000000000000000000038a5bf10
 
 The block is 0 index of chain which has nonce : 0 & previous hash : "0"
 
+The hash is made arificially
+
 Any blocks can't be added before genesis block
 
 ## Version 1 (until kokonut 1.0.5)
