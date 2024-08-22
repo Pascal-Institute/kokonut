@@ -194,7 +194,7 @@ Modified :
 - miner is "0000000000000000000000000000000000000000000000000000000000000000"
 - reward is 0.0
 
-- KNT Transaction is available it is added to block
+- Transaction is available it is added to block
 - Transaction Validation
   - Verify signed data with public key
   - Sender retention is bigger or equal than remittance
@@ -219,12 +219,14 @@ Modified :
   "index":15,
   "previousHash":"000000187dcf778ee1661b74744ab5b2fada3e4771a410f47624a2de63a4b60e",
   "timestamp":1723758087785,
-  "ticker":"KNT",
   "data": {
     "reward":50.0,
-    "miner":"6c60b7550766d5ae24ccc3327f0e47fbaa51e599172795bb9ad06ac82784a92d",
+    "ticker":"KNT",
+    "miners":[
+      {"miner" : "6c60b7550766d5ae24ccc3327f0e47fbaa51e599172795bb9ad06ac82784a92d", "nonce": 11602138}
+    ],
     "comment":"Mining Kokonut",
-    "transaction": [
+    "transactions": [
       {
         "uid": "123e4567-e89b-12d3-a456-426614174000",
         "sender": "6c60b7550766d5ae24ccc3327f0e47fbaa51e599172795bb9ad06ac82784a92d",
@@ -232,7 +234,7 @@ Modified :
         "remittance": 1.0,  
         "currency": "KNT"
       }
-]
+    ]
   },
   "difficulty":6,
   "nonce":11602138,
