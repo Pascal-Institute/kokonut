@@ -13,9 +13,45 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.file.Files
 import java.security.*
+import java.time.Instant
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import kotlin.math.exp
+import kotlin.math.floor
+import kotlin.math.log2
+import kotlin.math.pow
 
 class Utility {
     companion object {
+
+        fun getReward(genesisTimestamp : Long, miningTimestamp : Long) : Double {
+
+            val genesisYear = getYear(genesisTimestamp)
+            val miningYear = getYear(miningTimestamp)
+            val x = miningYear - genesisYear
+
+            val constant = 16.230619
+            val exponent = -0.57721
+
+            val expTerm = exp(exponent * x)
+
+            val logTerm =  log2(2.0 + x)
+
+            val value = (expTerm / logTerm) * constant
+
+            return truncate(value)
+        }
+
+        private fun getYear(timestamp : Long) : Int{
+            val instant = Instant.ofEpochSecond(timestamp)
+            val dateTime = ZonedDateTime.ofInstant(instant, ZoneId.of("UTC"))
+            return dateTime.year
+        }
+
+        private fun truncate(value: Double): Double {
+            val scale = 10.0.pow(6)
+            return floor(value * scale) / scale
+        }
 
         fun calculateHash(timestamp : Long): String {
             val input = "$timestamp"

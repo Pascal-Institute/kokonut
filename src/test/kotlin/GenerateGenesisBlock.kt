@@ -1,29 +1,32 @@
 import kokonut.Utility.Companion.calculateHash
 import kokonut.core.Block
-import kokonut.core.BlockData
+import kokonut.core.Data
 import kokonut.core.Identity
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 import java.io.File
+import kotlin.math.min
 
 fun main() {
 
     val version = 4
-    val reward = 0.0
+    val totalReward = 0.0
     val hex = "123456789abcdef"
     val ticker = Identity.ticker
-    val difficulty = 32
-    val miner = "0".repeat(64)
+    val difficulty = 48
+    val miner =  "0".repeat(64)
+
     val comment = "Navigate beyond computing oceans"
     val timeStamp = System.currentTimeMillis()
     val artificialLeadingZeros = "0".repeat(difficulty)
     val hash = artificialLeadingZeros + hex[(timeStamp % 10).toInt()] + calculateHash(timeStamp).substring(difficulty + 1, miner.length)
 
 
-    val blockData = BlockData(
-        reward = reward,
+    val data = Data(
+        reward = totalReward,
         ticker = ticker,
         miner = miner,
+        transactions = listOf(),
         comment = comment
     )
 
@@ -32,7 +35,7 @@ fun main() {
         index = 0,
         previousHash = "0",
         timestamp = timeStamp,
-        data = blockData,
+        data = data,
         difficulty = 0,
         nonce = 0,
         hash = hash,

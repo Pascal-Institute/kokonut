@@ -8,14 +8,12 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
 import kokonut.GitHubFile
-import kokonut.core.Identity.ticker
 import kokonut.Policy
 import kokonut.URL.FUEL_NODE
 import kokonut.URL.FULL_RAW_STORAGE
 import kokonut.URL.FULL_STORAGE
 import kokonut.core.Block.Companion.calculateHash
 import kokonut.Utility.Companion.sendHttpGetPolicy
-import kotlinx.coroutines.processNextEventInCurrentThread
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 
@@ -100,7 +98,7 @@ class BlockChain {
         return totalCurrencyVolume
     }
 
-    fun mine(blockData: BlockData) : Block {
+    fun mine(blockData: Data) : Block {
 
         val policy = sendHttpGetPolicy(FUEL_NODE)
 

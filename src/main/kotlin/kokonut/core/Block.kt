@@ -11,7 +11,7 @@ data class Block(
     val index: Long,
     val previousHash: String,
     var timestamp: Long,
-    val data: BlockData,
+    val data: Data,
     val difficulty: Int? = null,
     var nonce: Long,
     var hash: String,
@@ -31,7 +31,7 @@ data class Block(
             previousHash: String,
             timestamp: Long,
             ticker: String,
-            data: BlockData,
+            data: Data,
             difficulty: Int,
             nonce: Long
         ): String {
@@ -47,7 +47,7 @@ data class Block(
             previousHash: String,
             timestamp: Long,
             ticker: String,
-            data: BlockData,
+            data: Data,
             difficulty: Int,
             nonce: Long,
             reward: Double
