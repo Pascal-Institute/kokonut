@@ -227,9 +227,4 @@ class BlockChain {
         }
         return true
     }
-
-    @Deprecated("Depracted from 1.0.5 use isValid() instead of", ReplaceWith("isValid()"))
-    fun isValidChain(): Boolean {
-        return isValid()
-    }
 }
