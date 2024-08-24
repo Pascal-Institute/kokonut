@@ -169,55 +169,7 @@ class BlockChain {
             val currentBlock = chain[i]
             val previousBlock = chain[i - 1]
 
-            val calculatedHash : String = when (currentBlock.version) {
-                1 -> {
-                    calculateHash(
-                        previousBlock.version!!,
-                        previousBlock.index,
-                        previousBlock.previousHash,
-                        currentBlock.timestamp,
-                        previousBlock.data.ticker,
-                        previousBlock.data,
-                        previousBlock.difficulty!!,
-                        currentBlock.nonce
-                    )
-                }
-
-                2 -> {
-                        calculateHash(
-                        previousBlock.version!!,
-                        previousBlock.index,
-                        previousBlock.previousHash,
-                        currentBlock.timestamp,
-                        previousBlock.data.ticker,
-                        previousBlock.data,
-                        previousBlock.difficulty!!,
-                        currentBlock.nonce
-                    )
-                }
-
-                3 -> {
-                    calculateHash(
-                        previousBlock.version!!,
-                        previousBlock.index,
-                        previousBlock.previousHash,
-                        currentBlock.timestamp,
-                        previousBlock.data.ticker,
-                        previousBlock.data,
-                        previousBlock.difficulty!!,
-                        currentBlock.nonce,
-                        currentBlock.data.reward
-                    )
-                }
-
-                else -> {
-                    currentBlock.calculateHash()
-                }
-            }
-
-
-
-            if (currentBlock.hash != calculatedHash) {
+            if (!currentBlock.isValid()) {
                 return false
             }
 
