@@ -10,9 +10,10 @@ import io.ktor.serialization.kotlinx.json.*
 import kokonut.GitHubFile
 import kokonut.Policy
 import kokonut.URL.FUEL_NODE
+import kokonut.URL.FULL_NODE_0
 import kokonut.URL.FULL_RAW_STORAGE
 import kokonut.URL.FULL_STORAGE
-import kokonut.core.Block.Companion.calculateHash
+import kokonut.Utility
 import kokonut.Utility.Companion.sendHttpGetPolicy
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
@@ -20,8 +21,6 @@ import kotlinx.serialization.json.Json
 class BlockChain {
 
     private val chain: MutableList<Block> = mutableListOf()
-    private val genesisBlockDifficulty = 32
-    private val genesisVersion = 0
 
     init {
         loadChainFromNetwork()
@@ -50,15 +49,7 @@ class BlockChain {
                 val response: HttpResponse = client.get(url)
                 try {
                     val block : Block = Json.decodeFromString(response.body())
-                    val updatedBlock = if(block.index.toInt() == 0)
-                    {block.copy(
-                        version = block.version ?: genesisVersion,
-                        difficulty = block.difficulty ?: genesisBlockDifficulty
-                    )}else{
-                        block
-                    }
-
-                    chain.add(updatedBlock)
+                    chain.add(block)
                 } catch (e: Exception) {
                     println("JSON Passer Error: ${e.message}")
                 }
@@ -98,7 +89,7 @@ class BlockChain {
         return totalCurrencyVolume
     }
 
-    fun mine(blockData: Data) : Block {
+    fun mine(data: Data) : Block {
 
         val policy = sendHttpGetPolicy(FUEL_NODE)
 
@@ -108,20 +99,27 @@ class BlockChain {
         val index =  lastBlock.index + 1
         val previousHash = lastBlock.hash
         var timestamp = System.currentTimeMillis()
-        val data = blockData
         val difficulty = policy.difficulty
         var nonce : Long = 0
 
-        var miningBlock = Block(
+        val miningBlock = Block(
             version = version,
             index = index,
-            previousHash = lastBlock.hash,
-            timestamp=timestamp,
-            data = blockData,
+            previousHash = previousHash,
+            timestamp = timestamp,
+            data = data,
             difficulty = difficulty,
             nonce = nonce,
             hash = ""
         )
+
+        data.reward = Utility.setReward(miningBlock.index)
+        val fullNodeReward = Utility.sendHttpGetReward(FULL_NODE_0, miningBlock.index)
+
+        if(data.reward != fullNodeReward){
+            throw Exception("Reward Is Invalid...")
+        }
+
         var miningHash = miningBlock.calculateHash()
 
         while(policy.difficulty > countLeadingZeros(miningHash)){
@@ -149,12 +147,7 @@ class BlockChain {
             return false
         }
 
-        if(block.data.reward != policy.reward){
-            return false
-        }
-
-        val calculatedHash = block.calculateHash()
-        if(block.hash != calculatedHash){
+        if(block.hash != block.calculateHash()){
             return false
         }
 

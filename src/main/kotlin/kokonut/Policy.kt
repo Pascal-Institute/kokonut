@@ -7,9 +7,8 @@ import kotlinx.serialization.Serializable
 data class Policy(
     val version : Int,
     val difficulty : Int,
-    val reward: Double,
 ) {
     fun isValid(block: Block): Boolean {
-        return (version == block.version) && (difficulty == block.difficulty) && (reward == block.data.reward)
+        return (version == block.version) && (difficulty == block.difficulty)
     }
 }

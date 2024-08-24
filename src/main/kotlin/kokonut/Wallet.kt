@@ -63,8 +63,8 @@ class Wallet(privateKeyFile : File, val publicKeyFile: File) {
         }
     }
 
-    private var privateKey : PrivateKey = loadPrivateKey(privateKeyFile.path)
-    private var publicKey : PublicKey = loadPublicKey(publicKeyFile.path)
+    var privateKey : PrivateKey = loadPrivateKey(privateKeyFile.path)
+    var publicKey : PublicKey = loadPublicKey(publicKeyFile.path)
     private var isValid = false
 
     var miner = "0000000000000000000000000000000000000000000000000000000000000000"
