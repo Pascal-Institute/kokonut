@@ -6,6 +6,7 @@ import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import kokonut.core.Block
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonElement
 import java.io.*
@@ -24,11 +25,11 @@ import kotlin.math.pow
 class Utility {
     companion object {
 
-        fun getReward(genesisTimestamp : Long, miningTimestamp : Long) : Double {
+        fun getReward(block: Block) : Double {
 
-            val genesisYear = getYear(genesisTimestamp)
-            val miningYear = getYear(miningTimestamp)
-            val x = miningYear - genesisYear
+            val totalBlockOfYear = 365 * 144
+
+            val x = (block.index).toDouble() / totalBlockOfYear
 
             val constant = 16.230619
             val exponent = -0.57721
@@ -40,12 +41,6 @@ class Utility {
             val value = (expTerm / logTerm) * constant
 
             return truncate(value)
-        }
-
-        private fun getYear(timestamp : Long) : Int{
-            val instant = Instant.ofEpochSecond(timestamp)
-            val dateTime = ZonedDateTime.ofInstant(instant, ZoneId.of("UTC"))
-            return dateTime.year
         }
 
         private fun truncate(value: Double): Double {
