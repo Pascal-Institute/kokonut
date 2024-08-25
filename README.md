@@ -182,7 +182,7 @@ Added :
 
 - Version 1, 2 and 3 are prohibited exist with version 4 in one block chain
 - All blocks are fully integrity guranteed (prevent modulation)
-- The mining reward is adjusted by Reduction Time (Index of block starts from 1), whick follows
+- The mining reward is adjusted by Reduction Time, block generation term is predicted 10 minitues (Index of block starts from 1 and Total Blocks per Year is 365 day * 144 blocks/day ), whick follows
 
 ![image](https://github.com/user-attachments/assets/4cc1dc73-76c9-498c-b71a-0c5ee88cdbb1)
 
