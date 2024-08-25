@@ -10,9 +10,9 @@ fun main(): Unit = runBlocking{
 
    println(Identity.version)
 
-   println(blockChain.getLastBlock())
+   //println(blockChain.getLastBlock())
 
-   println(blockChain.getTotalCurrencyVolume())
+   //println(blockChain.getTotalCurrencyVolume())
 
    val wallet = Wallet(
        File("C:\\Users\\public\\private_key.pem"),
