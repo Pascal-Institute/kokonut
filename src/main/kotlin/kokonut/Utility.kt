@@ -16,6 +16,9 @@ import java.net.URL
 import java.nio.ByteBuffer
 import java.nio.file.Files
 import java.security.*
+import java.sql.Connection
+import java.sql.ResultSet
+import java.sql.Statement
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -59,6 +62,64 @@ class Utility {
                 .digest(input.toByteArray())
                 .fold("") { str, it -> str + "%02x".format(it) }
         }
+
+        //SQLlite
+        fun getDatabasePath(): String {
+            val classLoader = Thread.currentThread().contextClassLoader
+            val resource = classLoader.getResource("kovault.db")
+            return resource?.toURI()?.path ?: throw IllegalStateException("Database file not found")
+        }
+
+        fun tableExists(connection: Connection, tableName: String): Boolean {
+            val metaData = connection.metaData
+            val resultSet: ResultSet = metaData.getTables(null, null, tableName, null)
+            val exists = resultSet.next()
+            resultSet.close()
+            return exists
+        }
+
+        fun printTableStructure(connection: Connection, tableName: String) {
+            val query = "PRAGMA table_info($tableName);"
+            val statement: Statement = connection.createStatement()
+            val resultSet: ResultSet = statement.executeQuery(query)
+
+            while (resultSet.next()) {
+                val columnName = resultSet.getString("name")
+                val columnType = resultSet.getString("type")
+                val isNullable = resultSet.getString("notnull")
+                val defaultValue = resultSet.getString("dflt_value")
+                println("Column: $columnName, Type: $columnType, Nullable: $isNullable, Default: $defaultValue")
+            }
+
+            resultSet.close()
+            statement.close()
+        }
+
+        fun printTableData(connection: Connection, tableName: String) {
+            val query = "SELECT * FROM $tableName;"
+            val statement: Statement = connection.createStatement()
+            val resultSet: ResultSet = statement.executeQuery(query)
+
+            // 열의 이름을 얻어서 헤더로 출력
+            val metaData = resultSet.metaData
+            val columnCount = metaData.columnCount
+            for (i in 1..columnCount) {
+                print("${metaData.getColumnName(i)}\t")
+            }
+            println()
+
+            // 데이터 출력
+            while (resultSet.next()) {
+                for (i in 1..columnCount) {
+                    print("${resultSet.getString(i)}\t")
+                }
+                println()
+            }
+
+            resultSet.close()
+            statement.close()
+        }
+
 
         suspend fun isNodeHealthy(url: String): Boolean {
             val client = HttpClient(CIO) {

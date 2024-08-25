@@ -19,6 +19,8 @@ dependencies {
     implementation("io.ktor:ktor-client-content-negotiation:2.3.4")
     implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:2.3.4")
     implementation("ch.qos.logback:logback-classic:1.4.12")
+    implementation("org.xerial:sqlite-jdbc:3.41.2.2")
+    implementation("com.google.code.gson:gson:2.10.1")
 }
 
 tasks.test {

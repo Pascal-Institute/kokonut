@@ -1,5 +1,6 @@
 package kokonut.core
 
+import com.google.gson.Gson
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
@@ -14,20 +15,99 @@ import kokonut.URL.FULL_NODE_0
 import kokonut.URL.FULL_RAW_STORAGE
 import kokonut.URL.FULL_STORAGE
 import kokonut.Utility
+import kokonut.Utility.Companion.getDatabasePath
 import kokonut.Utility.Companion.sendHttpGetPolicy
+import kokonut.Utility.Companion.tableExists
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+import java.sql.*
 import kotlin.math.truncate
 
 class BlockChain {
 
     private val chain: MutableList<Block> = mutableListOf()
+    private val gson = Gson()
 
     init {
         loadChainFromNetwork()
-
         println("Block Chain validity : ${isValid()}")
+
+        val dbPath = getDatabasePath()
+        println("Database path: $dbPath")
+        val connection: Connection = DriverManager.getConnection("jdbc:sqlite:$dbPath")
+
+        try {
+            val tableName = "kovault"
+
+            // 테이블 존재 여부 확인
+            if (!tableExists(connection, tableName)) {
+                val createTableSQL = """
+                CREATE TABLE $tableName (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    kovalut TEXT NOT NULL
+                );
+                """
+                val statement: Statement = connection.createStatement()
+                statement.execute(createTableSQL)
+                println("Table '$tableName' created.")
+            } else {
+                println("Table '$tableName' already exists.")
+            }
+
+            // Disable auto-commit for transaction control
+            connection.autoCommit = false
+
+            // 데이터 삽입
+            insertChainIntoDatabase(connection, tableName)
+
+            // 트랜잭션 커밋
+            connection.commit()
+            println("Changes committed successfully.")
+
+        } catch (e: Exception) {
+            // 오류 발생 시 롤백
+            try {
+                connection.rollback()
+            } catch (rollbackException: Exception) {
+                println("Failed to rollback transaction: ${rollbackException.message}")
+            }
+            println("An error occurred: ${e.message}")
+        } finally {
+            // 자원 정리
+            try {
+                connection.close()
+            } catch (closeException: Exception) {
+                println("Failed to close connection: ${closeException.message}")
+            }
+        }
     }
+
+    private fun insertChainIntoDatabase(connection: Connection, tableName: String) {
+        val insertSQL = "INSERT INTO $tableName (kovalut) VALUES (?)"
+        val preparedStatement: PreparedStatement = connection.prepareStatement(insertSQL)
+
+        try {
+            for (block in chain) {
+                val json = gson.toJson(block)
+                preparedStatement.setString(1, json)
+                val rowsAffected = preparedStatement.executeUpdate()
+                println("Rows affected: $rowsAffected")
+            }
+
+            println("All blocks have been inserted into the database.")
+        } catch (e: Exception) {
+            // 롤백을 호출하기 전에 트랜잭션이 유효한지 확인
+            try {
+                connection.rollback()
+            } catch (rollbackException: SQLException) {
+                println("Failed to rollback transaction: ${rollbackException.message}")
+            }
+            println("An error occurred while inserting data: ${e.message}")
+        } finally {
+            preparedStatement.close()
+        }
+    }
+
 
     fun loadChainFromNetwork() = runBlocking {
 
