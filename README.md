@@ -194,9 +194,17 @@ Modified :
   
 #### Genesis Block
 
+Given the following conditions, this block can be defined as the Genesis Block
+- previous hash is "0"
+- index is 0
 - miner is "0000000000000000000000000000000000000000000000000000000000000000"
 - reward is 0.0
+- transaction is null
+- difficulty is 0
+- nonce is 0
 
+
+#### Transaction
 - Transaction is available it is added to block
 - Transaction Validation
   - Verify signed data with public key
