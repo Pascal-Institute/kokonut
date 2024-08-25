@@ -186,7 +186,7 @@ Added :
 
 Modified :
 
-- Duty : The major number of kokonut framework is same to kokonut protocol version (for example kokonut:1.3.0 framework uses kokonut protocol version 3)
+- Duty : The major number of kokonut framework is same to kokonut protocol version (for example kokonut:3.0.0 framework uses kokonut protocol version 3)
   
 #### Genesis Block
 
