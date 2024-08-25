@@ -89,7 +89,7 @@ class BlockChain {
         return totalCurrencyVolume
     }
 
-    fun mine(data: Data) : Block {
+    fun mine(url : String, data: Data) : Block {
 
         val policy = sendHttpGetPolicy(FUEL_NODE)
 
@@ -114,10 +114,12 @@ class BlockChain {
         )
 
         data.reward = Utility.setReward(miningBlock.index)
-        val fullNodeReward = Utility.sendHttpGetReward(FULL_NODE_0, miningBlock.index)
+        val fullNodeReward = Utility.sendHttpGetReward(url, miningBlock.index)
 
         if(data.reward != fullNodeReward){
             throw Exception("Reward Is Invalid...")
+        }else{
+            println("Reward Is Valid")
         }
 
         var miningHash = miningBlock.calculateHash()

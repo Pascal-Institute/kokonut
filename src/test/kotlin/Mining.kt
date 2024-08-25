@@ -18,14 +18,18 @@ fun main(): Unit = runBlocking{
         File("C:\\Users\\public\\public_key.pem")
     )
 
-    if(blockChain.isValid() && wallet.isValid() && isNodeHealthy(FULL_NODE_0)){
+    val miningURL = FULL_NODE_0
 
-        val newBlock : Block = blockChain.mine(Data(
+    if(blockChain.isValid() && wallet.isValid() && isNodeHealthy(miningURL)){
+
+        val data =Data(
             0.0,
             Identity.ticker,
             miner= wallet.miner,
             null,
-            "Wonderful?"))
+            "kokonut version 4")
+
+        val newBlock : Block = blockChain.mine(FULL_NODE_0 ,data)
         val json = Json.encodeToJsonElement(newBlock)
         sendHttpPostRequest("${FULL_NODE_0}/addBlock", json, wallet.publicKeyFile)
     }

@@ -101,7 +101,7 @@ class Utility {
         }
 
         fun sendHttpGetReward(urlString: String, index: Long): Double? {
-            val url = URL("$urlString?index=$index")
+            val url = URL("$urlString/getReward?index=$index")
             val conn = url.openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
 
