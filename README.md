@@ -50,7 +50,7 @@ The hash is made arificially
 
 Any blocks can't be added before genesis block
 
-## Version 1 (until kokonut 1.0.5)
+## Version 1 (until kokonut:1.0.5)
 
 ### Abstract
 
@@ -100,7 +100,7 @@ val calculatedHash = Block.calculateHash(
 
 ---
 
-## Version 2 (until kokonut 1.0.7)
+## Version 2 (until kokonut:1.0.7)
 
 ### Abstract
 
@@ -112,7 +112,6 @@ Added :
 - The minimum unit of reward is 0.000001
 
 ### Block Structure
-
 ```json
 {
   "version":2,
@@ -135,7 +134,7 @@ Added :
 
 ---
 
-## Version 3 (cont'd)
+## Version 3 (until kokonut:1.3.0)
 
 ### Abstract
 
@@ -216,50 +215,29 @@ Modified :
 ```json
 {
   "version":4,
-  "index":15,
-  "previousHash":"000000187dcf778ee1661b74744ab5b2fada3e4771a410f47624a2de63a4b60e",
-  "timestamp":1723758087785,
+  "index":1,
+  "previousHash":"00000000000000000000000000000000000000000000000061bdff5e59b8ff4c",
+  "timestamp":1724547179867,
   "data": {
-    "reward":50.0,
-    "ticker":"KNT",
-    "miners":[
-      {"miner" : "6c60b7550766d5ae24ccc3327f0e47fbaa51e599172795bb9ad06ac82784a92d", "nonce": 11602138}
-    ],
-    "comment":"Mining Kokonut",
-    "transactions": [
-      {
-        "uid": "123e4567-e89b-12d3-a456-426614174000",
-        "sender": "6c60b7550766d5ae24ccc3327f0e47fbaa51e599172795bb9ad06ac82784a92d",
-        "receiver": "0000003564fa1117c925342d2570700c9e2574bcbc5777db5d045b601d8dfe9a",
-        "remittance": 1.0,  
-        "currency": "KNT"
-      }
-    ]
-  },
+    "reward":16.230218,
+    "miner":"6c60b7550766d5ae24ccc3327f0e47fbaa51e599172795bb9ad06ac82784a92d",
+    "transactions":null,
+    "comment":"kokonut version 4"
+    },
   "difficulty":6,
-  "nonce":11602138,
-  "hash":"0000003564fa78d7c925342d2570700c9e2574bcbc5777db5d045b601d8dfe9a"
-}
+  "nonce":1502929,
+  "hash":"000000f31571551dacab93769546843d2ef483fd0d26181fe8950de617b919ec"}
 ```
+
 
 ### Proven Of Work
 
 ```kotlin
-val calculatedHash = Block.calculateHash(
-  currentBlock.version,
-  currentBlock.index,
-  currentBlock.previousHash,
-  currentBlock.timestamp,
-  currentBlock.ticker,
-  currentBlock.data,
-  currentBlock.difficulty,
-  currentBlock.nonce
-  )
-
-  fun calculateHash(version : Int, index: Long, previousHash: String, timestamp: Long, ticker: String, data: BlockData, difficulty: Int, nonce : Long): String {
-    val input = "$version$index$previousHash$timestamp$ticker$data$difficulty$nonce"
-      return MessageDigest.getInstance("SHA-256")
-      .digest(input.toByteArray())
-      .fold("") { str, it -> str + "%02x".format(it) }
-  }
+    fun calculateHash(): String {
+        val input = "$version$index$previousHash$timestamp$data$difficulty$nonce"
+        hash = MessageDigest.getInstance("SHA-256")
+            .digest(input.toByteArray())
+            .fold("") { str, it -> str + "%02x".format(it) }
+        return hash
+    }
 ```
