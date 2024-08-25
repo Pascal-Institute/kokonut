@@ -182,7 +182,11 @@ Added :
 
 - Version 1, 2 and 3 are prohibited exist with version 4 in one block chain
 - All blocks are fully integrity guranteed (prevent modulation)
+- The mining reward is adjusted by Reduction Time (Index of block starts from 1), whick follows
 
+![image](https://github.com/user-attachments/assets/4cc1dc73-76c9-498c-b71a-0c5ee88cdbb1)
+
+ 
 
 Modified :
 
