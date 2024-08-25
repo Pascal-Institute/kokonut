@@ -41,7 +41,7 @@ class Utility {
             return value
         }
 
-        private fun truncate(value: Double): Double {
+        fun truncate(value: Double): Double {
             val scale = 10.0.pow(6)
             return floor(value * scale) / scale
         }

@@ -17,6 +17,7 @@ import kokonut.Utility
 import kokonut.Utility.Companion.sendHttpGetPolicy
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+import kotlin.math.truncate
 
 class BlockChain {
 
@@ -81,12 +82,10 @@ class BlockChain {
         var totalCurrencyVolume = 0.0
 
         chain.forEach {
-            if(it.version!!>= 3){
-                totalCurrencyVolume += it.data.reward
-            }
+            totalCurrencyVolume += it.data.reward
         }
 
-        return totalCurrencyVolume
+        return Utility.truncate(totalCurrencyVolume)
     }
 
     fun mine(url : String, data: Data) : Block {
