@@ -1,13 +1,12 @@
 import kokonut.*
 import kokonut.URL.FULL_NODE_0
-import kokonut.Utility.Companion.isNodeHealthy
-import kokonut.Utility.Companion.sendHttpPostRequest
+import kokonut.util.Utility.Companion.isNodeHealthy
+import kokonut.util.Utility.Companion.sendHttpPostRequest
 import kokonut.core.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToJsonElement
 import java.io.File
-import kotlin.math.min
 
 fun main(): Unit = runBlocking{
 

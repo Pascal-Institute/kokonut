@@ -1,4 +1,3 @@
-import kokonut.Utility
 import kokonut.Wallet
 import java.security.KeyPair
 

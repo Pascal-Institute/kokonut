@@ -1,6 +1,5 @@
 package kokonut.core
 
-import com.google.gson.Gson
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
@@ -8,14 +7,14 @@ import io.ktor.client.request.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
-import kokonut.GitHubFile
+import kokonut.util.GitHubFile
 import kokonut.Policy
-import kokonut.SQLite
+import kokonut.util.SQLite
 import kokonut.URL.FUEL_NODE
 import kokonut.URL.FULL_RAW_STORAGE
 import kokonut.URL.FULL_STORAGE
-import kokonut.Utility
-import kokonut.Utility.Companion.sendHttpGetPolicy
+import kokonut.util.Utility
+import kokonut.util.Utility.Companion.sendHttpGetPolicy
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 

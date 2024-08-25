@@ -1,6 +1,6 @@
 package kokonut
 
-import kokonut.Utility.Companion.calculateHash
+import kokonut.util.Utility.Companion.calculateHash
 import java.io.File
 import java.security.*
 import java.security.spec.PKCS8EncodedKeySpec

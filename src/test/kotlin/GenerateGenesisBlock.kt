@@ -1,11 +1,10 @@
-import kokonut.Utility.Companion.calculateHash
+import kokonut.util.Utility.Companion.calculateHash
 import kokonut.core.Block
 import kokonut.core.Data
 import kokonut.core.Identity
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 import java.io.File
-import kotlin.math.min
 
 fun main() {
 

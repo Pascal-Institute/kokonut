@@ -1,4 +1,4 @@
-package kokonut
+package kokonut.util
 
 import com.google.gson.Gson
 import kokonut.core.Block

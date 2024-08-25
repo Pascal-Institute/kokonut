@@ -1,6 +1,5 @@
 import kokonut.URL.FUEL_NODE
-import kokonut.Utility
-import kokonut.Utility.Companion.isNodeHealthy
+import kokonut.util.Utility
 
 fun main() {
     val policy = Utility.sendHttpGetPolicy(FUEL_NODE)
