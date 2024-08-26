@@ -31,6 +31,14 @@ kotlin {
     jvmToolchain(17)
 }
 
+sourceSets {
+    main {
+        resources {
+            srcDir("src/build//resources/main")
+        }
+    }
+}
+
 publishing {
     publications {
         create<MavenPublication>("maven") {
