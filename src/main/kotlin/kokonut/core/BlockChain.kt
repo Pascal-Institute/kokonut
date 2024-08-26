@@ -20,20 +20,24 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import java.net.URL
 
-class BlockChain(useDB: Boolean = true) {
+class BlockChain(useFull: Boolean = true) {
 
     val sqlite = SQLite()
 
     private val chain: MutableList<Block> = mutableListOf()
 
     init {
-        loadChainFromNetwork()
+        loadChainFromFuelNode()
 
         println("Block Chain validity : ${isValid()}")
 
-        if (useDB) {
-            sqlite.insertChainIntoDatabase("kovault", chain)
+        if (useFull) {
+
+        } else {
+            //loadChainFromFuelNode()
         }
+
+        sqlite.insertChainIntoDatabase("kovault", chain)
 
     }
 
@@ -62,7 +66,7 @@ class BlockChain(useDB: Boolean = true) {
             for (url in jsonUrls) {
                 val response: HttpResponse = client.get(url)
                 try {
-                    val block : Block = Json.decodeFromString(response.body())
+                    val block: Block = Json.decodeFromString(response.body())
                     chain.add(block)
                 } catch (e: Exception) {
                     println("JSON Passer Error: ${e.message}")
@@ -90,7 +94,7 @@ class BlockChain(useDB: Boolean = true) {
         return chain.last()
     }
 
-    fun getTotalCurrencyVolume() : Double {
+    fun getTotalCurrencyVolume(): Double {
 
         var totalCurrencyVolume = 0.0
 
@@ -101,18 +105,18 @@ class BlockChain(useDB: Boolean = true) {
         return Utility.truncate(totalCurrencyVolume)
     }
 
-    fun mine(url : URL, data: Data) : Block {
+    fun mine(url: URL, data: Data): Block {
 
         val policy = FUEL_NODE.getPolicy()
 
         val lastBlock = getLastBlock()
 
         val version = Identity.version
-        val index =  lastBlock.index + 1
+        val index = lastBlock.index + 1
         val previousHash = lastBlock.hash
         var timestamp = System.currentTimeMillis()
         val difficulty = policy.difficulty
-        var nonce : Long = 0
+        var nonce: Long = 0
 
         val miningBlock = Block(
             version = version,
@@ -128,15 +132,15 @@ class BlockChain(useDB: Boolean = true) {
         data.reward = Utility.setReward(miningBlock.index)
         val fullNodeReward = url.getReward(miningBlock.index)
 
-        if(data.reward != fullNodeReward){
+        if (data.reward != fullNodeReward) {
             throw Exception("Reward Is Invalid...")
-        }else{
+        } else {
             println("Reward Is Valid")
         }
 
         var miningHash = miningBlock.calculateHash()
 
-        while(policy.difficulty > countLeadingZeros(miningHash)){
+        while (policy.difficulty > countLeadingZeros(miningHash)) {
             timestamp = System.currentTimeMillis()
             nonce++
 
@@ -154,14 +158,14 @@ class BlockChain(useDB: Boolean = true) {
         return hash.takeWhile { it == '0' }.length
     }
 
-    fun addBlock(policy: Policy, block: Block) : Boolean{
+    fun addBlock(policy: Policy, block: Block): Boolean {
 
         //Proven Of Work
-        if(block.version != policy.version){
+        if (block.version != policy.version) {
             return false
         }
 
-        if(block.hash != block.calculateHash()){
+        if (block.hash != block.calculateHash()) {
             return false
         }
 
@@ -171,7 +175,7 @@ class BlockChain(useDB: Boolean = true) {
     }
 
     fun isValid(): Boolean {
-        for (i in chain.size - 1 downTo  1) {
+        for (i in chain.size - 1 downTo 1) {
 
             val currentBlock = chain[i]
             val previousBlock = chain[i - 1]
