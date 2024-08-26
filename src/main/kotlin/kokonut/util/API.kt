@@ -1,5 +1,7 @@
 package kokonut.util
 
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
@@ -7,6 +9,8 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import kokonut.Policy
+import kokonut.core.Block
+import kokonut.util.API.Companion.getReward
 import kokonut.util.Utility.Companion.writeFilePart
 import kokonut.util.Utility.Companion.writePart
 import kotlinx.serialization.json.JsonElement
@@ -39,6 +43,35 @@ class API {
             }
         }
 
+        fun URL.getChain(): MutableList<Block>? {
+            val url = URL("${this}/getChain")
+            val conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+
+            return try {
+                val responseCode = conn.responseCode
+
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    val inputStream = conn.inputStream
+                    val reader = BufferedReader(InputStreamReader(inputStream))
+                    val response = reader.use { it.readText() }
+
+                    val gson = Gson()
+                    val blockListType = object : TypeToken<MutableList<Block>>() {}.type
+                    gson.fromJson(response, blockListType)
+
+                } else {
+                    println("GET request failed with response code $responseCode")
+                    null
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            } finally {
+                conn.disconnect()
+            }
+        }
+
         fun URL.getReward(index: Long): Double? {
             val url = URL("${this}/getReward?index=$index")
             val conn = url.openConnection() as HttpURLConnection
@@ -54,15 +87,12 @@ class API {
                     val reader = BufferedReader(InputStreamReader(inputStream))
                     val response = reader.use { it.readText() }
 
-                    // Convert the response to Double
                     response.toDoubleOrNull()
                 } else {
-                    // Handle non-OK response codes
                     println("GET request failed with response code $responseCode")
                     null
                 }
             } catch (e: Exception) {
-                // Handle exceptions
                 e.printStackTrace()
                 null
             } finally {
