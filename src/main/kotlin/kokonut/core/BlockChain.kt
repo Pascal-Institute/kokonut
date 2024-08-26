@@ -13,8 +13,9 @@ import kokonut.util.SQLite
 import kokonut.URL.FUEL_NODE
 import kokonut.URL.FULL_RAW_STORAGE
 import kokonut.URL.FULL_STORAGE
+import kokonut.util.API.Companion.sendHttpGetPolicy
+import kokonut.util.API.Companion.sendHttpGetReward
 import kokonut.util.Utility
-import kokonut.util.Utility.Companion.sendHttpGetPolicy
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 
@@ -124,7 +125,7 @@ class BlockChain(useDB: Boolean = true) {
         )
 
         data.reward = Utility.setReward(miningBlock.index)
-        val fullNodeReward = Utility.sendHttpGetReward(url, miningBlock.index)
+        val fullNodeReward = sendHttpGetReward(url, miningBlock.index)
 
         if(data.reward != fullNodeReward){
             throw Exception("Reward Is Invalid...")

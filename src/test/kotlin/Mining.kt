@@ -1,7 +1,7 @@
 import kokonut.*
 import kokonut.URL.FULL_NODE_0
-import kokonut.util.Utility.Companion.isNodeHealthy
-import kokonut.util.Utility.Companion.sendHttpPostRequest
+import kokonut.util.API.Companion.isNodeHealthy
+import kokonut.util.API.Companion.sendHttpPostRequest
 import kokonut.core.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
