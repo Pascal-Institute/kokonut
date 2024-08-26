@@ -35,7 +35,12 @@ class BlockChain(useDB: Boolean = true) {
 
     }
 
-    fun loadChainFromNetwork() = runBlocking {
+    @Deprecated("Please use loadChainFromFuelNode")
+    fun loadChainFromNetwork() {
+        loadChainFromFuelNode()
+    }
+
+    fun loadChainFromFuelNode() = runBlocking {
 
         chain.clear()
 
