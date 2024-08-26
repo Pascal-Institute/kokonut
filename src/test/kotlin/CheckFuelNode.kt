@@ -1,6 +1,5 @@
-import kokonut.URL.FUEL_NODE
+import kokonut.AddressBook.FUEL_NODE
 import kokonut.util.API.Companion.sendHttpGetPolicy
-import kokonut.util.Utility
 
 fun main() {
     val policy = sendHttpGetPolicy(FUEL_NODE)

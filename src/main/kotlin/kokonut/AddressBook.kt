@@ -1,6 +1,6 @@
 package kokonut
 
-object URL{
+object AddressBook{
     const val FUEL_NODE = "https://pascal-institute.github.io/kokonut-oil-station/"
     const val FULL_STORAGE = "https://api.github.com/repos/Pascal-Institute/kovault/contents/"
     const val FULL_RAW_STORAGE ="https://raw.githubusercontent.com/Pascal-Institute/kovault/main/"

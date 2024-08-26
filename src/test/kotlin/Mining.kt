@@ -1,5 +1,5 @@
 import kokonut.*
-import kokonut.URL.FULL_NODE_0
+import kokonut.AddressBook.FULL_NODE_0
 import kokonut.util.API.Companion.isNodeHealthy
 import kokonut.util.API.Companion.sendHttpPostRequest
 import kokonut.core.*

@@ -10,9 +10,9 @@ import io.ktor.serialization.kotlinx.json.*
 import kokonut.util.GitHubFile
 import kokonut.Policy
 import kokonut.util.SQLite
-import kokonut.URL.FUEL_NODE
-import kokonut.URL.FULL_RAW_STORAGE
-import kokonut.URL.FULL_STORAGE
+import kokonut.AddressBook.FUEL_NODE
+import kokonut.AddressBook.FULL_RAW_STORAGE
+import kokonut.AddressBook.FULL_STORAGE
 import kokonut.util.API.Companion.sendHttpGetPolicy
 import kokonut.util.API.Companion.sendHttpGetReward
 import kokonut.util.Utility
