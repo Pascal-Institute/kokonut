@@ -19,7 +19,7 @@ import java.net.URL
 
 class API {
     companion object {
-        suspend fun URL.isNodeHealthy(): Boolean {
+        suspend fun URL.isHealthy(): Boolean {
             val client = HttpClient(CIO) {
                 install(HttpTimeout) {
                     requestTimeoutMillis = 3000
@@ -39,7 +39,7 @@ class API {
             }
         }
 
-        fun URL.sendHttpGetReward(index: Long): Double? {
+        fun URL.getReward(index: Long): Double? {
             val url = URL("${this}/getReward?index=$index")
             val conn = url.openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
@@ -70,7 +70,7 @@ class API {
             }
         }
 
-        fun URL.sendHttpGetPolicy(): Policy {
+        fun URL.getPolicy(): Policy {
             val conn = this.openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
 
@@ -100,7 +100,6 @@ class API {
                 val difficulty = difficultyMatch?.groups?.get(1)?.value?.toIntOrNull()
                     ?: throw IOException("Failed to parse the mining difficulty")
 
-
                 // Create Policy data class instance
                 return Policy(version, difficulty)
             } else {
@@ -108,7 +107,7 @@ class API {
             }
         }
 
-        fun URL.sendHttpPostRequest(byteArray: ByteArray, publicKeyFile: File) {
+        fun URL.getCertified(byteArray: ByteArray, publicKeyFile: File) {
             val boundary = "Boundary-${System.currentTimeMillis()}"
             val connection = this.openConnection() as HttpURLConnection
             connection.requestMethod = "POST"
@@ -119,7 +118,7 @@ class API {
             try {
                 connection.outputStream.use { os ->
                     // Write JSON part
-                    Utility.writePart(
+                    writePart(
                         os,
                         boundary,
                         "json",
@@ -128,7 +127,7 @@ class API {
                     )
 
                     // Write file part
-                    Utility.writeFilePart(os, boundary, "public_key", "application/x-pem-file", publicKeyFile)
+                    writeFilePart(os, boundary, "public_key", "application/x-pem-file", publicKeyFile)
 
                     // End of multipart
                     os.write("--$boundary--\r\n".toByteArray(Charsets.UTF_8))
@@ -156,9 +155,9 @@ class API {
         }
 
 
-        fun URL.sendHttpPostRequest(jsonElement: JsonElement, publicKeyFile: File) {
+        fun URL.addBlock(jsonElement: JsonElement, publicKeyFile: File) {
             val boundary = "Boundary-${System.currentTimeMillis()}"
-            val connection = this.openConnection() as HttpURLConnection
+            val connection = URL("${this}/addBlock").openConnection() as HttpURLConnection
             connection.requestMethod = "POST"
             connection.doOutput = true
             connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
