@@ -19,7 +19,7 @@ import java.net.URL
 
 class API {
     companion object {
-        suspend fun isNodeHealthy(url: String): Boolean {
+        suspend fun URL.isNodeHealthy(): Boolean {
             val client = HttpClient(CIO) {
                 install(HttpTimeout) {
                     requestTimeoutMillis = 3000
@@ -28,7 +28,7 @@ class API {
             }
 
             return try {
-                val response: HttpResponse = client.get(url)
+                val response: HttpResponse = client.get(this)
                 println("Node is healthy : ${response.status}")
                 response.status.isSuccess()
             } catch (e: Exception) {
@@ -39,8 +39,8 @@ class API {
             }
         }
 
-        fun sendHttpGetReward(urlString: String, index: Long): Double? {
-            val url = URL("$urlString/getReward?index=$index")
+        fun URL.sendHttpGetReward(index: Long): Double? {
+            val url = URL("${this}/getReward?index=$index")
             val conn = url.openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
 
@@ -70,9 +70,8 @@ class API {
             }
         }
 
-        fun sendHttpGetPolicy(urlString: String): Policy {
-            val url = URL(urlString)
-            val conn = url.openConnection() as HttpURLConnection
+        fun URL.sendHttpGetPolicy(): Policy {
+            val conn = this.openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
 
             val responseCode = conn.responseCode
@@ -109,10 +108,9 @@ class API {
             }
         }
 
-        fun sendHttpPostRequest(urlString: String, byteArray: ByteArray, publicKeyFile: File) {
-            val url = URL(urlString)
+        fun URL.sendHttpPostRequest(byteArray: ByteArray, publicKeyFile: File) {
             val boundary = "Boundary-${System.currentTimeMillis()}"
-            val connection = url.openConnection() as HttpURLConnection
+            val connection = this.openConnection() as HttpURLConnection
             connection.requestMethod = "POST"
             connection.doOutput = true
             connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
@@ -158,10 +156,9 @@ class API {
         }
 
 
-        fun sendHttpPostRequest(urlString: String, jsonElement: JsonElement, publicKeyFile: File) {
-            val url = URL(urlString)
+        fun URL.sendHttpPostRequest(jsonElement: JsonElement, publicKeyFile: File) {
             val boundary = "Boundary-${System.currentTimeMillis()}"
-            val connection = url.openConnection() as HttpURLConnection
+            val connection = this.openConnection() as HttpURLConnection
             connection.requestMethod = "POST"
             connection.doOutput = true
             connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")

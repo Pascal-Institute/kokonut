@@ -10,14 +10,15 @@ import io.ktor.serialization.kotlinx.json.*
 import kokonut.util.GitHubFile
 import kokonut.Policy
 import kokonut.util.SQLite
-import kokonut.AddressBook.FUEL_NODE
-import kokonut.AddressBook.FULL_RAW_STORAGE
-import kokonut.AddressBook.FULL_STORAGE
+import kokonut.URLBook.FUEL_NODE
+import kokonut.URLBook.FULL_RAW_STORAGE
+import kokonut.URLBook.FULL_STORAGE
 import kokonut.util.API.Companion.sendHttpGetPolicy
 import kokonut.util.API.Companion.sendHttpGetReward
 import kokonut.util.Utility
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+import java.net.URL
 
 class BlockChain(useDB: Boolean = true) {
 
@@ -100,9 +101,9 @@ class BlockChain(useDB: Boolean = true) {
         return Utility.truncate(totalCurrencyVolume)
     }
 
-    fun mine(url : String, data: Data) : Block {
+    fun mine(url : URL, data: Data) : Block {
 
-        val policy = sendHttpGetPolicy(FUEL_NODE)
+        val policy = FUEL_NODE.sendHttpGetPolicy()
 
         val lastBlock = getLastBlock()
 
@@ -125,7 +126,7 @@ class BlockChain(useDB: Boolean = true) {
         )
 
         data.reward = Utility.setReward(miningBlock.index)
-        val fullNodeReward = sendHttpGetReward(url, miningBlock.index)
+        val fullNodeReward = url.sendHttpGetReward(miningBlock.index)
 
         if(data.reward != fullNodeReward){
             throw Exception("Reward Is Invalid...")
