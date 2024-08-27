@@ -3,6 +3,7 @@ package kokonut.util
 import com.google.gson.Gson
 import kokonut.core.Block
 import kokonut.core.BlockChain
+import kokonut.util.Utility.Companion.getJarDirectory
 import java.io.File
 import java.sql.*
 
@@ -50,23 +51,17 @@ class SQLite {
 
     //SQLlite
     fun getDatabasePath(): String {
-        val classLoader = Thread.currentThread().contextClassLoader
-        val resource = classLoader.getResource("kovault.db")
-        return if (resource != null) {
-            resource.toURI().path
+        val jarDir = getJarDirectory() // 현재 실행 중인 애플리케이션의 JAR 파일 디렉토리 경로를 가져옴
+        val dbFile = File(jarDir, "kovault.db")
+
+        if (!dbFile.exists()) {
+            dbFile.createNewFile()
+            println("Database file created at: ${dbFile.absolutePath}")
         } else {
-            val jarDir = File(classLoader.getResource("").toURI()).parentFile
-            val dbFile = File(jarDir, "kovault.db")
-
-            if (!dbFile.exists()) {
-                dbFile.createNewFile()
-                println("Database file created at: ${dbFile.absolutePath}")
-            } else {
-                println("Database file already exists at: ${dbFile.absolutePath}")
-            }
-
-            dbFile.absolutePath
+            println("Database file already exists at: ${dbFile.absolutePath}")
         }
+
+        return dbFile.absolutePath
     }
 
     fun tableExists(tableName: String): Boolean {

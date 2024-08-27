@@ -1,12 +1,20 @@
 package kokonut.util
 
 import java.io.*
+import java.net.URI
 import java.nio.file.Files
+import java.nio.file.Paths
 import java.security.*
 import kotlin.math.*
 
 class Utility {
     companion object {
+
+        fun getJarDirectory(): File {
+            val uri: URI = Utility::class.java.protectionDomain.codeSource.location.toURI()
+            return File(Paths.get(uri).parent.toString())
+        }
+
         fun setReward(index: Long) : Double {
 
             val intendedTotalBlockOfYear = 365 * 144
