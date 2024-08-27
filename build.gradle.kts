@@ -34,7 +34,7 @@ kotlin {
 sourceSets {
     main {
         resources {
-            srcDir("src/build//resources/main")
+            srcDir("src/build/resources/main")
         }
     }
 }
