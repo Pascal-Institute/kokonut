@@ -3,6 +3,7 @@ package kokonut.util
 import com.google.gson.Gson
 import kokonut.core.Block
 import kokonut.core.BlockChain
+import java.io.File
 import java.sql.*
 
 class SQLite {
@@ -51,7 +52,21 @@ class SQLite {
     fun getDatabasePath(): String {
         val classLoader = Thread.currentThread().contextClassLoader
         val resource = classLoader.getResource("kovault.db")
-        return resource?.toURI()?.path ?: throw IllegalStateException("Database file not found")
+        return if (resource != null) {
+            resource.toURI().path
+        } else {
+            val jarDir = File(classLoader.getResource("").toURI()).parentFile
+            val dbFile = File(jarDir, "kovault.db")
+
+            if (!dbFile.exists()) {
+                dbFile.createNewFile()
+                println("Database file created at: ${dbFile.absolutePath}")
+            } else {
+                println("Database file already exists at: ${dbFile.absolutePath}")
+            }
+
+            dbFile.absolutePath
+        }
     }
 
     fun tableExists(tableName: String): Boolean {
