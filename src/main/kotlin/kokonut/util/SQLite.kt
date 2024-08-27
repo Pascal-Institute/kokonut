@@ -21,8 +21,8 @@ class SQLite {
             if (!tableExists(tableName)) {
                 val createTableSQL = """
                 CREATE TABLE $tableName (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    kovalut TEXT NOT NULL
+                    hash TEXT PRIMARY KEY,
+                    value TEXT NOT NULL
                 );
                 """
                 val statement: Statement = connection.createStatement()
@@ -120,31 +120,32 @@ class SQLite {
     }
 
     fun insertChainIntoDatabase(tableName: String, chain: MutableList<Block>) {
-        val connection = DriverManager.getConnection("jdbc:sqlite:$dbPath")
+        val connection: Connection = DriverManager.getConnection("jdbc:sqlite:$dbPath")
+        val insertSQL = "INSERT INTO $tableName (hash, value) VALUES (?, ?)"
+        val selectSQL = "SELECT COUNT(*) FROM $tableName WHERE hash = ?"
 
-        val checkSQL = "SELECT COUNT(*) FROM $tableName WHERE hash = ?"
-        val insertSQL = "INSERT INTO $tableName (hash, kovalut) VALUES (?, ?)"
-        val checkStatement: PreparedStatement = connection.prepareStatement(checkSQL)
-        val insertStatement: PreparedStatement = connection.prepareStatement(insertSQL)
+        val preparedStatementInsert: PreparedStatement = connection.prepareStatement(insertSQL)
+        val preparedStatementSelect: PreparedStatement = connection.prepareStatement(selectSQL)
+
         connection.autoCommit = false
 
         try {
             for (block in chain) {
-                val blockHash = block.hash
-                val json = gson.toJson(block)
+                val hash = block.hash
+                val value = gson.toJson(block)
 
-                checkStatement.setString(1, blockHash)
-                val resultSet = checkStatement.executeQuery()
-                resultSet.next()
-                val count = resultSet.getInt(1)
+                // Check if hash already exists
+                preparedStatementSelect.setString(1, hash)
+                val resultSet: ResultSet = preparedStatementSelect.executeQuery()
+                val count = if (resultSet.next()) resultSet.getInt(1) else 0
 
                 if (count == 0) {
-                    insertStatement.setString(1, blockHash)
-                    insertStatement.setString(2, json)
-                    val rowsAffected = insertStatement.executeUpdate()
-                    println("hash $blockHash is added to database.")
+                    // Insert if hash does not exist
+                    preparedStatementInsert.setString(1, hash)
+                    preparedStatementInsert.setString(2, value)
+                    val rowsAffected = preparedStatementInsert.executeUpdate()
                 } else {
-                    println("Block with hash $blockHash already exists in the database.")
+                    println("Hash $hash already exists, skipping insert.")
                 }
             }
 
@@ -158,8 +159,6 @@ class SQLite {
             }
             println("An error occurred while inserting data: ${e.message}")
         } finally {
-            checkStatement.close()
-            insertStatement.close()
             connection.close()
         }
     }
