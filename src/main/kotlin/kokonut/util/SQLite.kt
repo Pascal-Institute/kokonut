@@ -120,23 +120,36 @@ class SQLite {
     }
 
     fun insertChainIntoDatabase(tableName: String, chain: MutableList<Block>) {
+        val connection = DriverManager.getConnection("jdbc:sqlite:$dbPath")
 
-        connection = DriverManager.getConnection("jdbc:sqlite:$dbPath")
-
-        val insertSQL = "INSERT INTO $tableName (kovalut) VALUES (?)"
-        val preparedStatement: PreparedStatement = connection.prepareStatement(insertSQL)
+        val checkSQL = "SELECT COUNT(*) FROM $tableName WHERE hash = ?"
+        val insertSQL = "INSERT INTO $tableName (hash, kovalut) VALUES (?, ?)"
+        val checkStatement: PreparedStatement = connection.prepareStatement(checkSQL)
+        val insertStatement: PreparedStatement = connection.prepareStatement(insertSQL)
         connection.autoCommit = false
+
         try {
             for (block in chain) {
+                val blockHash = block.hash
                 val json = gson.toJson(block)
-                preparedStatement.setString(1, json)
-                val rowsAffected = preparedStatement.executeUpdate()
-                println("Rows affected: $rowsAffected")
+
+                checkStatement.setString(1, blockHash)
+                val resultSet = checkStatement.executeQuery()
+                resultSet.next()
+                val count = resultSet.getInt(1)
+
+                if (count == 0) {
+                    insertStatement.setString(1, blockHash)
+                    insertStatement.setString(2, json)
+                    val rowsAffected = insertStatement.executeUpdate()
+                    println("hash $blockHash is added to database.")
+                } else {
+                    println("Block with hash $blockHash already exists in the database.")
+                }
             }
 
             connection.commit()
-
-            println("All blocks have been inserted into the database.")
+            println("All blocks have been processed.")
         } catch (e: Exception) {
             try {
                 connection.rollback()
@@ -145,7 +158,8 @@ class SQLite {
             }
             println("An error occurred while inserting data: ${e.message}")
         } finally {
-            preparedStatement.close()
+            checkStatement.close()
+            insertStatement.close()
             connection.close()
         }
     }
