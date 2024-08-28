@@ -117,7 +117,7 @@ class SQLite {
         connection.close()
     }
 
-    fun fetch(chain: MutableList<Block>) : MutableList<Block> {
+    fun fetch(chain: MutableList<Block>): MutableList<Block> {
 
         connection = DriverManager.getConnection("jdbc:sqlite:$dbPath")
         val newChain = mutableListOf<Block>()
@@ -130,12 +130,53 @@ class SQLite {
             val serializedBlock = resultSet.getString("block") // 직렬화된 블록 데이터
             val block = Json.decodeFromString<Block>(serializedBlock)
 
-            if(!chain.contains(block)){
+            if (!chain.contains(block)) {
                 newChain.add(block)
             }
         }
 
         return newChain
+    }
+
+    fun insert(block: Block) {
+        val connection: Connection = DriverManager.getConnection("jdbc:sqlite:$dbPath")
+        val insertSQL = "INSERT INTO $tableName (hash, block) VALUES (?, ?)"
+        val selectSQL = "SELECT COUNT(*) FROM $tableName WHERE hash = ?"
+
+        val preparedStatementInsert: PreparedStatement = connection.prepareStatement(insertSQL)
+        val preparedStatementSelect: PreparedStatement = connection.prepareStatement(selectSQL)
+
+        connection.autoCommit = false
+
+        try {
+            val hash = block.hash
+            val value = gson.toJson(block)
+
+            // Check if hash already exists
+            preparedStatementSelect.setString(1, hash)
+            val resultSet: ResultSet = preparedStatementSelect.executeQuery()
+            val count = if (resultSet.next()) resultSet.getInt(1) else 0
+
+            if (count == 0) {
+                preparedStatementInsert.setString(1, hash)
+                preparedStatementInsert.setString(2, value)
+                val rowsAffected = preparedStatementInsert.executeUpdate()
+            } else {
+                println("Hash $hash already exists, skipping insert.")
+            }
+
+            connection.commit()
+            println("All blocks have been processed.")
+        } catch (e: Exception) {
+            try {
+                connection.rollback()
+            } catch (rollbackException: SQLException) {
+                println("Failed to rollback transaction: ${rollbackException.message}")
+            }
+            println("An error occurred while inserting data: ${e.message}")
+        } finally {
+            connection.close()
+        }
     }
 
     fun insert(chain: MutableList<Block>) {
