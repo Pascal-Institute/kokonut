@@ -117,6 +117,24 @@ class SQLite {
         connection.close()
     }
 
+    fun fetch(): MutableList<Block> {
+
+        connection = DriverManager.getConnection("jdbc:sqlite:$dbPath")
+        val newChain = mutableListOf<Block>()
+        val query = "SELECT hash, block FROM tableName"
+
+        val statement = connection.prepareStatement(query)
+        val resultSet = statement.executeQuery()
+
+        while (resultSet.next()) {
+            val serializedBlock = resultSet.getString("block") // 직렬화된 블록 데이터
+            val block = Json.decodeFromString<Block>(serializedBlock)
+            newChain.add(block)
+        }
+
+        return newChain
+    }
+
     fun fetch(chain: MutableList<Block>): MutableList<Block> {
 
         connection = DriverManager.getConnection("jdbc:sqlite:$dbPath")
