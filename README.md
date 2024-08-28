@@ -199,7 +199,7 @@ Given the following conditions, this block can be defined as the Genesis Block
 - index is 0
 - miner is "0000000000000000000000000000000000000000000000000000000000000000"
 - reward is 0.0
-- transaction is null
+- transaction is empty (not null)
 - difficulty is 0
 - nonce is 0
 
