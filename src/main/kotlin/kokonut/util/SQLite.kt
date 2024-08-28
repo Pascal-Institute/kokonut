@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import kokonut.core.Block
 import kokonut.core.BlockChain
 import kokonut.util.Utility.Companion.getJarDirectory
+import kotlinx.serialization.json.Json
 import java.io.File
 import java.sql.*
 
@@ -117,6 +118,27 @@ class SQLite {
         resultSet.close()
         statement.close()
         connection.close()
+    }
+
+    fun fetch(chain: MutableList<Block>) : MutableList<Block> {
+
+        connection = DriverManager.getConnection("jdbc:sqlite:$dbPath")
+        val newChain = mutableListOf<Block>()
+        val query = "SELECT hash, block FROM tableName"
+
+        val statement = connection.prepareStatement(query)
+        val resultSet = statement.executeQuery()
+
+        while (resultSet.next()) {
+            val serializedBlock = resultSet.getString("block") // 직렬화된 블록 데이터
+            val block = Json.decodeFromString<Block>(serializedBlock)
+
+            if(!chain.contains(block)){
+                newChain.add(block)
+            }
+        }
+
+        return newChain
     }
 
     fun insert(tableName: String, chain: MutableList<Block>) {
