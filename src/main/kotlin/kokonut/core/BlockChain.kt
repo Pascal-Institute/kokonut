@@ -7,6 +7,7 @@ import io.ktor.client.request.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
+import kokonut.Node
 import kokonut.util.GitHubFile
 import kokonut.Policy
 import kokonut.URLBook
@@ -22,14 +23,14 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import java.net.URL
 
-class BlockChain(val isFullNode: Boolean = false, val url: URL = URLBook.FULL_NODE_0) {
+class BlockChain(node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0) {
 
     val sqlite = SQLite()
 
     private val chain: MutableList<Block> = sqlite.fetch()
 
     init {
-        if (isFullNode) {
+        if (node == Node.LIGHT) {
             loadChainFromFuelNode()
         } else {
             loadChainFromFullNode()
