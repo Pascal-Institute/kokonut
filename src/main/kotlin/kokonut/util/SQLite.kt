@@ -11,13 +11,12 @@ import java.sql.*
 class SQLite {
 
     private val gson = Gson()
+    val tableName = "kovault"
     val dbPath = getDatabasePath()
     var connection: Connection = DriverManager.getConnection("jdbc:sqlite:$dbPath")
 
     init {
         try {
-            val tableName = "kovault"
-
             // 테이블 존재 여부 확인
             if (!tableExists(tableName)) {
                 val createTableSQL = """
@@ -99,7 +98,6 @@ class SQLite {
         val statement: Statement = connection.createStatement()
         val resultSet: ResultSet = statement.executeQuery(query)
 
-        // 열의 이름을 얻어서 헤더로 출력
         val metaData = resultSet.metaData
         val columnCount = metaData.columnCount
         for (i in 1..columnCount) {
@@ -107,7 +105,6 @@ class SQLite {
         }
         println()
 
-        // 데이터 출력
         while (resultSet.next()) {
             for (i in 1..columnCount) {
                 print("${resultSet.getString(i)}\t")
@@ -141,7 +138,7 @@ class SQLite {
         return newChain
     }
 
-    fun insert(tableName: String, chain: MutableList<Block>) {
+    fun insert(chain: MutableList<Block>) {
         val connection: Connection = DriverManager.getConnection("jdbc:sqlite:$dbPath")
         val insertSQL = "INSERT INTO $tableName (hash, block) VALUES (?, ?)"
         val selectSQL = "SELECT COUNT(*) FROM $tableName WHERE hash = ?"

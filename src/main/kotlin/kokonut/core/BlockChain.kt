@@ -37,7 +37,7 @@ class BlockChain(useFull: Boolean = true) {
             //loadChainFromFuelNode()
         }
 
-        sqlite.insert("kovault", chain)
+        sqlite.insert(chain)
 
     }
 
