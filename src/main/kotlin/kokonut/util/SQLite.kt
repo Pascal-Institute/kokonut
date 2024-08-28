@@ -22,7 +22,7 @@ class SQLite {
                 val createTableSQL = """
                 CREATE TABLE $tableName (
                     hash TEXT PRIMARY KEY,
-                    value TEXT NOT NULL
+                    block TEXT NOT NULL
                 );
                 """
                 val statement: Statement = connection.createStatement()
@@ -121,7 +121,7 @@ class SQLite {
 
     fun insertChainIntoDatabase(tableName: String, chain: MutableList<Block>) {
         val connection: Connection = DriverManager.getConnection("jdbc:sqlite:$dbPath")
-        val insertSQL = "INSERT INTO $tableName (hash, value) VALUES (?, ?)"
+        val insertSQL = "INSERT INTO $tableName (hash, block) VALUES (?, ?)"
         val selectSQL = "SELECT COUNT(*) FROM $tableName WHERE hash = ?"
 
         val preparedStatementInsert: PreparedStatement = connection.prepareStatement(insertSQL)
