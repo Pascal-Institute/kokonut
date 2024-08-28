@@ -121,7 +121,7 @@ class SQLite {
 
         connection = DriverManager.getConnection("jdbc:sqlite:$dbPath")
         val newChain = mutableListOf<Block>()
-        val query = "SELECT hash, block FROM tableName"
+        val query = "SELECT hash, block FROM $tableName"
 
         val statement = connection.prepareStatement(query)
         val resultSet = statement.executeQuery()
@@ -177,7 +177,12 @@ class SQLite {
 
             if (count == 0) {
                 preparedStatementInsert.setString(1, hash)
-                preparedStatementInsert.setString(2, value)
+                // Set the JSON value or NULL if it is null
+                if (value == "null") { // Check if Gson produced "null" string
+                    preparedStatementInsert.setNull(2, Types.NULL)
+                } else {
+                    preparedStatementInsert.setString(2, value)
+                }
                 val rowsAffected = preparedStatementInsert.executeUpdate()
             } else {
                 println("Hash $hash already exists, skipping insert.")
@@ -220,7 +225,11 @@ class SQLite {
                 if (count == 0) {
                     // Insert if hash does not exist
                     preparedStatementInsert.setString(1, hash)
-                    preparedStatementInsert.setString(2, value)
+                    if (value == "null") { // Check if Gson produced "null" string
+                        preparedStatementInsert.setNull(2, Types.NULL)
+                    } else {
+                        preparedStatementInsert.setString(2, value)
+                    }
                     val rowsAffected = preparedStatementInsert.executeUpdate()
                 } else {
                     println("Hash $hash already exists, skipping insert.")

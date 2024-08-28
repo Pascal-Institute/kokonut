@@ -9,10 +9,12 @@ import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
 import kokonut.util.GitHubFile
 import kokonut.Policy
+import kokonut.URLBook
 import kokonut.util.SQLite
 import kokonut.URLBook.FUEL_NODE
 import kokonut.URLBook.FULL_RAW_STORAGE
 import kokonut.URLBook.FULL_STORAGE
+import kokonut.util.API.Companion.getChain
 import kokonut.util.API.Companion.getPolicy
 import kokonut.util.API.Companion.getReward
 import kokonut.util.Utility
@@ -20,22 +22,24 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import java.net.URL
 
-class BlockChain(useFull: Boolean = true) {
+class BlockChain(val isFullNode: Boolean = false, val url: URL = URLBook.FULL_NODE_0) {
 
     val sqlite = SQLite()
 
-    private val chain: MutableList<Block> = mutableListOf()
+    private val chain: MutableList<Block> = sqlite.fetch()
 
     init {
-        loadChainFromFuelNode()
+        if (isFullNode) {
+            loadChainFromFuelNode()
+        } else {
+            loadChainFromFullNode()
 
+            if(chain.isEmpty()){
+                loadChainFromFuelNode()
+            }
+        }
         println("Block Chain validity : ${isValid()}")
 
-        if (useFull) {
-
-        } else {
-            //loadChainFromFuelNode()
-        }
 
         sqlite.insert(chain)
 
@@ -79,6 +83,16 @@ class BlockChain(useFull: Boolean = true) {
             println("Error! : ${e.message}")
         } finally {
             client.close()
+        }
+    }
+
+    fun loadChainFromFullNode() = runBlocking {
+        val newChain = url.getChain()
+
+        newChain.forEach { newBlock ->
+            if (newBlock !in chain) {
+                chain.add(newBlock)
+            }
         }
     }
 
