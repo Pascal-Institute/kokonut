@@ -30,7 +30,7 @@ class BlockChain(node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0) {
     private val chain: MutableList<Block> = sqlite.fetch()
 
     init {
-        if (node == Node.LIGHT) {
+        if (node == Node.FULL) {
             loadChainFromFuelNode()
         } else {
             loadChainFromFullNode()
