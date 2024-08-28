@@ -119,7 +119,7 @@ class SQLite {
         connection.close()
     }
 
-    fun insertChainIntoDatabase(tableName: String, chain: MutableList<Block>) {
+    fun insert(tableName: String, chain: MutableList<Block>) {
         val connection: Connection = DriverManager.getConnection("jdbc:sqlite:$dbPath")
         val insertSQL = "INSERT INTO $tableName (hash, block) VALUES (?, ?)"
         val selectSQL = "SELECT COUNT(*) FROM $tableName WHERE hash = ?"
