@@ -23,26 +23,18 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import java.net.URL
 
-class BlockChain(node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0) {
+class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0) {
 
-    val sqlite = SQLite()
-
-    private val chain: MutableList<Block> = sqlite.fetch()
+    val database = SQLite()
 
     init {
         if (node == Node.FULL) {
             loadChainFromFuelNode()
         } else {
             loadChainFromFullNode()
-
-            if(chain.isEmpty()){
-                loadChainFromFuelNode()
-            }
         }
+
         println("Block Chain validity : ${isValid()}")
-
-
-        sqlite.insert(chain)
 
     }
 
@@ -53,8 +45,6 @@ class BlockChain(node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0) {
 
     fun loadChainFromFuelNode() = runBlocking {
 
-        chain.clear()
-
         val client = HttpClient(CIO) {
             install(ContentNegotiation) {
                 json(Json { ignoreUnknownKeys = true })
@@ -62,7 +52,6 @@ class BlockChain(node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0) {
         }
 
         try {
-
             val files: List<GitHubFile> = client.get(FULL_STORAGE).body()
 
             val jsonUrls = files.filter { it.type == "file" && it.name.endsWith(".json") }
@@ -72,14 +61,11 @@ class BlockChain(node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0) {
                 val response: HttpResponse = client.get(url)
                 try {
                     val block: Block = Json.decodeFromString(response.body())
-                    chain.add(block)
+                    database.insert(block)
                 } catch (e: Exception) {
                     println("JSON Passer Error: ${e.message}")
                 }
             }
-
-            sortByIndex()
-
         } catch (e: Exception) {
             println("Error! : ${e.message}")
         } finally {
@@ -89,29 +75,29 @@ class BlockChain(node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0) {
 
     fun loadChainFromFullNode() = runBlocking {
         val newChain = url.getChain()
+        val chain = database.fetch()
 
         newChain.forEach { newBlock ->
             if (newBlock !in chain) {
-                chain.add(newBlock)
+                database.insert(newBlock)
             }
         }
     }
 
-    private fun sortByIndex() {
-        chain.sortBy { it.index }
-    }
-
     fun getGenesisBlock(): Block {
+        val chain = database.fetch()
         return chain.first()
     }
 
     fun getLastBlock(): Block {
+        val chain = database.fetch()
         return chain.last()
     }
 
     fun getTotalCurrencyVolume(): Double {
 
         var totalCurrencyVolume = 0.0
+        val chain = database.fetch()
 
         chain.forEach {
             totalCurrencyVolume += it.data.reward
@@ -166,6 +152,8 @@ class BlockChain(node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0) {
             println("Nonce : $nonce")
         }
 
+        database.insert(miningBlock)
+
         return miningBlock
     }
 
@@ -173,23 +161,8 @@ class BlockChain(node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0) {
         return hash.takeWhile { it == '0' }.length
     }
 
-    fun addBlock(policy: Policy, block: Block): Boolean {
-
-        //Proven Of Work
-        if (block.version != policy.version) {
-            return false
-        }
-
-        if (block.hash != block.calculateHash()) {
-            return false
-        }
-
-        //Proven done!
-        chain.add(block)
-        return true
-    }
-
     fun isValid(): Boolean {
+        val chain = database.fetch()
         for (i in chain.size - 1 downTo 1) {
 
             val currentBlock = chain[i]

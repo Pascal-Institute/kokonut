@@ -31,5 +31,6 @@ fun main(): Unit = runBlocking{
         val newBlock : Block = blockChain.mine(fullNode ,data)
         val json = Json.encodeToJsonElement(newBlock)
         fullNode.addBlock(json, wallet.publicKeyFile)
+
     }
 }
