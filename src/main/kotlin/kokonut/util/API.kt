@@ -66,7 +66,7 @@ class API {
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                mutableListOf()
+                throw e
             } finally {
                 conn.disconnect()
             }
