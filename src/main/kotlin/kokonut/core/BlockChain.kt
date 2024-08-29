@@ -9,7 +9,6 @@ import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
 import kokonut.Node
 import kokonut.util.GitHubFile
-import kokonut.Policy
 import kokonut.URLBook
 import kokonut.util.SQLite
 import kokonut.URLBook.FUEL_NODE
@@ -19,6 +18,7 @@ import kokonut.util.API.Companion.getChain
 import kokonut.util.API.Companion.getPolicy
 import kokonut.util.API.Companion.getReward
 import kokonut.util.Utility
+import kokonut.util.Utility.Companion.truncate
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import java.net.URL
@@ -26,6 +26,7 @@ import java.net.URL
 class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0) {
 
     val database = SQLite()
+    private var cachedChain: List<Block>? = null
 
     init {
         runBlocking {
@@ -33,11 +34,12 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
                 Node.FULL -> loadChainFromFuelNode()
                 else -> loadChainFromFullNode()
             }
+            cachedChain = database.fetch()
             println("Block Chain validity : ${isValid()}")
         }
     }
 
-    fun loadChainFromFuelNode() = runBlocking {
+    suspend fun loadChainFromFuelNode() {
 
         val client = HttpClient(CIO) {
             install(ContentNegotiation) {
@@ -63,11 +65,12 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
         } catch (e: Exception) {
             println("Error! : ${e.message}")
         } finally {
+            cachedChain = database.fetch()
             client.close()
         }
     }
 
-    fun loadChainFromFullNode() = runBlocking {
+    suspend fun loadChainFromFullNode() {
         val newChain = url.getChain()
         val chain = database.fetch()
 
@@ -78,26 +81,13 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
         }
     }
 
-    fun getGenesisBlock(): Block {
-        val chain = database.fetch()
-        return chain.first()
-    }
+    fun getGenesisBlock(): Block = cachedChain?.firstOrNull() ?: throw IllegalStateException("Chain is Empty")
 
-    fun getLastBlock(): Block {
-        val chain = database.fetch()
-        return chain.last()
-    }
+    fun getLastBlock(): Block = cachedChain?.lastOrNull() ?: throw IllegalStateException("Chain is Empty")
 
     fun getTotalCurrencyVolume(): Double {
-
-        var totalCurrencyVolume = 0.0
-        val chain = database.fetch()
-
-        chain.forEach {
-            totalCurrencyVolume += it.data.reward
-        }
-
-        return Utility.truncate(totalCurrencyVolume)
+        val totalCurrencyVolume = cachedChain?.sumOf { it.data.reward } ?: 0.0
+        return truncate(totalCurrencyVolume)
     }
 
     fun mine(url: URL, data: Data): Block {
@@ -147,6 +137,7 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
         }
 
         database.insert(miningBlock)
+        cachedChain = database.fetch()
 
         return miningBlock
     }
@@ -156,7 +147,7 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
     }
 
     fun isValid(): Boolean {
-        val chain = database.fetch()
+        val chain = cachedChain ?: return false
         for (i in chain.size - 1 downTo 1) {
 
             val currentBlock = chain[i]
