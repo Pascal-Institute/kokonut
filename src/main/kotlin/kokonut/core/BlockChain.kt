@@ -34,7 +34,7 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
                 Node.FULL -> loadChainFromFuelNode()
                 else -> loadChainFromFullNode()
             }
-            cachedChain = database.fetch()
+            syncChain()
             println("Block Chain validity : ${isValid()}")
         }
     }
@@ -65,7 +65,6 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
         } catch (e: Exception) {
             println("Error! : ${e.message}")
         } finally {
-            cachedChain = database.fetch()
             client.close()
         }
     }
@@ -81,6 +80,10 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
         }
     }
 
+    private fun syncChain() {
+        cachedChain = database.fetch()
+    }
+
     fun getGenesisBlock(): Block = cachedChain?.firstOrNull() ?: throw IllegalStateException("Chain is Empty")
 
     fun getLastBlock(): Block = cachedChain?.lastOrNull() ?: throw IllegalStateException("Chain is Empty")
@@ -91,6 +94,8 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
     }
 
     fun mine(url: URL, data: Data): Block {
+
+        syncChain()
 
         val policy = FUEL_NODE.getPolicy()
 
@@ -137,7 +142,8 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
         }
 
         database.insert(miningBlock)
-        cachedChain = database.fetch()
+
+        syncChain()
 
         return miningBlock
     }
