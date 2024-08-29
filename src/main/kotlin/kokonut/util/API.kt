@@ -61,8 +61,7 @@ class API {
                     gson.fromJson(response, blockListType)
 
                 } else {
-                    println("GET request failed with response code $responseCode")
-                    mutableListOf()
+                    throw RuntimeException("GET request failed with response code $responseCode")
                 }
             } catch (e: Exception) {
                 e.printStackTrace()

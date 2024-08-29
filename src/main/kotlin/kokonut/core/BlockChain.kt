@@ -70,13 +70,18 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
     }
 
     suspend fun loadChainFromFullNode() {
-        val newChain = url.getChain()
-        val chain = database.fetch()
+        try {
+            val newChain = url.getChain()
+            val chain = database.fetch()
 
-        newChain.forEach { newBlock ->
-            if (newBlock !in chain) {
-                database.insert(newBlock)
+            newChain.forEach { newBlock ->
+                if (newBlock !in chain) {
+                    database.insert(newBlock)
+                }
             }
+        } catch (e: Exception) {
+            println("Error! : ${e.message} , Activate fetch from Fuel Node...")
+            loadChainFromFuelNode()
         }
     }
 
