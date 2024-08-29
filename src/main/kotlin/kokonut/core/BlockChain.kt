@@ -28,19 +28,13 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
     val database = SQLite()
 
     init {
-        if (node == Node.FULL) {
-            loadChainFromFuelNode()
-        } else {
-            loadChainFromFullNode()
+        runBlocking {
+            when (node) {
+                Node.FULL -> loadChainFromFuelNode()
+                else -> loadChainFromFullNode()
+            }
+            println("Block Chain validity : ${isValid()}")
         }
-
-        println("Block Chain validity : ${isValid()}")
-
-    }
-
-    @Deprecated("Please use loadChainFromFuelNode")
-    fun loadChainFromNetwork() {
-        loadChainFromFuelNode()
     }
 
     fun loadChainFromFuelNode() = runBlocking {
