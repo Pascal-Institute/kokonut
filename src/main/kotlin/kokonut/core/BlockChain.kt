@@ -29,17 +29,17 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
     private var cachedChain: List<Block>? = null
 
     init {
-        runBlocking {
+
             when (node) {
                 Node.FULL -> loadChainFromFuelNode()
                 else -> loadChainFromFullNode()
             }
             println("Block Chain validity : ${isValid()}")
-        }
+
         syncChain()
     }
 
-    suspend fun loadChainFromFuelNode() {
+    fun loadChainFromFuelNode() = runBlocking {
 
         val client = HttpClient(CIO) {
             install(ContentNegotiation) {
@@ -69,7 +69,7 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
         }
     }
 
-    suspend fun loadChainFromFullNode() {
+    fun loadChainFromFullNode() = runBlocking {
         try {
             val newChain = url.getChain()
             val chain = database.fetch()
