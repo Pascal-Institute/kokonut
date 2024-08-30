@@ -34,10 +34,8 @@ fun main(): Unit = runBlocking{
             emptyList(),
             "welcome to kokonut")
 
-        fullNode.startMining(wallet.publicKeyFile)
-
         try {
-            val newBlock : Block = blockChain.mine(fullNode ,data)
+            val newBlock : Block = blockChain.mine(wallet, data)
             val json = Json.encodeToJsonElement(newBlock)
             fullNode.addBlock(json, wallet.publicKeyFile)
         }catch (e : Exception){

@@ -14,6 +14,7 @@ import kokonut.util.SQLite
 import kokonut.URLBook.FUEL_NODE
 import kokonut.URLBook.FULL_RAW_STORAGE
 import kokonut.URLBook.FULL_STORAGE
+import kokonut.Wallet
 import kokonut.util.API.Companion.getChain
 import kokonut.util.API.Companion.getPolicy
 import kokonut.util.API.Companion.getReward
@@ -106,9 +107,11 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
         return truncate(totalCurrencyVolume)
     }
 
-    fun mine(url: URL, data: Data): Block {
+    fun mine(wallet : Wallet, data: Data): Block {
 
         loadChainFromFullNode()
+
+        url.startMining(wallet.publicKeyFile)
 
         syncChain()
 
