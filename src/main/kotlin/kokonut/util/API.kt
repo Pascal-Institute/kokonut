@@ -10,7 +10,6 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import kokonut.Policy
 import kokonut.core.Block
-import kokonut.util.API.Companion.getReward
 import kokonut.util.Utility.Companion.writeFilePart
 import kokonut.util.Utility.Companion.writePart
 import kotlinx.serialization.json.JsonElement
@@ -183,6 +182,40 @@ class API {
             }
         }
 
+        fun URL.startMining(publicKeyFile: File) {
+            val connection = this.openConnection() as HttpURLConnection
+            connection.requestMethod = "POST"
+            connection.doOutput = true
+            connection.setRequestProperty("Content-Type", "application/x-pem-file")
+            connection.setRequestProperty("Accept", "application/json")
+
+            try {
+                publicKeyFile.inputStream().use { fis ->
+                    connection.outputStream.use { os ->
+                        fis.copyTo(os)
+                    }
+                }
+
+                // Check response
+                val responseCode = connection.responseCode
+                if (responseCode in 200..299) {
+                    connection.inputStream.bufferedReader().use { reader ->
+                        val response = reader.readText()
+                        println("Response: $response, Start Mining")
+                    }
+                } else {
+                    println("Failed with HTTP error code: $responseCode")
+                    connection.errorStream?.bufferedReader()?.use { reader ->
+                        val errorResponse = reader.readText()
+                        println("Error Response: $errorResponse")
+                    }
+                }
+            } catch (e: IOException) {
+                e.printStackTrace()
+            } finally {
+                connection.disconnect()
+            }
+        }
 
         fun URL.addBlock(jsonElement: JsonElement, publicKeyFile: File) {
             val boundary = "Boundary-${System.currentTimeMillis()}"
@@ -229,6 +262,41 @@ class API {
             } finally {
                 connection.disconnect()
             }
+        }
+    }
+
+    fun URL.stopMining(publicKeyFile: File) {
+        val connection = this.openConnection() as HttpURLConnection
+        connection.requestMethod = "POST"
+        connection.doOutput = true
+        connection.setRequestProperty("Content-Type", "application/x-pem-file")
+        connection.setRequestProperty("Accept", "application/json")
+
+        try {
+            publicKeyFile.inputStream().use { fis ->
+                connection.outputStream.use { os ->
+                    fis.copyTo(os)
+                }
+            }
+
+            // Check response
+            val responseCode = connection.responseCode
+            if (responseCode in 200..299) {
+                connection.inputStream.bufferedReader().use { reader ->
+                    val response = reader.readText()
+                    println("Response: $response, Stop Mining")
+                }
+            } else {
+                println("Failed with HTTP error code: $responseCode")
+                connection.errorStream?.bufferedReader()?.use { reader ->
+                    val errorResponse = reader.readText()
+                    println("Error Response: $errorResponse")
+                }
+            }
+        } catch (e: IOException) {
+            e.printStackTrace()
+        } finally {
+            connection.disconnect()
         }
     }
 }
