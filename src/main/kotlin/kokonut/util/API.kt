@@ -266,40 +266,40 @@ class API {
                 connection.disconnect()
             }
         }
-    }
 
-    fun URL.stopMining(publicKeyFile: File) {
-        val connection = this.openConnection() as HttpURLConnection
-        connection.requestMethod = "POST"
-        connection.doOutput = true
-        connection.setRequestProperty("Content-Type", "application/x-pem-file")
-        connection.setRequestProperty("Accept", "application/json")
+        fun URL.stopMining(publicKeyFile: File) {
+            val connection = this.openConnection() as HttpURLConnection
+            connection.requestMethod = "POST"
+            connection.doOutput = true
+            connection.setRequestProperty("Content-Type", "application/x-pem-file")
+            connection.setRequestProperty("Accept", "application/json")
 
-        try {
-            publicKeyFile.inputStream().use { fis ->
-                connection.outputStream.use { os ->
-                    fis.copyTo(os)
+            try {
+                publicKeyFile.inputStream().use { fis ->
+                    connection.outputStream.use { os ->
+                        fis.copyTo(os)
+                    }
                 }
+
+                // Check response
+                val responseCode = connection.responseCode
+                if (responseCode in 200..299) {
+                    connection.inputStream.bufferedReader().use { reader ->
+                        val response = reader.readText()
+                        println("Response: $response, Stop Mining")
+                    }
+                } else {
+                    println("Failed with HTTP error code: $responseCode")
+                    connection.errorStream?.bufferedReader()?.use { reader ->
+                        val errorResponse = reader.readText()
+                        println("Error Response: $errorResponse")
+                    }
+                }
+            } catch (e: IOException) {
+                e.printStackTrace()
+            } finally {
+                connection.disconnect()
             }
-
-            // Check response
-            val responseCode = connection.responseCode
-            if (responseCode in 200..299) {
-                connection.inputStream.bufferedReader().use { reader ->
-                    val response = reader.readText()
-                    println("Response: $response, Stop Mining")
-                }
-            } else {
-                println("Failed with HTTP error code: $responseCode")
-                connection.errorStream?.bufferedReader()?.use { reader ->
-                    val errorResponse = reader.readText()
-                    println("Error Response: $errorResponse")
-                }
-            }
-        } catch (e: IOException) {
-            e.printStackTrace()
-        } finally {
-            connection.disconnect()
         }
     }
 }

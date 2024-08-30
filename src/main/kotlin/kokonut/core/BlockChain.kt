@@ -17,6 +17,7 @@ import kokonut.URLBook.FULL_STORAGE
 import kokonut.util.API.Companion.getChain
 import kokonut.util.API.Companion.getPolicy
 import kokonut.util.API.Companion.getReward
+import kokonut.util.API.Companion.startMining
 import kokonut.util.Utility
 import kokonut.util.Utility.Companion.truncate
 import kotlinx.coroutines.runBlocking
@@ -107,7 +108,13 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
 
     fun mine(url: URL, data: Data): Block {
 
+        loadChainFromFullNode()
+
         syncChain()
+
+        if(!isValid()){
+            throw IllegalStateException("Chain is Invalid. Stop Mining...")
+        }
 
         val policy = FUEL_NODE.getPolicy()
 
