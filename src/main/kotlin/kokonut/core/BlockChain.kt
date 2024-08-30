@@ -14,9 +14,11 @@ import kokonut.util.SQLite
 import kokonut.URLBook.FUEL_NODE
 import kokonut.URLBook.FULL_RAW_STORAGE
 import kokonut.URLBook.FULL_STORAGE
+import kokonut.Wallet
 import kokonut.util.API.Companion.getChain
 import kokonut.util.API.Companion.getPolicy
 import kokonut.util.API.Companion.getReward
+import kokonut.util.API.Companion.startMining
 import kokonut.util.Utility
 import kokonut.util.Utility.Companion.truncate
 import kotlinx.coroutines.runBlocking
@@ -34,9 +36,6 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
                 Node.FULL -> loadChainFromFuelNode()
                 else -> loadChainFromFullNode()
             }
-            println("Block Chain validity : ${isValid()}")
-
-        syncChain()
     }
 
     fun loadChainFromFuelNode() = runBlocking {
@@ -65,6 +64,11 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
         } catch (e: Exception) {
             println("Error! : ${e.message}")
         } finally {
+
+            syncChain()
+
+            println("Block Chain validity : ${isValid()}")
+
             client.close()
         }
     }
@@ -82,6 +86,11 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
         } catch (e: Exception) {
             println("Error! : ${e.message} , Activate fetch from Fuel Node...")
             loadChainFromFuelNode()
+        } finally {
+
+            syncChain()
+
+            println("Block Chain validity : ${isValid()}")
         }
     }
 
@@ -98,9 +107,17 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
         return truncate(totalCurrencyVolume)
     }
 
-    fun mine(url: URL, data: Data): Block {
+    fun mine(wallet : Wallet, data: Data): Block {
+
+        loadChainFromFullNode()
+
+        url.startMining(wallet.publicKeyFile)
 
         syncChain()
+
+        if(!isValid()){
+            throw IllegalStateException("Chain is Invalid. Stop Mining...")
+        }
 
         val policy = FUEL_NODE.getPolicy()
 
