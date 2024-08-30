@@ -34,9 +34,6 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
                 Node.FULL -> loadChainFromFuelNode()
                 else -> loadChainFromFullNode()
             }
-            println("Block Chain validity : ${isValid()}")
-
-        syncChain()
     }
 
     fun loadChainFromFuelNode() = runBlocking {
@@ -65,6 +62,11 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
         } catch (e: Exception) {
             println("Error! : ${e.message}")
         } finally {
+
+            syncChain()
+
+            println("Block Chain validity : ${isValid()}")
+
             client.close()
         }
     }
@@ -82,6 +84,11 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
         } catch (e: Exception) {
             println("Error! : ${e.message} , Activate fetch from Fuel Node...")
             loadChainFromFuelNode()
+        } finally {
+
+            syncChain()
+
+            println("Block Chain validity : ${isValid()}")
         }
     }
 

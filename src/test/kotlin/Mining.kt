@@ -20,7 +20,11 @@ fun main(): Unit = runBlocking{
 
     val fullNode = FULL_NODE_0
 
-    if(blockChain.isValid() && wallet.isValid() && fullNode.isHealthy()){
+    if(wallet.isValid() && fullNode.isHealthy()){
+
+        if(!blockChain.isValid()){
+            throw IllegalStateException("Chain is Invaild")
+        }
 
         val data =Data(
             0.0,
