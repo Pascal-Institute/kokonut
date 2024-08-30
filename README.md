@@ -233,7 +233,7 @@ Given the following conditions, this block can be defined as the Genesis Block
   "data": {
     "reward":16.230218,
     "miner":"6c60b7550766d5ae24ccc3327f0e47fbaa51e599172795bb9ad06ac82784a92d",
-    "transactions":null,
+    "transactions":[],
     "comment":"kokonut version 4"
     },
   "difficulty":6,
