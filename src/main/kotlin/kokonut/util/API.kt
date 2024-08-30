@@ -12,6 +12,7 @@ import kokonut.Policy
 import kokonut.core.Block
 import kokonut.util.Utility.Companion.writeFilePart
 import kokonut.util.Utility.Companion.writePart
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import java.io.BufferedReader
 import java.io.File
@@ -55,9 +56,8 @@ class API {
                     val reader = BufferedReader(InputStreamReader(inputStream))
                     val response = reader.use { it.readText() }
 
-                    val gson = Gson()
-                    val blockListType = object : TypeToken<MutableList<Block>>() {}.type
-                    gson.fromJson(response, blockListType)
+                    // Deserialize JSON response to a list of blocks
+                    Json.decodeFromString(response)
 
                 } else {
                     throw RuntimeException("GET request failed with response code $responseCode")
