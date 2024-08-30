@@ -3,6 +3,7 @@ import kokonut.URLBook.FULL_NODE_0
 import kokonut.util.API.Companion.isHealthy
 import kokonut.core.*
 import kokonut.util.API.Companion.addBlock
+import kokonut.util.API.Companion.startMining
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToJsonElement
@@ -28,8 +29,11 @@ fun main(): Unit = runBlocking{
             emptyList(),
             "welcome to kokonut")
 
+        fullNode.startMining(wallet.publicKeyFile)
+
         val newBlock : Block = blockChain.mine(fullNode ,data)
         val json = Json.encodeToJsonElement(newBlock)
+
         fullNode.addBlock(json, wallet.publicKeyFile)
 
     }

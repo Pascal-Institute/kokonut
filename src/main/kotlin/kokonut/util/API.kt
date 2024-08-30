@@ -10,6 +10,7 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import kokonut.Policy
 import kokonut.core.Block
+import kokonut.util.API.Companion.addBlock
 import kokonut.util.Utility.Companion.writeFilePart
 import kokonut.util.Utility.Companion.writePart
 import kotlinx.serialization.json.Json
@@ -182,8 +183,8 @@ class API {
             }
         }
 
-        fun URL.startMining(publicKeyFile: File) {
-            val connection = this.openConnection() as HttpURLConnection
+        fun URL.startMining(publicKeyFile: File) : Boolean {
+            val connection = URL("${this}/startMining").openConnection() as HttpURLConnection
             connection.requestMethod = "POST"
             connection.doOutput = true
             connection.setRequestProperty("Content-Type", "application/x-pem-file")
@@ -215,6 +216,8 @@ class API {
             } finally {
                 connection.disconnect()
             }
+
+            return true
         }
 
         fun URL.addBlock(jsonElement: JsonElement, publicKeyFile: File) {
