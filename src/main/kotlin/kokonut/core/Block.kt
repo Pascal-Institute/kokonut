@@ -5,12 +5,12 @@ import java.security.MessageDigest
 
 @Serializable
 data class Block(
-    val version: Int? = null,
+    val version: Int,
     val index: Long,
     val previousHash: String,
     var timestamp: Long,
     val data: Data,
-    val difficulty: Int? = null,
+    val difficulty: Int,
     var nonce: Long,
     var hash: String,
 ) {

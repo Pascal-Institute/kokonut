@@ -7,6 +7,6 @@ data class Data(
     var reward: Double,
     val ticker: String = Identity.ticker,
     val miner: String,
-    val transactions : List<Transaction>?,
+    var transactions : List<Transaction> = emptyList(),
     val comment: String
 )

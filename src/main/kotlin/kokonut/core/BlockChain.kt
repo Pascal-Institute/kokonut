@@ -7,48 +7,39 @@ import io.ktor.client.request.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
+import kokonut.Node
 import kokonut.util.GitHubFile
-import kokonut.Policy
+import kokonut.URLBook
 import kokonut.util.SQLite
 import kokonut.URLBook.FUEL_NODE
 import kokonut.URLBook.FULL_RAW_STORAGE
 import kokonut.URLBook.FULL_STORAGE
+import kokonut.util.API.Companion.getChain
 import kokonut.util.API.Companion.getPolicy
 import kokonut.util.API.Companion.getReward
 import kokonut.util.Utility
+import kokonut.util.Utility.Companion.truncate
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import java.net.URL
 
-class BlockChain(useFull: Boolean = true) {
+class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0) {
 
-    val sqlite = SQLite()
-
-    private val chain: MutableList<Block> = mutableListOf()
+    val database = SQLite()
+    private var cachedChain: List<Block>? = null
 
     init {
-        loadChainFromFuelNode()
 
-        println("Block Chain validity : ${isValid()}")
+            when (node) {
+                Node.FULL -> loadChainFromFuelNode()
+                else -> loadChainFromFullNode()
+            }
+            println("Block Chain validity : ${isValid()}")
 
-        if (useFull) {
-
-        } else {
-            //loadChainFromFuelNode()
-        }
-
-        sqlite.insertChainIntoDatabase("kovault", chain)
-
-    }
-
-    @Deprecated("Please use loadChainFromFuelNode")
-    fun loadChainFromNetwork() {
-        loadChainFromFuelNode()
+        syncChain()
     }
 
     fun loadChainFromFuelNode() = runBlocking {
-
-        chain.clear()
 
         val client = HttpClient(CIO) {
             install(ContentNegotiation) {
@@ -57,7 +48,6 @@ class BlockChain(useFull: Boolean = true) {
         }
 
         try {
-
             val files: List<GitHubFile> = client.get(FULL_STORAGE).body()
 
             val jsonUrls = files.filter { it.type == "file" && it.name.endsWith(".json") }
@@ -67,14 +57,11 @@ class BlockChain(useFull: Boolean = true) {
                 val response: HttpResponse = client.get(url)
                 try {
                     val block: Block = Json.decodeFromString(response.body())
-                    chain.add(block)
+                    database.insert(block)
                 } catch (e: Exception) {
                     println("JSON Passer Error: ${e.message}")
                 }
             }
-
-            sortByIndex()
-
         } catch (e: Exception) {
             println("Error! : ${e.message}")
         } finally {
@@ -82,30 +69,38 @@ class BlockChain(useFull: Boolean = true) {
         }
     }
 
-    private fun sortByIndex() {
-        chain.sortBy { it.index }
+    fun loadChainFromFullNode() = runBlocking {
+        try {
+            val newChain = url.getChain()
+            val chain = database.fetch()
+
+            newChain.forEach { newBlock ->
+                if (newBlock !in chain) {
+                    database.insert(newBlock)
+                }
+            }
+        } catch (e: Exception) {
+            println("Error! : ${e.message} , Activate fetch from Fuel Node...")
+            loadChainFromFuelNode()
+        }
     }
 
-    fun getGenesisBlock(): Block {
-        return chain.first()
+    private fun syncChain() {
+        cachedChain = database.fetch()
     }
 
-    fun getLastBlock(): Block {
-        return chain.last()
-    }
+    fun getGenesisBlock(): Block = cachedChain?.firstOrNull() ?: throw IllegalStateException("Chain is Empty")
+
+    fun getLastBlock(): Block = cachedChain?.lastOrNull() ?: throw IllegalStateException("Chain is Empty")
 
     fun getTotalCurrencyVolume(): Double {
-
-        var totalCurrencyVolume = 0.0
-
-        chain.forEach {
-            totalCurrencyVolume += it.data.reward
-        }
-
-        return Utility.truncate(totalCurrencyVolume)
+        val totalCurrencyVolume = cachedChain?.sumOf { it.data.reward } ?: 0.0
+        return truncate(totalCurrencyVolume)
     }
 
     fun mine(url: URL, data: Data): Block {
+
+        syncChain()
 
         val policy = FUEL_NODE.getPolicy()
 
@@ -151,6 +146,10 @@ class BlockChain(useFull: Boolean = true) {
             println("Nonce : $nonce")
         }
 
+        database.insert(miningBlock)
+
+        syncChain()
+
         return miningBlock
     }
 
@@ -158,23 +157,8 @@ class BlockChain(useFull: Boolean = true) {
         return hash.takeWhile { it == '0' }.length
     }
 
-    fun addBlock(policy: Policy, block: Block): Boolean {
-
-        //Proven Of Work
-        if (block.version != policy.version) {
-            return false
-        }
-
-        if (block.hash != block.calculateHash()) {
-            return false
-        }
-
-        //Proven done!
-        chain.add(block)
-        return true
-    }
-
     fun isValid(): Boolean {
+        val chain = cachedChain ?: return false
         for (i in chain.size - 1 downTo 1) {
 
             val currentBlock = chain[i]

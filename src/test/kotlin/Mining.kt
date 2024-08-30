@@ -25,11 +25,12 @@ fun main(): Unit = runBlocking{
             0.0,
             Identity.ticker,
             miner= wallet.miner,
-            null,
+            emptyList(),
             "welcome to kokonut")
 
         val newBlock : Block = blockChain.mine(fullNode ,data)
         val json = Json.encodeToJsonElement(newBlock)
         fullNode.addBlock(json, wallet.publicKeyFile)
+
     }
 }

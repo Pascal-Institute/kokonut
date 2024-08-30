@@ -1,11 +1,9 @@
 import kokonut.Wallet
 import kokonut.core.BlockChain
 import kokonut.core.Identity
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import java.io.File
 
-fun main(): Unit = runBlocking{
+fun main() {
    val blockChain = BlockChain()
 
    println(Identity.version)

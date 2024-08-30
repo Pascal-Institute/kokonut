@@ -5,18 +5,18 @@ fun main(){
 
     try {
         val tableName = "kovault"
-        if (blockChain.sqlite.tableExists(tableName)) {
+        if (blockChain.database.tableExists(tableName)) {
             println("Table '$tableName' exists.")
 
             println("Table structure:")
-            blockChain.sqlite.printTableStructure(tableName)
+            blockChain.database.printTableStructure(tableName)
 
             println("Table data:")
-            blockChain.sqlite.printTableData(tableName)
+            blockChain.database.printTableData(tableName)
         } else {
             println("Table '$tableName' does not exist.")
         }
     } finally {
-        blockChain.sqlite.connection.close()
+        blockChain.database.connection.close()
     }
 }

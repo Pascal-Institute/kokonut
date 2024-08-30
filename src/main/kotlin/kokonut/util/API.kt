@@ -43,7 +43,7 @@ class API {
             }
         }
 
-        fun URL.getChain(): MutableList<Block>? {
+        fun URL.getChain(): MutableList<Block> {
             val url = URL("${this}/getChain")
             val conn = url.openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
@@ -61,12 +61,11 @@ class API {
                     gson.fromJson(response, blockListType)
 
                 } else {
-                    println("GET request failed with response code $responseCode")
-                    null
+                    throw RuntimeException("GET request failed with response code $responseCode")
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                null
+                throw e
             } finally {
                 conn.disconnect()
             }

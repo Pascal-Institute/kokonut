@@ -4,25 +4,25 @@ import com.google.gson.Gson
 import kokonut.core.Block
 import kokonut.core.BlockChain
 import kokonut.util.Utility.Companion.getJarDirectory
+import kotlinx.serialization.json.Json
 import java.io.File
 import java.sql.*
 
 class SQLite {
 
     private val gson = Gson()
+    val tableName = "kovault"
     val dbPath = getDatabasePath()
     var connection: Connection = DriverManager.getConnection("jdbc:sqlite:$dbPath")
 
     init {
         try {
-            val tableName = "kovault"
-
             // 테이블 존재 여부 확인
             if (!tableExists(tableName)) {
                 val createTableSQL = """
                 CREATE TABLE $tableName (
                     hash TEXT PRIMARY KEY,
-                    value TEXT NOT NULL
+                    block TEXT NOT NULL
                 );
                 """
                 val statement: Statement = connection.createStatement()
@@ -98,7 +98,6 @@ class SQLite {
         val statement: Statement = connection.createStatement()
         val resultSet: ResultSet = statement.executeQuery(query)
 
-        // 열의 이름을 얻어서 헤더로 출력
         val metaData = resultSet.metaData
         val columnCount = metaData.columnCount
         for (i in 1..columnCount) {
@@ -106,7 +105,6 @@ class SQLite {
         }
         println()
 
-        // 데이터 출력
         while (resultSet.next()) {
             for (i in 1..columnCount) {
                 print("${resultSet.getString(i)}\t")
@@ -119,9 +117,94 @@ class SQLite {
         connection.close()
     }
 
-    fun insertChainIntoDatabase(tableName: String, chain: MutableList<Block>) {
+    fun fetch(): MutableList<Block> {
+
+        connection = DriverManager.getConnection("jdbc:sqlite:$dbPath")
+        val newChain = mutableListOf<Block>()
+        val query = "SELECT hash, block FROM $tableName"
+
+        val statement = connection.prepareStatement(query)
+        val resultSet = statement.executeQuery()
+
+        while (resultSet.next()) {
+            val serializedBlock = resultSet.getString("block") // 직렬화된 블록 데이터
+            val block = Json.decodeFromString<Block>(serializedBlock)
+            newChain.add(block)
+        }
+
+        return newChain
+    }
+
+    fun fetch(chain: MutableList<Block>): MutableList<Block> {
+
+        connection = DriverManager.getConnection("jdbc:sqlite:$dbPath")
+        val newChain = mutableListOf<Block>()
+        val query = "SELECT hash, block FROM tableName"
+
+        val statement = connection.prepareStatement(query)
+        val resultSet = statement.executeQuery()
+
+        while (resultSet.next()) {
+            val serializedBlock = resultSet.getString("block") // 직렬화된 블록 데이터
+            val block = Json.decodeFromString<Block>(serializedBlock)
+
+            if (!chain.contains(block)) {
+                newChain.add(block)
+            }
+        }
+
+        return newChain
+    }
+
+    fun insert(block: Block) {
         val connection: Connection = DriverManager.getConnection("jdbc:sqlite:$dbPath")
-        val insertSQL = "INSERT INTO $tableName (hash, value) VALUES (?, ?)"
+        val insertSQL = "INSERT INTO $tableName (hash, block) VALUES (?, ?)"
+        val selectSQL = "SELECT COUNT(*) FROM $tableName WHERE hash = ?"
+
+        val preparedStatementInsert: PreparedStatement = connection.prepareStatement(insertSQL)
+        val preparedStatementSelect: PreparedStatement = connection.prepareStatement(selectSQL)
+
+        connection.autoCommit = false
+
+        try {
+            val hash = block.hash
+            val value = gson.toJson(block)
+
+            // Check if hash already exists
+            preparedStatementSelect.setString(1, hash)
+            val resultSet: ResultSet = preparedStatementSelect.executeQuery()
+            val count = if (resultSet.next()) resultSet.getInt(1) else 0
+
+            if (count == 0) {
+                preparedStatementInsert.setString(1, hash)
+                // Set the JSON value or NULL if it is null
+                if (value == "null") { // Check if Gson produced "null" string
+                    preparedStatementInsert.setNull(2, Types.NULL)
+                } else {
+                    preparedStatementInsert.setString(2, value)
+                }
+                val rowsAffected = preparedStatementInsert.executeUpdate()
+            } else {
+                println("Hash $hash already exists, skipping insert.")
+            }
+
+            connection.commit()
+            println("All blocks have been processed.")
+        } catch (e: Exception) {
+            try {
+                connection.rollback()
+            } catch (rollbackException: SQLException) {
+                println("Failed to rollback transaction: ${rollbackException.message}")
+            }
+            println("An error occurred while inserting data: ${e.message}")
+        } finally {
+            connection.close()
+        }
+    }
+
+    fun insert(chain: MutableList<Block>) {
+        val connection: Connection = DriverManager.getConnection("jdbc:sqlite:$dbPath")
+        val insertSQL = "INSERT INTO $tableName (hash, block) VALUES (?, ?)"
         val selectSQL = "SELECT COUNT(*) FROM $tableName WHERE hash = ?"
 
         val preparedStatementInsert: PreparedStatement = connection.prepareStatement(insertSQL)
@@ -142,7 +225,11 @@ class SQLite {
                 if (count == 0) {
                     // Insert if hash does not exist
                     preparedStatementInsert.setString(1, hash)
-                    preparedStatementInsert.setString(2, value)
+                    if (value == "null") { // Check if Gson produced "null" string
+                        preparedStatementInsert.setNull(2, Types.NULL)
+                    } else {
+                        preparedStatementInsert.setString(2, value)
+                    }
                     val rowsAffected = preparedStatementInsert.executeUpdate()
                 } else {
                     println("Hash $hash already exists, skipping insert.")
