@@ -55,7 +55,7 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
             for (url in jsonUrls) {
                 val response: HttpResponse = client.get(url)
                 try {
-                    val block: Block = Json.decodeFromString(response.body())
+                    val block: Block = Json.decodeFromString<Block>(response.body())
                     database.insert(block)
                 } catch (e: Exception) {
                     println("JSON Passer Error: ${e.message}")
@@ -64,13 +64,12 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
         } catch (e: Exception) {
             println("Error! : ${e.message}")
         } finally {
-
-            syncChain()
-
-            println("Block Chain validity : ${isValid()}")
-
             client.close()
         }
+
+        syncChain()
+
+        println("Block Chain validity : ${isValid()}")
     }
 
     fun loadChainFromFullNode() = runBlocking {
@@ -86,12 +85,11 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
         } catch (e: Exception) {
             println("Error! : ${e.message} , Activate fetch from Fuel Node...")
             loadChainFromFuelNode()
-        } finally {
-
-            syncChain()
-
-            println("Block Chain validity : ${isValid()}")
         }
+
+        syncChain()
+
+        println("Block Chain validity : ${isValid()}")
     }
 
     private fun syncChain() {
@@ -112,8 +110,6 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
         loadChainFromFullNode()
 
         url.startMining(wallet.publicKeyFile)
-
-        syncChain()
 
         if(!isValid()){
             throw IllegalStateException("Chain is Invalid. Stop Mining...")
