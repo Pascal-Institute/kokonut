@@ -1,16 +1,14 @@
 package kokonut.util
 
-import com.google.gson.Gson
 import kokonut.core.Block
-import kokonut.core.BlockChain
 import kokonut.util.Utility.Companion.getJarDirectory
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.sql.*
 
 class SQLite {
 
-    private val gson = Gson()
     val tableName = "kovault"
     val dbPath = getDatabasePath()
     var connection: Connection = DriverManager.getConnection("jdbc:sqlite:$dbPath")
@@ -128,7 +126,7 @@ class SQLite {
 
         while (resultSet.next()) {
             val serializedBlock = resultSet.getString("block") // 직렬화된 블록 데이터
-            val block = Json.decodeFromString<Block>(serializedBlock)
+            val block : Block = Json.decodeFromString(serializedBlock)
             newChain.add(block)
         }
 
@@ -168,7 +166,7 @@ class SQLite {
 
         try {
             val hash = block.hash
-            val value = gson.toJson(block)
+            val value = Json.encodeToString(block)
 
             // Check if hash already exists
             preparedStatementSelect.setString(1, hash)
@@ -215,7 +213,7 @@ class SQLite {
         try {
             for (block in chain) {
                 val hash = block.hash
-                val value = gson.toJson(block)
+                val value = Json.encodeToString(block)
 
                 // Check if hash already exists
                 preparedStatementSelect.setString(1, hash)
