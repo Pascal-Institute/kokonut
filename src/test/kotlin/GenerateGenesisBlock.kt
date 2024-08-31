@@ -41,8 +41,12 @@ fun main() {
     )
 
 
-    val json = Json { prettyPrint = true } // JSON 인스턴스 생성 (prettyPrint는 선택 사항)
-    val jsonString = json.encodeToString(genesisBlock) // Block 객체를 JSON 문자열로 변환
+    val json = Json {
+        prettyPrint = false
+        encodeDefaults = true
+    }
+
+    val jsonString = json.encodeToString(genesisBlock)
 
     // JSON 문자열을 파일로 저장
     val file = File("src\\main\\resources\\${hash}.json")
