@@ -15,7 +15,6 @@ class SQLite {
 
     init {
         try {
-            // 테이블 존재 여부 확인
             if (!tableExists(tableName)) {
                 val createTableSQL = """
                 CREATE TABLE $tableName (
@@ -48,18 +47,18 @@ class SQLite {
     }
 
     fun deleteDatabase() {
-        val jarDir = getJarDirectory() // 현재 실행 중인 애플리케이션의 JAR 파일 디렉토리 경로를 가져옴
+        val jarDir = getJarDirectory()
         val dbFile = File(jarDir, "kovault.db")
 
-        if(dbFile.exists()){
+        if (dbFile.exists()) {
             dbFile.delete()
-            println("Server Initialize... Database is deleted...")
+            println("Database is deleted...")
         }
     }
 
     //SQLlite
     fun getDatabasePath(): String {
-        val jarDir = getJarDirectory() // 현재 실행 중인 애플리케이션의 JAR 파일 디렉토리 경로를 가져옴
+        val jarDir = getJarDirectory()
         val dbFile = File(jarDir, "kovault.db")
 
         if (!dbFile.exists()) {
@@ -136,7 +135,7 @@ class SQLite {
 
         while (resultSet.next()) {
             val serializedBlock = resultSet.getString("block") // 직렬화된 블록 데이터
-            val block : Block = Json.decodeFromString(serializedBlock)
+            val block: Block = Json.decodeFromString(serializedBlock)
             newChain.add(block)
         }
 
