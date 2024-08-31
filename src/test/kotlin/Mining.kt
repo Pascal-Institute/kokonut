@@ -41,10 +41,5 @@ fun main(): Unit = runBlocking{
         }catch (e : Exception){
             fullNode.stopMining(wallet.publicKeyFile)
         }
-
-
-
-
-
     }
 }
