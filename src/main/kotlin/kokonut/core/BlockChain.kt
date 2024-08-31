@@ -121,7 +121,7 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
 
         val lastBlock = getLastBlock()
 
-        val version = Identity.version
+        val version = Identity.protocolVersion
         val index = lastBlock.index + 1
         val previousHash = lastBlock.hash
         var timestamp = System.currentTimeMillis()

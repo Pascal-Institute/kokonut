@@ -4,9 +4,12 @@ import kokonut.core.Identity
 import java.io.File
 
 fun main() {
-   val blockChain = BlockChain()
 
-   println(Identity.version)
+   println(Identity.libraryVersion)
+
+   println(Identity.protocolVersion)
+
+   val blockChain = BlockChain()
 
    println(blockChain.getLastBlock())
 
