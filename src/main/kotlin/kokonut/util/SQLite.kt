@@ -47,6 +47,16 @@ class SQLite {
         }
     }
 
+    fun deleteDatabase() {
+        val jarDir = getJarDirectory() // 현재 실행 중인 애플리케이션의 JAR 파일 디렉토리 경로를 가져옴
+        val dbFile = File(jarDir, "kovault.db")
+
+        if(dbFile.exists()){
+            dbFile.delete()
+            println("Server Initialize... Database is deleted...")
+        }
+    }
+
     //SQLlite
     fun getDatabasePath(): String {
         val jarDir = getJarDirectory() // 현재 실행 중인 애플리케이션의 JAR 파일 디렉토리 경로를 가져옴
