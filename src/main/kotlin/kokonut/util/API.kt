@@ -1,7 +1,5 @@
 package kokonut.util
 
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
@@ -10,7 +8,6 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import kokonut.Policy
 import kokonut.core.Block
-import kokonut.util.API.Companion.addBlock
 import kokonut.util.Utility.Companion.writeFilePart
 import kokonut.util.Utility.Companion.writePart
 import kotlinx.serialization.json.Json
