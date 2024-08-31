@@ -31,11 +31,14 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
     private var cachedChain: List<Block>? = null
 
     init {
-
-            when (node) {
-                Node.FULL -> loadChainFromFuelNode()
-                else -> loadChainFromFullNode()
+        when (node) {
+            Node.FULL -> {
+                database.deleteDatabase()
+                loadChainFromFuelNode()
             }
+
+            else -> loadChainFromFullNode()
+        }
     }
 
     fun loadChainFromFuelNode() = runBlocking {
@@ -104,13 +107,13 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
         return truncate(totalCurrencyVolume)
     }
 
-    fun mine(wallet : Wallet, data: Data): Block {
+    fun mine(wallet: Wallet, data: Data): Block {
 
         loadChainFromFullNode()
 
         url.startMining(wallet.publicKeyFile)
 
-        if(!isValid()){
+        if (!isValid()) {
             throw IllegalStateException("Chain is Invalid. Stop Mining...")
         }
 
