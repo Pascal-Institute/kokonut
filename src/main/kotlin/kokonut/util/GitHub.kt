@@ -1,11 +1,31 @@
 package kokonut.util
 
+import kokonut.core.Block
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
 
-class GitHub {
-    companion object {
+class GitHub(var remoteUrl : String, var repoPath: String) {
+
+        fun clone() : String{
+            return executeCMD(listOf("git", "clone", remoteUrl, repoPath), File(repoPath))
+        }
+
+        fun remote() : String{
+            return executeCMD(listOf("git", "remote", "update"), File(repoPath))
+        }
+
+        fun add(jsonFilePath : String) : String{
+            return executeCMD(listOf("git", "add", jsonFilePath), File(repoPath))
+        }
+
+        fun commit(block: Block) : String{
+            return executeCMD(listOf("git", "commit", "-m", "Add Index ${block.index} Block to Chain"), File(repoPath))
+        }
+
+        fun push() : String{
+            return executeCMD(listOf("git", "push", "origin", "main"), File(repoPath))
+        }
 
         private fun executeCMD(command: List<String>, workingDir: File): String {
             val process = ProcessBuilder(command)
@@ -25,6 +45,4 @@ class GitHub {
             process.waitFor()
             return result.toString()
         }
-
-    }
 }
