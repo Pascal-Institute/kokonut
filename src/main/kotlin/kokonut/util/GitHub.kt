@@ -15,8 +15,8 @@ class GitHub(var remoteUrl : String, var repoPath: String) {
             return executeCMD(listOf("git", "remote", "update"), File(repoPath))
         }
 
-        fun add(jsonFilePath : String) : String{
-            return executeCMD(listOf("git", "add", jsonFilePath), File(repoPath))
+        fun add() : String{
+            return executeCMD(listOf("git", "add", "."), File(repoPath))
         }
 
         fun commit(block: Block) : String{
