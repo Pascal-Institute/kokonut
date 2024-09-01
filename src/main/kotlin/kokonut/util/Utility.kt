@@ -57,6 +57,13 @@ class Utility {
             file.writeText(content)
         }
 
+        fun createDirectory(path: String) {
+            val dir = File(path)
+            if (!dir.exists()) {
+                dir.mkdirs()
+            }
+        }
+
         fun writePart(
             outputStream: OutputStream,
             boundary: String,
