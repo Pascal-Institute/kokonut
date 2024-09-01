@@ -52,6 +52,11 @@ class Utility {
                 .fold("") { str, it -> str + "%02x".format(it) }
         }
 
+        fun createFile(filePath: String, content: String) {
+            val file = File(filePath)
+            file.writeText(content)
+        }
+
         fun writePart(
             outputStream: OutputStream,
             boundary: String,
