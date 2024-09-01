@@ -32,7 +32,7 @@ fun main(): Unit = runBlocking{
             Identity.ticker,
             miner= wallet.miner,
             emptyList(),
-            "welcome to kokonut")
+            "Block Chain")
 
         try {
             val newBlock : Block = blockChain.mine(wallet, data)
