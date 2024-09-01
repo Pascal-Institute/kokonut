@@ -7,6 +7,14 @@ import java.io.InputStreamReader
 
 class GitHub(var remoteUrl : String, var repoPath: String) {
 
+        fun configEmail(email : String) : String {
+            return executeCMD(listOf("git", "config", "user.email", email), File(repoPath))
+        }
+
+        fun configName(name : String) : String {
+            return executeCMD(listOf("git", "config", "user.name", name), File(repoPath))
+        }
+
         fun clone() : String{
             return executeCMD(listOf("git", "clone", remoteUrl, repoPath), File(repoPath))
         }
