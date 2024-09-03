@@ -38,8 +38,12 @@ fun main(): Unit = runBlocking{
             val newBlock : Block = blockChain.mine(wallet, data)
             val json = Json.encodeToJsonElement(newBlock)
             fullNode.addBlock(json, wallet.publicKeyFile)
+            blockChain.miningState = MiningState.MINED
         }catch (e : Exception){
+            blockChain.miningState = MiningState.FAILED
             fullNode.stopMining(wallet.publicKeyFile)
         }
     }
+
+    blockChain.miningState = MiningState.READY
 }

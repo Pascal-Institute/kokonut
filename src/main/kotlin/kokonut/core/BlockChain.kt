@@ -7,6 +7,7 @@ import io.ktor.client.request.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
+import kokonut.MiningState
 import kokonut.Node
 import kokonut.util.GitHubFile
 import kokonut.URLBook
@@ -27,6 +28,7 @@ import java.net.URL
 
 class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0) {
 
+    var miningState = MiningState.READY
     val database = SQLite()
     private var cachedChain: List<Block>? = null
 
@@ -107,12 +109,14 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
     }
 
     fun mine(wallet: Wallet, data: Data): Block {
+        miningState = MiningState.MINING
 
         loadChainFromFullNode()
 
         url.startMining(wallet.publicKeyFile)
 
         if (!isValid()) {
+            miningState = MiningState.FAILED
             throw IllegalStateException("Chain is Invalid. Stop Mining...")
         }
 
@@ -142,6 +146,7 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
         val fullNodeReward = url.getReward(miningBlock.index)
 
         if (data.reward != fullNodeReward) {
+            miningState = MiningState.FAILED
             throw Exception("Reward Is Invalid...")
         } else {
             println("Reward Is Valid")
