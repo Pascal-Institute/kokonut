@@ -10,10 +10,10 @@ object Identity {
     private val properties: Properties = Properties().apply {
         Identity.javaClass.classLoader.getResourceAsStream("version.properties")?.use { load(it) }
     }
-    val protocolVersion: Int
-    get() = properties.getProperty("version", "1.0.0").split(".")[majorIndex].toInt()
 
     val libraryVersion : String
-    get() = properties.getProperty("version", "1.0.0")
+        get() = properties.getProperty("version", "1.0.0")
 
+    val protocolVersion: Int
+    get() = libraryVersion.split(".")[majorIndex].toInt()
 }
