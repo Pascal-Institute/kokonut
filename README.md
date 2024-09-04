@@ -16,6 +16,7 @@
 ## Full Node
 
 - URL :
+- DockerHub : https://hub.docker.com/r/volta2030/knt_fullnode
 - Validate Block and Add to Chain. powered by kokonut
 - Check Chain is valid
 
