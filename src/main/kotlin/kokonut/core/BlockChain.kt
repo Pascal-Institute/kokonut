@@ -95,10 +95,6 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
         println("Block Chain validity : ${isValid()}")
     }
 
-    private fun syncChain() {
-        cachedChain = database.fetch()
-    }
-
     fun getGenesisBlock(): Block = cachedChain?.firstOrNull() ?: throw IllegalStateException("Chain is Empty")
 
     fun getLastBlock(): Block = cachedChain?.lastOrNull() ?: throw IllegalStateException("Chain is Empty")
@@ -172,10 +168,6 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
         return miningBlock
     }
 
-    private fun countLeadingZeros(hash: String): Int {
-        return hash.takeWhile { it == '0' }.length
-    }
-
     fun isValid(): Boolean {
         val chain = cachedChain ?: return false
         for (i in chain.size - 1 downTo 1) {
@@ -193,4 +185,13 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
         }
         return true
     }
+
+    private fun countLeadingZeros(hash: String): Int {
+        return hash.takeWhile { it == '0' }.length
+    }
+
+    private fun syncChain() {
+        cachedChain = database.fetch().sortedBy { it.index }
+    }
+
 }
