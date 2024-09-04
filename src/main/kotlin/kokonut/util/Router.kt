@@ -1,16 +1,24 @@
 package kokonut.util
 
 import io.ktor.http.*
+import io.ktor.http.content.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kokonut.URLBook
 import kokonut.Wallet
+import kokonut.core.Block
 import kokonut.core.BlockChain
 import kokonut.core.Identity
+import kokonut.util.API.Companion.getPolicy
+import kokonut.util.Utility.Companion.recordToFuelNode
 import kotlinx.html.*
 import kotlinx.html.stream.appendHTML
+import kotlinx.serialization.json.Json
 import java.io.File
+import java.nio.file.Paths
+import java.security.PublicKey
 
 
 class Router {
@@ -140,7 +148,90 @@ class Router {
         }
 
         fun Route.addBlock(blockchain: BlockChain) {
+            post("/addBlock") {
 
+                val keyPath = "/app/key"
+                Utility.createDirectory(keyPath)
+
+                val policy = URLBook.FUEL_NODE.getPolicy()
+
+                if(!blockchain.isValid()){
+                    call.respond(HttpStatusCode.Created, "Block Add Failed : Server block chain is invalid")
+                }
+
+                val multipart = call.receiveMultipart()
+                var block: Block? = null
+                var publicKeyFile: File? = null
+
+                multipart.forEachPart { part ->
+                    when (part) {
+                        is PartData.FormItem -> {
+                            if (part.name == "json") {
+                                block = Json.decodeFromString(Block.serializer(), part.value)
+                                println("Received JSON: $block")
+                            }
+                        }
+                        is PartData.FileItem -> {
+                            if (part.name == "public_key") {
+                                val fileBytes = part.streamProvider().use { it.readBytes() }
+                                publicKeyFile = part.originalFileName?.let { it1 -> File(keyPath, it1) }
+                                publicKeyFile!!.writeBytes(fileBytes)
+                                println("Received file: ${part.originalFileName}")
+                            }
+                        }
+                        else -> {}
+                    }
+                    part.dispose()
+                }
+
+                if (block != null && publicKeyFile != null) {
+                    println(block!!.version)
+                    println(block!!.index)
+                    println(block!!.previousHash)
+                    println(block!!.timestamp)
+                    println(block!!.data.miner)
+                    println(block!!.data.ticker)
+                    println(block!!.data)
+                    println(block!!.difficulty)
+                    println(block!!.nonce)
+
+                    val publicKey : PublicKey = Wallet.loadPublicKey(publicKeyFile!!.path)
+                    val miner : String = Utility.calculateHash(publicKey)
+
+                    /**
+                     * Validation From Fuel Node
+                     * */
+                    //Check Version
+                    if(policy.version != block!!.version){
+                        call.respond(HttpStatusCode.Created, "Block Add Failed : Fuel Node version ${policy.version} and Client version ${block!!.version} is different")
+                    }
+
+                    //Check difficulty
+                    if(policy.difficulty != block!!.difficulty){
+                        call.respond(HttpStatusCode.Created, "Block Add Failed : Fuel Node difficulty ${policy.difficulty} and Client difficulty ${block!!.difficulty} is different")
+                    }
+
+                    if(block!!.data.miner != miner){
+                        call.respond(HttpStatusCode.Created, "Block Add Failed : Invalid miner")
+                    }
+
+                    val calculatedHash = block!!.calculateHash()
+                    if (block!!.hash == calculatedHash) {
+
+                        blockchain.database.insert(block!!)
+
+                        recordToFuelNode(block!!)
+
+                        call.respond(HttpStatusCode.Created, "Block Add Succeed and Reward ${block!!.data.reward} KNT is Recorded...")
+
+                    } else {
+                        call.respond(HttpStatusCode.Created, "Block Add Failed : Invalid Block, calculatedHash : ${calculatedHash} blockHash : ${block!!.hash}")
+                    }
+                } else {
+                    call.respondText("Missing block or miner public key", status = HttpStatusCode.BadRequest)
+                }
+                Paths.get(keyPath).toFile().deleteRecursively()
+            }
         }
 
         fun Route.stopMining() {
