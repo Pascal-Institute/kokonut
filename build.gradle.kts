@@ -35,7 +35,7 @@ kotlin {
 publishing {
     publications {
         create<MavenPublication>("maven") {
-            groupId = "com.pascal.institute" //Navigate beyond computing oceans
+            groupId = "io.github.pascal-institute" //Navigate beyond computing oceans
             artifactId = "kokonut"
 
             version = project.version.toString()
