@@ -9,7 +9,7 @@
 
 ## Fuel Node
 
-- URL : https://pascal-institute.github.io/kokonut-oil-station/
+- URL : https://kokonut-oil.onrender.com
 - Synchronize full nodes
 - Supplies important information to cross validation between full & light node
 
