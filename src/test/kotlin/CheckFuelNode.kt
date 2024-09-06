@@ -1,8 +1,8 @@
-import kokonut.URLBook.FUEL_NODE
+import kokonut.URLBook.POLICY_NODE
 import kokonut.util.API.Companion.getPolicy
 
 fun main() {
-    val policy = FUEL_NODE.getPolicy()
+    val policy = POLICY_NODE.getPolicy()
     println(policy.version)
     println(policy.difficulty)
 }

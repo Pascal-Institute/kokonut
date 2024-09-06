@@ -12,9 +12,9 @@ import kokonut.Node
 import kokonut.util.GitHubFile
 import kokonut.URLBook
 import kokonut.util.SQLite
-import kokonut.URLBook.FUEL_NODE
 import kokonut.URLBook.FULL_RAW_STORAGE
 import kokonut.URLBook.FULL_STORAGE
+import kokonut.URLBook.POLICY_NODE
 import kokonut.Wallet
 import kokonut.util.API.Companion.getChain
 import kokonut.util.API.Companion.getPolicy
@@ -116,7 +116,7 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
             throw IllegalStateException("Chain is Invalid. Stop Mining...")
         }
 
-        val policy = FUEL_NODE.getPolicy()
+        val policy = POLICY_NODE.getPolicy()
 
         val lastBlock = getLastBlock()
 
