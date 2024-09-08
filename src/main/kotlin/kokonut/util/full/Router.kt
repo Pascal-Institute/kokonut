@@ -1,4 +1,4 @@
-package kokonut.util
+package kokonut.util.full
 
 import io.ktor.http.*
 import io.ktor.http.content.*
@@ -12,6 +12,7 @@ import kokonut.core.Block
 import kokonut.core.BlockChain
 import kokonut.core.Identity
 import kokonut.util.API.Companion.getPolicy
+import kokonut.util.Utility
 import kokonut.util.Utility.Companion.recordToFuelNode
 import kotlinx.html.*
 import kotlinx.html.stream.appendHTML
@@ -153,7 +154,7 @@ class Router {
                 val keyPath = "/app/key"
                 Utility.createDirectory(keyPath)
 
-                val policy = URLBook.FUEL_NODE.getPolicy()
+                val policy = URLBook.POLICY_NODE.getPolicy()
 
                 if(!blockchain.isValid()){
                     call.respond(HttpStatusCode.Created, "Block Add Failed : Server block chain is invalid")
