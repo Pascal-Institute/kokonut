@@ -5,10 +5,12 @@ import kokonut.core.*
 import kokonut.util.API.Companion.addBlock
 import kokonut.util.API.Companion.startMining
 import kokonut.util.API.Companion.stopMining
+import kokonut.util.Utility.Companion.getLongestChainFullNode
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToJsonElement
 import java.io.File
+import java.net.URL
 
 fun main(): Unit = runBlocking{
 
@@ -19,7 +21,9 @@ fun main(): Unit = runBlocking{
         File("C:\\Users\\public\\public_key.pem")
     )
 
-    val fullNode = FULL_NODE_0
+    val fullNode = URL(getLongestChainFullNode().ServiceAddress)
+
+    println(fullNode)
 
     if(wallet.isValid() && fullNode.isHealthy()){
 

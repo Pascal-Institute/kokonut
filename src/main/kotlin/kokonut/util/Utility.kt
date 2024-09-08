@@ -1,12 +1,17 @@
 package kokonut.util
 
+import kokonut.URLBook
 import kokonut.core.Block
+import kokonut.util.API.Companion.getChain
+import kokonut.util.full.Fullnode
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.*
 import java.net.URI
+import java.net.URL
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.security.*
@@ -41,6 +46,25 @@ class Utility {
         fun truncate(value: Double): Double {
             val scale = 10.0.pow(6)
             return floor(value * scale) / scale
+        }
+
+        fun getLongestChainFullNode() : Fullnode {
+            runBlocking { URLBook.loadFullnodeServices() }
+
+            var maxSize = 0
+            var fullNodeChainSize = 0
+            lateinit var fullnode : Fullnode
+
+            URLBook.fullNodes.forEach {
+
+                fullNodeChainSize = URL(it.ServiceAddress).getChain().size
+                if(fullNodeChainSize > maxSize){
+                    fullnode = it
+                    maxSize = fullNodeChainSize
+                }
+            }
+
+            return fullnode
         }
 
         fun calculateHash(timestamp : Long): String {
