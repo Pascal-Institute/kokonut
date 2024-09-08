@@ -6,7 +6,7 @@
 ## Block Chain Framework powered by Kotlin
 
 # Node
-- It configures 3 parts. Fuel, Full and Light Nodes
+- Configuration is 3 parts. Fuel, Full and Light Nodes
 
 ## Fuel Node
 
