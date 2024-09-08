@@ -89,6 +89,17 @@ It is called genesis block which follows below :
 ```
 ## Proven Of Work
 
+```kotlin
+    fun calculateHash(): String {
+        val input = "$version$index$previousHash$timestamp$data$difficulty$nonce"
+        hash = MessageDigest.getInstance("SHA-256")
+            .digest(input.toByteArray())
+            .fold("") { str, it -> str + "%02x".format(it) }
+        return hash
+    }
+
+```
+
 ## Mining
 
 ### Status
