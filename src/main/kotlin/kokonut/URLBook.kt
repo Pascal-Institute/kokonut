@@ -12,7 +12,7 @@ import java.net.URL
 object URLBook{
 
     lateinit var fullNodes :List<Fullnode>
-    lateinit var FULL_NODE_0 : URL
+    var FULL_NODE_0 : URL
 
     val json = Json {
         ignoreUnknownKeys = true
