@@ -1,3 +1,4 @@
+import kokonut.URLBook.FULL_NODE_0
 import kokonut.Wallet
 import kokonut.core.BlockChain
 import kokonut.core.Identity
@@ -8,6 +9,8 @@ fun main() {
    println(Identity.libraryVersion)
 
    println(Identity.protocolVersion)
+
+   println(FULL_NODE_0)
 
    val blockChain = BlockChain()
 
