@@ -4,15 +4,15 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
-import kokonut.util.full.Fullnode
+import kokonut.util.full.FullNode
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import java.net.URL
 
 object URLBook{
 
-    lateinit var fullNodes :List<Fullnode>
-    var FULL_NODE_0 : URL
+    lateinit var fullNodes :List<FullNode>
+    var FULL_NODE_0 = URL("https://www.github.com")
 
     val json = Json {
         ignoreUnknownKeys = true
@@ -26,14 +26,20 @@ object URLBook{
         runBlocking {
             loadFullnodeServices()
         }
-        FULL_NODE_0 = URL(fullNodes[0].ServiceAddress)
+        if(fullNodes.isNotEmpty()){
+            FULL_NODE_0 = URL(fullNodes[0].ServiceAddress)
+        }
     }
 
-    suspend fun loadFullnodeServices(): List<Fullnode> {
+    suspend fun loadFullnodeServices(): List<FullNode> {
         val client = HttpClient()
         val response: HttpResponse = client.get(FUEL_NODE)
         client.close()
-        fullNodes = json.decodeFromString<List<Fullnode>>(response.body())
-        return fullNodes
+        fullNodes = try{
+            json.decodeFromString<List<FullNode>>(response.body())}
+        catch (e : Exception){
+            emptyList<FullNode>()
+        }
+        return  fullNodes
     }
 }

@@ -3,7 +3,7 @@ package kokonut.util
 import kokonut.URLBook
 import kokonut.core.Block
 import kokonut.util.API.Companion.getChain
-import kokonut.util.full.Fullnode
+import kokonut.util.full.FullNode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -48,12 +48,12 @@ class Utility {
             return floor(value * scale) / scale
         }
 
-        fun getLongestChainFullNode() : Fullnode {
+        fun getLongestChainFullNode() : FullNode {
             runBlocking { URLBook.loadFullnodeServices() }
 
             var maxSize = 0
             var fullNodeChainSize = 0
-            lateinit var fullnode : Fullnode
+            lateinit var fullnode : FullNode
 
             URLBook.fullNodes.forEach {
 
