@@ -7,11 +7,10 @@ object Identity {
     const val majorIndex = 0
     const val ticker : String = "KNT"
 
-    //For only full node
     var isRegistered = false
 
     private val properties: Properties = Properties().apply {
-        Identity.javaClass.classLoader.getResourceAsStream("version.properties")?.use { load(it) }
+        Thread.currentThread().contextClassLoader.getResourceAsStream("version.properties")?.use { load(it) }
     }
 
     val libraryVersion : String
