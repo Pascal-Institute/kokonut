@@ -5,6 +5,8 @@ plugins {
     `maven-publish`
 }
 
+version = "4.0.7"
+
 repositories {
     mavenCentral()
     maven{
@@ -32,6 +34,15 @@ tasks.test {
 
 kotlin {
     jvmToolchain(17)
+}
+
+
+tasks.jar {
+    manifest {
+        attributes(
+            "Implementation-Version" to project.version
+        )
+    }
 }
 
 publishing {
