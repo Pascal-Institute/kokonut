@@ -23,7 +23,7 @@ object Identity {
     }
 
     val libraryVersion : String
-        get() = if(isDebugMode) manifest.mainAttributes.getValue("Implementation-Version") else properties.getProperty("version", "1.0.0")
+        get() = manifest.mainAttributes.getValue("Implementation-Version")
 
     val protocolVersion: Int
     get() = libraryVersion.split(".")[majorIndex].toInt()
