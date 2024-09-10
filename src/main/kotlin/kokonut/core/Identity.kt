@@ -7,22 +7,22 @@ import java.util.*
 import java.util.jar.Manifest
 
 object Identity {
-
     const val majorIndex = 0
     const val ticker : String = "KNT"
-
     var isRegistered = false
-    val name : String = this::class.java.classLoader.name
 
-    val isRelease = if(name.contains("kokonut")) true else false
+    private val properties: Properties = Properties().apply {
+        Identity.javaClass.classLoader.getResourceAsStream("mode.properties")?.use { load(it) }
+    }
+
+    private val mode = properties.getProperty("mode", "release")
 
     private val manifest: Manifest by lazy {
-        println(name)
-        val manifestStream: InputStream? = when(isRelease){
-            true ->{
+        val manifestStream: InputStream? = when(mode){
+            "release" ->{
                 this::class.java.classLoader.getResourceAsStream("META-INF/MANIFEST.MF")
             }
-            false->{
+            "develop"->{
                 val jarFile = File(findKokonutJar())
                 if (jarFile.exists()) {
                     val jar = java.util.jar.JarFile(jarFile)
@@ -30,6 +30,10 @@ object Identity {
                 } else {
                     throw IllegalStateException("Manifest file not found in debugging environment")
                 }
+            }
+
+            else -> {
+                throw IllegalStateException("Manifest file not found in debugging environment")
             }
         }
         Manifest(manifestStream)
