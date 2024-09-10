@@ -1,5 +1,7 @@
 package kokonut.core
 
+import kokonut.util.Utility.Companion.findKokonutJar
+import java.io.File
 import java.io.InputStream
 import java.util.*
 import java.util.jar.Manifest
@@ -8,18 +10,27 @@ object Identity {
 
     const val majorIndex = 0
     const val ticker : String = "KNT"
-    val isDebugMode: Boolean = System.getProperty("debug.mode") == "true"
-    //For only full node
-    var isRegistered = false
 
-    private val properties: Properties = Properties().apply {
-        Identity.javaClass.classLoader.getResourceAsStream("version.properties")?.use { load(it) }
-    }
+    var isRegistered = false
+    val name : String = this::class.java.classLoader.name
+    val isRelease = if(name.contains("kokonut")) true else false
 
     private val manifest: Manifest by lazy {
-        val inputStream: InputStream = Thread.currentThread().contextClassLoader.getResourceAsStream("META-INF/MANIFEST.MF")
-            ?: throw IllegalStateException("Manifest file not found")
-        Manifest(inputStream)
+        val manifestStream: InputStream? = when(isRelease){
+            true ->{
+                this::class.java.classLoader.getResourceAsStream("META-INF/MANIFEST.MF")
+            }
+            false->{
+                val jarFile = File(findKokonutJar())
+                if (jarFile.exists()) {
+                    val jar = java.util.jar.JarFile(jarFile)
+                    jar.getInputStream(jar.getEntry("META-INF/MANIFEST.MF"))
+                } else {
+                    throw IllegalStateException("Manifest file not found in debugging environment")
+                }
+            }
+        }
+        Manifest(manifestStream)
     }
 
     val libraryVersion : String

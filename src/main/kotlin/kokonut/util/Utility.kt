@@ -67,6 +67,16 @@ class Utility {
             return fullnode
         }
 
+        fun findKokonutJar(): String {
+            val buildDir = File("build/libs")
+
+            val kokonutJar = buildDir.listFiles { _, name ->
+                name.startsWith("kokonut-") && name.endsWith(".jar")
+            }?.firstOrNull()  // 첫 번째 파일을 선택
+
+            return kokonutJar!!.absolutePath
+        }
+
         fun calculateHash(timestamp : Long): String {
             val input = "$timestamp"
             return MessageDigest.getInstance("SHA-256")

@@ -36,7 +36,6 @@ kotlin {
     jvmToolchain(17)
 }
 
-
 tasks.jar {
     manifest {
         attributes(
