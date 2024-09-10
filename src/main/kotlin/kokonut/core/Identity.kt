@@ -18,6 +18,9 @@ object Identity {
     private val mode = properties.getProperty("mode", "release")
 
     private val manifest: Manifest by lazy {
+
+        println(mode)
+
         val manifestStream: InputStream? = when(mode){
             "release" ->{
                 this::class.java.classLoader.getResourceAsStream("META-INF/MANIFEST.MF")
