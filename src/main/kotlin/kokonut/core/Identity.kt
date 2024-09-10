@@ -13,9 +13,11 @@ object Identity {
 
     var isRegistered = false
     val name : String = this::class.java.classLoader.name
+
     val isRelease = if(name.contains("kokonut")) true else false
 
     private val manifest: Manifest by lazy {
+        println(name)
         val manifestStream: InputStream? = when(isRelease){
             true ->{
                 this::class.java.classLoader.getResourceAsStream("META-INF/MANIFEST.MF")
