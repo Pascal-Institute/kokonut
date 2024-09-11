@@ -305,12 +305,13 @@ class Router {
 
         fun Route.addBlock(blockchain: BlockChain) {
             post("/addBlock") {
+
                 val keyPath = "/app/key"
                 Utility.createDirectory(keyPath)
 
                 val policy = URLBook.POLICY_NODE.getPolicy()
 
-                if (!blockchain.isValid()) {
+                if(!blockchain.isValid()){
                     call.respond(HttpStatusCode.Created, "Block Add Failed : Server block chain is invalid")
                 }
 
@@ -326,7 +327,6 @@ class Router {
                                 println("Received JSON: $block")
                             }
                         }
-
                         is PartData.FileItem -> {
                             if (part.name == "public_key") {
                                 val fileBytes = part.streamProvider().use { it.readBytes() }
@@ -335,66 +335,48 @@ class Router {
                                 println("Received file: ${part.originalFileName}")
                             }
                         }
-
                         else -> {}
                     }
                     part.dispose()
                 }
 
                 if (block != null && publicKeyFile != null) {
-                    println(block!!.version)
-                    println(block!!.index)
-                    println(block!!.previousHash)
-                    println(block!!.timestamp)
-                    println(block!!.data.miner)
-                    println(block!!.data.ticker)
-                    println(block!!.data)
-                    println(block!!.difficulty)
-                    println(block!!.nonce)
 
-                    val publicKey: PublicKey = Wallet.loadPublicKey(publicKeyFile!!.path)
-                    val miner: String = Utility.calculateHash(publicKey)
+                    println(block)
 
-                    /**
-                     * Validation From Fuel Node
-                     * */
-                    //Check Version
-                    if (policy.version != block!!.version) {
-                        call.respond(
-                            HttpStatusCode.Created,
-                            "Block Add Failed : Fuel Node version ${policy.version} and Client version ${block!!.version} is different"
-                        )
-                    }
+                    val publicKey : PublicKey = Wallet.loadPublicKey(publicKeyFile!!.path)
+                    val miner : String = Utility.calculateHash(publicKey)
 
-                    //Check difficulty
-                    if (policy.difficulty != block!!.difficulty) {
-                        call.respond(
-                            HttpStatusCode.Created,
-                            "Block Add Failed : Fuel Node difficulty ${policy.difficulty} and Client difficulty ${block!!.difficulty} is different"
-                        )
-                    }
-
-                    if (block!!.data.miner != miner) {
+                    //Check Miner
+                    if(block!!.data.miner != miner){
                         call.respond(HttpStatusCode.Created, "Block Add Failed : Invalid miner")
                     }
 
+                    //Check Index
+                    if(block!!.index != blockchain.getLastBlock().index + 1){
+                        call.respond(HttpStatusCode.Created, "Block Add Failed : Invalid index")
+                    }
+
+                    //Check Version
+                    if(policy.version != block!!.version){
+                        call.respond(HttpStatusCode.Created, "Block Add Failed : Fuel Node version ${policy.version} and Client version ${block!!.version} is different")
+                    }
+
+                    //Check Difficulty
+                    if(policy.difficulty != block!!.difficulty){
+                        call.respond(HttpStatusCode.Created, "Block Add Failed : Fuel Node difficulty ${policy.difficulty} and Client difficulty ${block!!.difficulty} is different")
+                    }
+
+                    //Check Hash
                     val calculatedHash = block!!.calculateHash()
                     if (block!!.hash == calculatedHash) {
 
                         blockchain.database.insert(block!!)
 
-                        recordToFuelNode(block!!)
-
-                        call.respond(
-                            HttpStatusCode.Created,
-                            "Block Add Succeed and Reward ${block!!.data.reward} KNT is Recorded..."
-                        )
+                        call.respond(HttpStatusCode.Created, "Block Add Succeed and Reward ${block!!.data.reward} KNT is Recorded...")
 
                     } else {
-                        call.respond(
-                            HttpStatusCode.Created,
-                            "Block Add Failed : Invalid Block, calculatedHash : ${calculatedHash} blockHash : ${block!!.hash}"
-                        )
+                        call.respond(HttpStatusCode.Created, "Block Add Failed : Invalid Block, calculatedHash : ${calculatedHash} blockHash : ${block!!.hash}")
                     }
                 } else {
                     call.respondText("Missing block or miner public key", status = HttpStatusCode.BadRequest)

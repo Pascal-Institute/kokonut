@@ -139,27 +139,6 @@ class Utility {
             outputStream.write("\r\n".toByteArray(Charsets.UTF_8))
         }
 
-        fun addHealthCheck(){
-            CoroutineScope(Dispatchers.Default).launch {
-                val client = HttpClient(CIO) {
-                    install(ContentNegotiation) {
-                        json(Json { prettyPrint = true })
-                    }
-                }
-
-                while (isActive) {
-                    try {
-                        val response = client.put("https://kokonut-oil.onrender.com/ui/dc1/services:knt_fullnode") {
-                        }
-                        println("Consul response: $response")
-                    } catch (e: Exception) {
-                        println("Failed to send status to Consul: ${e.message}")
-                    }
-                    delay(300.seconds)
-                }
-            }
-        }
-
         suspend fun recordToFuelNode(block: Block) {
             withContext(Dispatchers.IO) {
                 val token = System.getenv("KEY")
