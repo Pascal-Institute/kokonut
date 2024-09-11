@@ -1,12 +1,15 @@
 package kokonut.util
 
+import io.ktor.client.*
+import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.request.*
+import io.ktor.serialization.kotlinx.json.*
 import kokonut.URLBook
 import kokonut.core.Block
 import kokonut.util.API.Companion.getChain
 import kokonut.util.full.FullNode
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.*
@@ -16,6 +19,7 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.security.*
 import kotlin.math.*
+import kotlin.time.Duration.Companion.seconds
 
 class Utility {
     companion object {
@@ -133,6 +137,27 @@ class Utility {
             outputStream.write("Content-Type: $contentType\r\n\r\n".toByteArray(Charsets.UTF_8))
             Files.copy(file.toPath(), outputStream)
             outputStream.write("\r\n".toByteArray(Charsets.UTF_8))
+        }
+
+        fun addHealthCheck(){
+            CoroutineScope(Dispatchers.Default).launch {
+                val client = HttpClient(CIO) {
+                    install(ContentNegotiation) {
+                        json(Json { prettyPrint = true })
+                    }
+                }
+
+                while (isActive) {
+                    try {
+                        val response = client.put("https://kokonut-oil.onrender.com/ui/dc1/services:knt_fullnode") {
+                        }
+                        println("Consul response: $response")
+                    } catch (e: Exception) {
+                        println("Failed to send status to Consul: ${e.message}")
+                    }
+                    delay(300.seconds)
+                }
+            }
         }
 
         suspend fun recordToFuelNode(block: Block) {
