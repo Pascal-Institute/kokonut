@@ -92,8 +92,7 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
                 }
             }
         } catch (e: Exception) {
-            println("Error! : ${e.message} , Activate fetch from Fuel Node...")
-            loadChainFromGenesisNode()
+            println("Aborted : ${e.message}")
         }
         syncChain()
 
