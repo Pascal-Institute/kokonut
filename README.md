@@ -6,7 +6,9 @@
 ## Block Chain Framework powered by Kotlin
 
 # Node
-- Configuration is 3 parts. Fuel, Full and Light Nodes
+- Configuration is 4 parts. Fuel, Full and Light Nodes
+
+## Genesis Node
 
 ## Fuel Node
 
@@ -37,6 +39,15 @@ This protocol describes block chain systems & rules of kokonut
 ## Block
 
 ### Basic Structure
+
+- version : The kokonut protocol verison (match to major number of library version)
+- index
+- previousHash
+- timestamp
+- data
+- difficulty
+- nonce
+- hash
 
 ```json
 {
@@ -69,6 +80,7 @@ It is called genesis block which follows below :
 - hash isn't made by SHA-256 Hash Algorithm. it is artificially generated.
 
 #### Structure
+
 ```
 { 
   "version":4,
@@ -89,6 +101,14 @@ It is called genesis block which follows below :
 ```
 ## Proven Of Work
 
+### Validation Process
+ 1. Check Miner
+ 2. Check Index
+ 3. Check Version
+ 4. CHeck Difficulty
+ 5. Check Hash
+
+### Calculate Hash
 ```kotlin
     fun calculateHash(): String {
         val input = "$version$index$previousHash$timestamp$data$difficulty$nonce"
