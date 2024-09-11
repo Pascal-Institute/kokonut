@@ -21,7 +21,6 @@ import kokonut.core.Identity
 import kokonut.core.Identity.isRegistered
 import kokonut.util.API.Companion.getPolicy
 import kokonut.util.Utility
-import kokonut.util.Utility.Companion.recordToFuelNode
 import kotlinx.html.*
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -33,7 +32,7 @@ class Router {
     companion object {
         fun Route.root() {
             get("/") {
-                call.respondHtml(HttpStatusCode.OK, {
+                call.respondHtml(HttpStatusCode.OK) {
                     head {
                         title("Kokonut Full Node")
                     }
@@ -50,7 +49,7 @@ class Router {
                         h1 { +"Get Reward : /getReward?index=index" }
                     }
 
-                })
+                }
             }
         }
 
@@ -109,19 +108,19 @@ class Router {
 
         fun Route.isValid(blockchain: BlockChain) {
             get("/isValid") {
-                call.respondHtml(HttpStatusCode.OK,{
-                        head {
-                            title("Check Chain is Valid")
-                        }
+                call.respondHtml(HttpStatusCode.OK) {
+                    head {
+                        title("Check Chain is Valid")
+                    }
 
-                        body {
-                            if (blockchain.isValid()) {
-                                h1 { +"Valid" }
-                            } else {
-                                h1 { +"Invalid" }
-                            }
+                    body {
+                        if (blockchain.isValid()) {
+                            h1 { +"Valid" }
+                        } else {
+                            h1 { +"Invalid" }
                         }
-                    })
+                    }
+                }
             }
         }
 
@@ -130,36 +129,36 @@ class Router {
 
                 val lastBlock = blockchain.getLastBlock()
 
-                call.respondHtml(HttpStatusCode.OK, {
+                call.respondHtml(HttpStatusCode.OK) {
 
-                        head {
-                            title("Get Last Block")
-                        }
-                        body {
-                            h1 { +"version : ${lastBlock.version}" }
-                            h1 { +"index : ${lastBlock.index}" }
-                            h1 { +"previousHash : ${lastBlock.previousHash}" }
-                            h1 { +"timestamp : ${lastBlock.timestamp}" }
-                            h1 { +"ticker : ${lastBlock.data.ticker}" }
-                            h1 { +"data : ${lastBlock.data}" }
-                            h1 { +"difficulty : ${lastBlock.difficulty}" }
-                            h1 { +"nonce : ${lastBlock.nonce}" }
-                            h1 { +"hash : ${lastBlock.hash}" }
-                        }
-                })
+                    head {
+                        title("Get Last Block")
+                    }
+                    body {
+                        h1 { +"version : ${lastBlock.version}" }
+                        h1 { +"index : ${lastBlock.index}" }
+                        h1 { +"previousHash : ${lastBlock.previousHash}" }
+                        h1 { +"timestamp : ${lastBlock.timestamp}" }
+                        h1 { +"ticker : ${lastBlock.data.ticker}" }
+                        h1 { +"data : ${lastBlock.data}" }
+                        h1 { +"difficulty : ${lastBlock.difficulty}" }
+                        h1 { +"nonce : ${lastBlock.nonce}" }
+                        h1 { +"hash : ${lastBlock.hash}" }
+                    }
+                }
             }
         }
 
         fun Route.getTotalCurrencyVolume(blockchain: BlockChain) {
             get("/getTotalCurrencyVolume") {
-                call.respondHtml(HttpStatusCode.OK, {
-                        head {
-                            title("Get Last Block")
-                        }
-                        body {
-                            h1 { +"Total Currency Volume : ${blockchain.getTotalCurrencyVolume()} KNT" }
-                        }
-                })
+                call.respondHtml(HttpStatusCode.OK) {
+                    head {
+                        title("Get Last Block")
+                    }
+                    body {
+                        h1 { +"Total Currency Volume : ${blockchain.getTotalCurrencyVolume()} KNT" }
+                    }
+                }
             }
         }
 
@@ -268,7 +267,13 @@ class Router {
                     Name = serviceName,
                     ID = Utility.calculateHash(wallet.publicKey),
                     Address = serviceAddress,
-                    Port = servicePort.toInt()
+                    Port = servicePort.toInt(),
+                    Check = HealthCheck(
+                        HTTP = serviceAddress,
+                        Interval = "300s",
+                        Timeout = "30s",
+                        DeregisterCriticalServiceAfter = "10m"
+                    )
                 )
 
                 val client = HttpClient(CIO) {
@@ -305,6 +310,7 @@ class Router {
 
         fun Route.addBlock(blockchain: BlockChain) {
             post("/addBlock") {
+
                 val keyPath = "/app/key"
                 Utility.createDirectory(keyPath)
 
@@ -342,22 +348,22 @@ class Router {
                 }
 
                 if (block != null && publicKeyFile != null) {
-                    println(block!!.version)
-                    println(block!!.index)
-                    println(block!!.previousHash)
-                    println(block!!.timestamp)
-                    println(block!!.data.miner)
-                    println(block!!.data.ticker)
-                    println(block!!.data)
-                    println(block!!.difficulty)
-                    println(block!!.nonce)
+
+                    println(block)
 
                     val publicKey: PublicKey = Wallet.loadPublicKey(publicKeyFile!!.path)
                     val miner: String = Utility.calculateHash(publicKey)
 
-                    /**
-                     * Validation From Fuel Node
-                     * */
+                    //Check Miner
+                    if (block!!.data.miner != miner) {
+                        call.respond(HttpStatusCode.Created, "Block Add Failed : Invalid miner")
+                    }
+
+                    //Check Index
+                    if (block!!.index != blockchain.getLastBlock().index + 1) {
+                        call.respond(HttpStatusCode.Created, "Block Add Failed : Invalid index")
+                    }
+
                     //Check Version
                     if (policy.version != block!!.version) {
                         call.respond(
@@ -366,7 +372,7 @@ class Router {
                         )
                     }
 
-                    //Check difficulty
+                    //Check Difficulty
                     if (policy.difficulty != block!!.difficulty) {
                         call.respond(
                             HttpStatusCode.Created,
@@ -374,16 +380,11 @@ class Router {
                         )
                     }
 
-                    if (block!!.data.miner != miner) {
-                        call.respond(HttpStatusCode.Created, "Block Add Failed : Invalid miner")
-                    }
-
+                    //Check Hash
                     val calculatedHash = block!!.calculateHash()
                     if (block!!.hash == calculatedHash) {
 
                         blockchain.database.insert(block!!)
-
-                        recordToFuelNode(block!!)
 
                         call.respond(
                             HttpStatusCode.Created,

@@ -12,9 +12,10 @@ import kokonut.Node
 import kokonut.util.GitHubFile
 import kokonut.URLBook
 import kokonut.util.SQLite
-import kokonut.URLBook.FULL_RAW_STORAGE
-import kokonut.URLBook.FULL_STORAGE
+import kokonut.URLBook.GENESIS_NODE
+import kokonut.URLBook.GENESIS_RAW_NODE
 import kokonut.URLBook.POLICY_NODE
+import kokonut.URLBook.fullNodes
 import kokonut.Wallet
 import kokonut.util.API.Companion.getChain
 import kokonut.util.API.Companion.getPolicy
@@ -35,14 +36,18 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
     init {
         when (node) {
             Node.FULL -> {
-                loadChainFromFuelNode()
+                if (fullNodes.size <= 1) {
+                    loadChainFromGenesisNode()
+                } else {
+                    loadChainFromFullNode()
+                }
             }
 
-            else -> loadChainFromFullNode()
+            Node.LIGHT -> loadChainFromFullNode()
         }
     }
 
-    fun loadChainFromFuelNode() = runBlocking {
+    fun loadChainFromGenesisNode() = runBlocking {
 
         val client = HttpClient(CIO) {
             install(ContentNegotiation) {
@@ -51,10 +56,10 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
         }
 
         try {
-            val files: List<GitHubFile> = client.get(FULL_STORAGE).body()
+            val files: List<GitHubFile> = client.get(GENESIS_NODE).body()
 
             val jsonUrls = files.filter { it.type == "file" && it.name.endsWith(".json") }
-                .map { "${FULL_RAW_STORAGE}${it.path}" }
+                .map { "${GENESIS_RAW_NODE}${it.path}" }
 
             for (url in jsonUrls) {
                 val response: HttpResponse = client.get(url)
@@ -87,8 +92,7 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
                 }
             }
         } catch (e: Exception) {
-            println("Error! : ${e.message} , Activate fetch from Fuel Node...")
-            loadChainFromFuelNode()
+            println("Aborted : ${e.message}")
         }
         syncChain()
 

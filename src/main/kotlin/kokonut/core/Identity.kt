@@ -3,20 +3,19 @@ package kokonut.core
 import java.util.*
 
 object Identity {
-
     const val majorIndex = 0
     const val ticker : String = "KNT"
 
-    //For only full node
+    //For Full Node
     var isRegistered = false
 
     private val properties: Properties = Properties().apply {
-        Identity.javaClass.classLoader.getResourceAsStream("version.properties")?.use { load(it) }
+        Identity.javaClass.classLoader.getResourceAsStream("kokonut.properties")?.use { load(it) }
     }
 
     val libraryVersion : String
-        get() = properties.getProperty("version", "1.0.0")
+        get() = properties.getProperty("version", "0.0.0")
 
     val protocolVersion: Int
-    get() = libraryVersion.split(".")[majorIndex].toInt()
+        get() = libraryVersion.split(".")[majorIndex].toInt()
 }

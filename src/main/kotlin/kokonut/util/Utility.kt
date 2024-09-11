@@ -1,12 +1,15 @@
 package kokonut.util
 
+import io.ktor.client.*
+import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.request.*
+import io.ktor.serialization.kotlinx.json.*
 import kokonut.URLBook
 import kokonut.core.Block
 import kokonut.util.API.Companion.getChain
 import kokonut.util.full.FullNode
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.*
@@ -16,6 +19,7 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.security.*
 import kotlin.math.*
+import kotlin.time.Duration.Companion.seconds
 
 class Utility {
     companion object {
@@ -65,6 +69,16 @@ class Utility {
             }
 
             return fullnode
+        }
+
+        fun findKokonutJar(): String {
+            val buildDir = File("build/libs")
+
+            val kokonutJar = buildDir.listFiles { _, name ->
+                name.startsWith("kokonut-") && name.endsWith(".jar")
+            }?.firstOrNull()  // 첫 번째 파일을 선택
+
+            return kokonutJar!!.absolutePath
         }
 
         fun calculateHash(timestamp : Long): String {

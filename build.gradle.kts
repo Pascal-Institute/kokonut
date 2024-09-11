@@ -1,9 +1,11 @@
 plugins {
+    java
     kotlin("jvm") version "2.0.0"
-    //id("io.ktor.plugin") version "2.3.4" this is the problem for shadowJar
     kotlin("plugin.serialization") version "1.8.20"
     `maven-publish`
 }
+
+version = "4.0.7"
 
 repositories {
     mavenCentral()
@@ -11,6 +13,7 @@ repositories {
         url = uri("https://jitpack.io")
     }
 }
+
 
 dependencies {
     testImplementation(kotlin("test"))
@@ -31,6 +34,14 @@ tasks.test {
 
 kotlin {
     jvmToolchain(17)
+}
+
+tasks.jar {
+    manifest {
+        attributes(
+            "Implementation-Version" to project.version
+        )
+    }
 }
 
 publishing {

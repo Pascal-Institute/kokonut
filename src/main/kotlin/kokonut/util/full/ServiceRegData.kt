@@ -7,5 +7,6 @@ data class ServiceRegData(
    val Name : String,
    val ID : String,
    val Address : String,
-   val Port : Int
+   val Port : Int,
+   val Check: HealthCheck? = null
 )
