@@ -18,8 +18,8 @@ object URLBook{
         ignoreUnknownKeys = true
     }
     val POLICY_NODE = URL("https://pascal-institute.github.io/kokonut-oil-station")
-    val FULL_STORAGE = URL("https://api.github.com/repos/Pascal-Institute/kovault/contents/")
-    val FULL_RAW_STORAGE = URL("https://raw.githubusercontent.com/Pascal-Institute/kovault/main/")
+    val GENESIS_NODE = URL("https://api.github.com/repos/Pascal-Institute/genesis_node/contents/")
+    val GENESIS_RAW_NODE = URL("https://raw.githubusercontent.com/Pascal-Institute/genesis_node/main/")
     val FUEL_NODE = URL("https://kokonut-oil.onrender.com/v1/catalog/service/knt_fullnode")
 
     init {

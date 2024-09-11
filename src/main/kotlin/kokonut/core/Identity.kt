@@ -5,6 +5,8 @@ import java.util.*
 object Identity {
     const val majorIndex = 0
     const val ticker : String = "KNT"
+
+    //For Full Node
     var isRegistered = false
 
     private val properties: Properties = Properties().apply {
