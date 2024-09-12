@@ -5,29 +5,6 @@
 
 ## Block Chain Framework powered by Kotlin
 
-# Node
-- Configuration is 4 parts. Fuel, Full and Light Nodes
-
-## Genesis Node
-
-## Fuel Node
-
-- URL : https://kokonut-oil.onrender.com
-- Synchronize full nodes
-- Supplies important information to cross validation between full & light node
-
-## Full Node
-
-- URL :
-- DockerHub : https://hub.docker.com/r/volta2030/knt_fullnode
-- Validate Block and Add to Chain. powered by kokonut
-- Check Chain is valid
-
-## Light Node
-
-- Mine Block. powered by kokonut
-- Check Chain is valid
-
 # Kokonut Protocol
 
 ## Version : 4
@@ -41,8 +18,8 @@ This protocol describes block chain systems & rules of kokonut
 ### Basic Structure
 
 - version : The kokonut protocol verison (match to major number of library version)
-- index
-- previousHash
+- index : The numbering of block which previous block index < next block index
+- previousHash : The hash of previous block
 - timestamp
 - data
 - difficulty
@@ -142,12 +119,27 @@ It is called genesis block which follows below :
 ![image](https://github.com/user-attachments/assets/631d3d02-c8c6-491f-8ed0-073b11eb8fd5)
 
 ## Node
+- Configuration is 4 parts. Fuel, Full and Light Nodes
+
+### Genesis Node
 
 ### Fuel Node
 
+- URL : https://kokonut-oil.onrender.com
+- Synchronize full nodes
+- Supplies important information to cross validation between full & light node
+
 ### Full Node
 
+- URL :
+- DockerHub : https://hub.docker.com/r/volta2030/knt_fullnode
+- Validate Block and Add to Chain. powered by kokonut
+- Check Chain is valid
+
 ### Light Node
+
+- Mine Block. powered by kokonut
+- Check Chain is valid
 
 ## Transaction
 
