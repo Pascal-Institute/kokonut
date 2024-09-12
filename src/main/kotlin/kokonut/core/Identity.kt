@@ -14,7 +14,7 @@ object Identity {
     }
 
     val libraryVersion : String
-        get() = properties.getProperty("version", "0.0.0")
+        get() = properties.getProperty("kokonut_version", "0.0.0")
 
     val protocolVersion: Int
         get() = libraryVersion.split(".")[majorIndex].toInt()
