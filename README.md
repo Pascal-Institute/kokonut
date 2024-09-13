@@ -119,7 +119,7 @@ It is called genesis block which follows below :
 ![image](https://github.com/user-attachments/assets/631d3d02-c8c6-491f-8ed0-073b11eb8fd5)
 
 ## Node
-- Configuration is 4 parts. Fuel, Full and Light Nodes
+- Configuration is 4 parts. Genesis, Fuel, Full and Light Nodes
 
 ### Genesis Node
 
