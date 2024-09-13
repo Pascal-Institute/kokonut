@@ -18,6 +18,7 @@ import kokonut.Wallet
 import kokonut.core.Block
 import kokonut.core.BlockChain
 import kokonut.core.Identity
+import kokonut.core.Identity.address
 import kokonut.core.Identity.isRegistered
 import kokonut.util.API.Companion.getPolicy
 import kokonut.util.Utility
@@ -295,6 +296,7 @@ class Router {
                 println("Response Body: $response")
 
                 if (response.status == HttpStatusCode.OK) {
+                    address = serviceAddress
                     isRegistered = true
                 }
 
