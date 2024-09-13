@@ -306,7 +306,19 @@ class Router {
 
                 call.respondText("Configuration Registration Successfully: ${response.status}")
 
+                //to do propagate
+
                 client.close()
+            }
+        }
+
+        fun Route.propagate() {
+            get("/propagate") {
+                val size = call.request.queryParameters["size"]?.toLongOrNull()
+                val id = call.request.queryParameters["id"]
+                val address = call.request.queryParameters["address"]
+
+                //To Do
             }
         }
 
