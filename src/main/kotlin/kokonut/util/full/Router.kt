@@ -18,20 +18,24 @@ import kokonut.util.Wallet
 import kokonut.core.Block
 import kokonut.core.BlockChain
 import kokonut.core.Identity
-import kokonut.core.Identity.address
 import kokonut.core.Identity.isRegistered
+import kokonut.state.MiningState
 import kokonut.util.API.Companion.getPolicy
 import kokonut.util.Utility
 import kotlinx.html.*
 import kotlinx.serialization.json.Json
 import java.io.File
-import java.net.URL
 import java.nio.file.Paths
 import java.security.PublicKey
 
 
 class Router {
+
     companion object {
+
+        lateinit var fullNode: FullNode
+        var miners : HashMap<String, MiningState> = hashMapOf()
+
         fun Route.root() {
             get("/") {
                 call.respondHtml(HttpStatusCode.OK) {
@@ -198,9 +202,12 @@ class Router {
 
                 val miner = Utility.calculateHash(Wallet.loadPublicKey(publicKeyFile.path))
 
-                println("Miner : $miner start mining...")
+                miners[miner] = MiningState.READY
 
+                println("Miner : $miner start mining...")
                 call.respond("Mining Approved...")
+
+                miners[miner] = MiningState.MINING
             }
         }
 
@@ -297,7 +304,12 @@ class Router {
                 println("Response Body: $response")
 
                 if (response.status == HttpStatusCode.OK) {
-                    address = serviceAddress
+                    fullNode = FullNode(
+                        serviceRegData.ID,
+                        serviceRegData.Name,
+                        serviceRegData.Address,
+                        Weights(1,1)
+                    )
                     isRegistered = true
                 }
 
@@ -309,9 +321,8 @@ class Router {
 
                 //to do propagate
                 URLBook.fullNodes.forEach{
-                    fullNode ->
                     run {
-                        client.put(fullNode.ServiceAddress + "/propagate?size=$blockchain.")
+                        client.put(it.ServiceAddress + "/propagate?size=$blockchain&id=${fullNode.ServiceID}&address=${fullNode.ServiceAddress}")
                     }
                 }
 
@@ -325,7 +336,10 @@ class Router {
                 val id = call.request.queryParameters["id"]
                 val address = call.request.queryParameters["address"]
 
-                //To Do
+                if (size == null || id == null || address == null) {
+                    call.respond(HttpStatusCode.BadRequest, "Missing or invalid parameters")
+                    return@get
+                }
             }
         }
 

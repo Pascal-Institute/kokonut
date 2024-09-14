@@ -2,6 +2,7 @@ import kokonut.util.API.Companion.isHealthy
 import kokonut.core.*
 import kokonut.state.MiningState
 import kokonut.util.API.Companion.addBlock
+import kokonut.util.API.Companion.startMining
 import kokonut.util.API.Companion.stopMining
 import kokonut.util.Utility.Companion.getLongestChainFullNode
 import kokonut.util.Wallet
@@ -38,6 +39,7 @@ fun main(): Unit = runBlocking{
             "Block Chain")
 
         try {
+            fullNode.startMining(wallet.publicKeyFile)
             val newBlock : Block = blockChain.mine(wallet, data)
             val json = Json.encodeToJsonElement(newBlock)
             fullNode.addBlock(json, wallet.publicKeyFile)

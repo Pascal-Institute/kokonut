@@ -7,7 +7,6 @@ object Identity {
     const val ticker : String = "KNT"
 
     //For Full Node
-    var address = ""
     var isRegistered = false
 
     private val properties: Properties = Properties().apply {
