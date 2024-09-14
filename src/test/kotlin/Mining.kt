@@ -1,6 +1,6 @@
-import kokonut.*
 import kokonut.util.API.Companion.isHealthy
 import kokonut.core.*
+import kokonut.state.MiningState
 import kokonut.util.API.Companion.addBlock
 import kokonut.util.API.Companion.stopMining
 import kokonut.util.Utility.Companion.getLongestChainFullNode

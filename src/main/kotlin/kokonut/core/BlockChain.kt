@@ -7,8 +7,8 @@ import io.ktor.client.request.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
-import kokonut.MiningState
-import kokonut.Node
+import kokonut.state.MiningState
+import kokonut.state.Node
 import kokonut.util.GitHubFile
 import kokonut.URLBook
 import kokonut.util.SQLite
