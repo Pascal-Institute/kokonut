@@ -11,20 +11,28 @@
 
 ## Abstract
 
-This protocol describes block chain systems & rules of kokonut
+This protocol describes block chain systems & rules of kokonut.
 
 ## Block
 
+- The 'Block' is the collection of data which contains uniqueness.
+- Blocks have meaning and value only when they are connected to each other.
+- Format is JSON(.json).
+
+## Block Chain
+
+- The connectivity of blocks.
+
 ### Basic Structure
 
-- version : The kokonut protocol verison (match to major number of library version)
-- index : The numbering of block which previous block index < next block index
-- previousHash : The hash of previous block
-- timestamp
-- data
-- difficulty
-- nonce
-- hash
+- version : The kokonut protocol verison (match to major number of library version).
+- index : The numbering of block which previous block index < next block index.
+- previousHash : The hash of previous block.
+- timestamp : Time relative to UTC. Indicates the time the block difficulty was solved.
+- data : 
+- difficulty : The numbers of leading 0 of hash. All block hash must follow difficulty.
+- nonce : The total times of trying hash function for satisfying difficulty.
+- hash : The output 64-digits string format which came from SHA-256(Secure Hash Algorithm 256-bit) hash function, inputs is the sequential collection of all data's in block.
 
 ```json
 {
