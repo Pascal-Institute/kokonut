@@ -85,6 +85,10 @@ It is called genesis block which follows below :
 
 - The connectivity of blocks.
 
+### Kovault
+
+- Kovalut is Database which use SQLite DBMS(DataBase Management System) software.
+
 ## Proven Of Work
 
 ### Validation Process
