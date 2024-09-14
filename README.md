@@ -19,10 +19,6 @@ This protocol describes block chain systems & rules of kokonut.
 - Blocks have meaning and value only when they are connected to each other.
 - Format is JSON(.json).
 
-## BlockChain
-
-- The connectivity of blocks.
-
 ### Basic Structure
 
 - version : The kokonut protocol verison (match to major number of library version).
@@ -84,6 +80,11 @@ It is called genesis block which follows below :
   "hash":"000000000000000000000000000000000000000000000000190282d71244ac7a"
 }
 ```
+
+## BlockChain
+
+- The connectivity of blocks.
+
 ## Proven Of Work
 
 ### Validation Process
