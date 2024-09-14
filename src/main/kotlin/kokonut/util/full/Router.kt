@@ -25,6 +25,7 @@ import kokonut.util.Utility
 import kotlinx.html.*
 import kotlinx.serialization.json.Json
 import java.io.File
+import java.net.URL
 import java.nio.file.Paths
 import java.security.PublicKey
 
@@ -203,7 +204,7 @@ class Router {
             }
         }
 
-        fun Route.submit() {
+        fun Route.submit(blockchain: BlockChain) {
             post("/submit") {
                 val keyPath = "/app/key"
                 Utility.createDirectory(keyPath)
@@ -307,6 +308,12 @@ class Router {
                 call.respondText("Configuration Registration Successfully: ${response.status}")
 
                 //to do propagate
+                URLBook.fullNodes.forEach{
+                    fullNode ->
+                    run {
+                        client.put(fullNode.ServiceAddress + "/propagate?size=$blockchain.")
+                    }
+                }
 
                 client.close()
             }
