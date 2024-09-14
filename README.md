@@ -155,6 +155,9 @@ It is called genesis block which follows below :
 - It has two mission. 1. Alert stop other full nodes mining 2. Comparison other full nodes than
   infect longer blockchain.
 
+### Diagram
+![image](https://github.com/user-attachments/assets/e9fe5f3e-e0d6-4410-a43a-13ca6d792fb8)
+
 ## Transaction
 
 ### Status
