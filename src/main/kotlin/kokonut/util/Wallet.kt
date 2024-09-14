@@ -1,4 +1,4 @@
-package kokonut
+package kokonut.util
 
 import kokonut.util.Utility.Companion.calculateHash
 import java.io.File

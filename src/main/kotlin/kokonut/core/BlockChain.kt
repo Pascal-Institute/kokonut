@@ -16,7 +16,7 @@ import kokonut.URLBook.GENESIS_NODE
 import kokonut.URLBook.GENESIS_RAW_NODE
 import kokonut.URLBook.POLICY_NODE
 import kokonut.URLBook.fullNodes
-import kokonut.Wallet
+import kokonut.util.Wallet
 import kokonut.util.API.Companion.getChain
 import kokonut.util.API.Companion.getPolicy
 import kokonut.util.API.Companion.getReward

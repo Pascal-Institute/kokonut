@@ -1,5 +1,5 @@
 import kokonut.URLBook.FULL_NODE_0
-import kokonut.Wallet
+import kokonut.util.Wallet
 import kokonut.core.BlockChain
 import kokonut.core.Identity
 import java.io.File

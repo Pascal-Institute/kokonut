@@ -1,11 +1,10 @@
 import kokonut.*
-import kokonut.URLBook.FULL_NODE_0
 import kokonut.util.API.Companion.isHealthy
 import kokonut.core.*
 import kokonut.util.API.Companion.addBlock
-import kokonut.util.API.Companion.startMining
 import kokonut.util.API.Companion.stopMining
 import kokonut.util.Utility.Companion.getLongestChainFullNode
+import kokonut.util.Wallet
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToJsonElement

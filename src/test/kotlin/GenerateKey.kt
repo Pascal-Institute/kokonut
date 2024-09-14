@@ -1,4 +1,4 @@
-import kokonut.Wallet
+import kokonut.util.Wallet
 import java.security.KeyPair
 
 fun main() {

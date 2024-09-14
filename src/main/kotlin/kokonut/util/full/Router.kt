@@ -14,7 +14,7 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kokonut.URLBook
-import kokonut.Wallet
+import kokonut.util.Wallet
 import kokonut.core.Block
 import kokonut.core.BlockChain
 import kokonut.core.Identity
