@@ -3,7 +3,7 @@
 
 # What is Kokonut...?
 
-## Block Chain Framework powered by Kotlin
+## BlockChain Framework powered by Kotlin
 
 # Kokonut Protocol
 
@@ -19,7 +19,7 @@ This protocol describes block chain systems & rules of kokonut.
 - Blocks have meaning and value only when they are connected to each other.
 - Format is JSON(.json).
 
-## Block Chain
+## BlockChain
 
 - The connectivity of blocks.
 
@@ -148,6 +148,11 @@ It is called genesis block which follows below :
 
 - Mine Block. powered by kokonut
 - Check Chain is valid
+
+## Propagation
+
+- It has two mission. 1. Alert stop other full nodes mining 2. Comparison other full nodes than
+  infect longer blockchain.
 
 ## Transaction
 
