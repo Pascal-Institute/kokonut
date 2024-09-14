@@ -165,10 +165,6 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
             println("Nonce : $nonce")
         }
 
-        database.insert(miningBlock)
-
-        syncChain()
-
         return miningBlock
     }
 
