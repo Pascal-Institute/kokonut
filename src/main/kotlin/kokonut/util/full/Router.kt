@@ -10,6 +10,7 @@ import io.ktor.http.content.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.html.*
+import io.ktor.server.plugins.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -22,6 +23,7 @@ import kokonut.core.Identity.isRegistered
 import kokonut.state.MiningState
 import kokonut.util.API.Companion.getPolicy
 import kokonut.util.API.Companion.propagate
+import kokonut.util.Miner
 import kokonut.util.Utility
 import kotlinx.html.*
 import kotlinx.serialization.json.Json
@@ -36,7 +38,7 @@ class Router {
     companion object {
 
         lateinit var fullNode: FullNode
-        var miners : HashMap<String, MiningState> = hashMapOf()
+        var miners : MutableSet<Miner> = mutableSetOf()
 
         fun Route.root() {
             get("/") {
@@ -204,12 +206,14 @@ class Router {
 
                 val miner = Utility.calculateHash(Wallet.loadPublicKey(publicKeyFile.path))
 
-                miners[miner] = MiningState.READY
+                miners.add(Miner(miner, call.request.origin.remoteHost, MiningState.READY))
 
                 println("Miner : $miner start mining...")
                 call.respond("Mining Approved...")
 
-                miners[miner] = MiningState.MINING
+                miners.find {
+                    it.miner == miner
+                }!!.miningState = MiningState.MINING
             }
         }
 
