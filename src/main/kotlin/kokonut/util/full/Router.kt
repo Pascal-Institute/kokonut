@@ -21,10 +21,12 @@ import kokonut.core.Identity
 import kokonut.core.Identity.isRegistered
 import kokonut.state.MiningState
 import kokonut.util.API.Companion.getPolicy
+import kokonut.util.API.Companion.propagate
 import kokonut.util.Utility
 import kotlinx.html.*
 import kotlinx.serialization.json.Json
 import java.io.File
+import java.net.URL
 import java.nio.file.Paths
 import java.security.PublicKey
 
@@ -319,13 +321,6 @@ class Router {
 
                 call.respondText("Configuration Registration Successfully: ${response.status}")
 
-                //to do propagate
-                URLBook.fullNodes.forEach{
-                    run {
-                        client.put(it.ServiceAddress + "/propagate?size=$blockchain&id=${fullNode.ServiceID}&address=${fullNode.ServiceAddress}")
-                    }
-                }
-
                 client.close()
             }
         }
@@ -420,6 +415,13 @@ class Router {
                     if (block!!.hash == calculatedHash) {
 
                         blockchain.database.insert(block!!)
+
+                        //to do propagate
+                        URLBook.fullNodes.forEach{
+                            run {
+                                URL(it.ServiceAddress).propagate(blockchain)
+                            }
+                        }
 
                         call.respond(
                             HttpStatusCode.Created,

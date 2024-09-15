@@ -168,6 +168,10 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
         return miningBlock
     }
 
+    fun getChainSize() : Int{
+        return cachedChain!!.size
+    }
+
     fun isValid(): Boolean {
         val chain = cachedChain ?: return false
         for (i in chain.size - 1 downTo 1) {
