@@ -53,6 +53,7 @@ class Router {
                         h1 { +"Kokonut Library Version : ${Identity.libraryVersion}" }
                         h1 { +"Timestamp : ${System.currentTimeMillis()}" }
                         h1 { +"Get Chain : /getChain" }
+                        h1 { +"Get Miners : /getMiners" }
                         h1 { +"Get Last Block : /getLastBlock" }
                         h1 { +"Chain Validation : /isValid" }
                         h1 { +"Get Total Currency Volume : /getTotalCurrencyVolume" }
@@ -174,12 +175,7 @@ class Router {
 
         fun Route.getReward() {
             get("/getReward") {
-                val value = call.request.queryParameters["index"]?.toLongOrNull()
-
-                // Mock reward value for demonstration
-                val reward = value?.let { Utility.setReward(it) } ?: 0.0
-
-                call.respond(reward)
+                call.respond(miners)
             }
         }
 
@@ -190,6 +186,17 @@ class Router {
                     call.respond(HttpStatusCode.Created, "Get Chain Failed : Server block chain is invalid")
                 }
                 call.respond(blockchain.database.fetch())
+            }
+        }
+
+        fun Route.getMiners() {
+            get("/getMiners"){
+                val value = call.request.queryParameters["index"]?.toLongOrNull()
+
+                // Mock reward value for demonstration
+                val reward = value?.let { Utility.setReward(it) } ?: 0.0
+
+                call.respond(reward)
             }
         }
 
