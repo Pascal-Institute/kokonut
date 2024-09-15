@@ -180,7 +180,7 @@ class Router {
         }
 
         fun Route.getReward() {
-            get("/getMiners"){
+            get("/getReward"){
                 val value = call.request.queryParameters["index"]?.toLongOrNull()
 
                 // Mock reward value for demonstration
