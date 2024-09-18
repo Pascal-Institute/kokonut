@@ -84,17 +84,18 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = FULL_NODE_0) {
 
     fun loadChainFromFullNode(url: URL) = runBlocking {
         try {
-            val newChain = url.getChain()
-            val chain = database.fetch()
+            val chainFromFullNode = runBlocking {  url.getChain() }
+            val chain = getChain()
 
-            newChain.forEach { newBlock ->
-                if (newBlock !in chain) {
-                    database.insert(newBlock)
+            chainFromFullNode.forEach { block ->
+                if (block !in chain) {
+                    database.insert(block)
                 }
             }
         } catch (e: Exception) {
             println("Aborted : ${e.message}")
         }
+
         syncChain()
 
         println("Block Chain validity : ${isValid()}")
@@ -167,6 +168,10 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = FULL_NODE_0) {
         }
 
         return miningBlock
+    }
+
+    fun getChain() : MutableList<Block> {
+        return database.fetch()
     }
 
     fun getChainSize() : Long{

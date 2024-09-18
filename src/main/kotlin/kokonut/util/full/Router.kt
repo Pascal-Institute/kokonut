@@ -205,7 +205,7 @@ class Router {
                 if (!blockchain.isValid()) {
                     call.respond(HttpStatusCode.Created, "Get Chain Failed : Server block chain is invalid")
                 }
-                call.respond(blockchain.database.fetch())
+                call.respond(blockchain.getChain())
             }
         }
 

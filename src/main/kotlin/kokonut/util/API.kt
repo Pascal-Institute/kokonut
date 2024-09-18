@@ -60,7 +60,6 @@ class API {
                     val reader = BufferedReader(InputStreamReader(inputStream))
                     val response = reader.use { it.readText() }
 
-                    // Deserialize JSON response to a list of blocks
                     Json.decodeFromString(response)
 
                 } else {
