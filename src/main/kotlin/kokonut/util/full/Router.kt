@@ -174,8 +174,20 @@ class Router {
         }
 
         fun Route.getMiners() {
+
+
+
             get("/getReward") {
-                call.respond(miners)
+
+                call.respondHtml(HttpStatusCode.OK) {
+                    head {
+                        title("Kokonut Full Node")
+                    }
+                    body {
+                        h1 { + miners.toString() }
+                    }
+
+                }
             }
         }
 
