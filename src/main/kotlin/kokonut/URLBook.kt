@@ -4,6 +4,8 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
+import kokonut.util.Utility
+import kokonut.util.Utility.Companion.getLongestChainFullNode
 import kokonut.util.full.FullNode
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
@@ -27,7 +29,7 @@ object URLBook{
             loadFullnodeServices()
         }
         if(fullNodes.isNotEmpty()){
-            FULL_NODE_0 = URL(fullNodes[0].ServiceAddress)
+            FULL_NODE_0 = URL(getLongestChainFullNode().ServiceAddress)
         }
     }
 

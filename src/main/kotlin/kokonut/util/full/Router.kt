@@ -345,16 +345,33 @@ class Router {
             }
         }
 
-        fun Route.propagate() {
-            get("/propagate") {
+        fun Route.propagate(blockchain: BlockChain) {
+            post("/propagate") {
                 val size = call.request.queryParameters["size"]?.toLongOrNull()
                 val id = call.request.queryParameters["id"]
                 val address = call.request.queryParameters["address"]
 
                 if (size == null || id == null || address == null) {
-                    call.respond(HttpStatusCode.BadRequest, "Missing or invalid parameters")
-                    return@get
+                    call.respond(HttpStatusCode.Created, "Propagate Failed : Missing or Invalid request parameters")
+                    return@post
                 }
+
+                if(blockchain.getChainSize() < size){
+                    blockchain.loadChainFromFullNode(URL(address))
+                    call.respond(HttpStatusCode.OK, "Propagate Succeed")
+                    URLBook.fullNodes.forEach{
+                        run {
+                            if(it.ServiceAddress != address && it.ServiceAddress != fullNode.ServiceAddress){
+                                URL(it.ServiceAddress).propagate(blockchain)
+                            }
+                        }
+                    }
+
+                }else if(blockchain.getChainSize() == size){
+
+                }
+
+                call.respond(HttpStatusCode.Created, "Propagate Failed")
             }
         }
 
@@ -444,7 +461,9 @@ class Router {
                         //to do propagate
                         URLBook.fullNodes.forEach{
                             run {
-                                URL(it.ServiceAddress).propagate(blockchain)
+                                if(it.ServiceAddress != fullNode.ServiceAddress){
+                                    URL(it.ServiceAddress).propagate(blockchain)
+                                }
                             }
                         }
 
