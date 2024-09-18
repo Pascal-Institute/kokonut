@@ -174,10 +174,7 @@ class Router {
         }
 
         fun Route.getMiners() {
-
-
-
-            get("/getReward") {
+            get("/getMiners") {
 
                 call.respondHtml(HttpStatusCode.OK) {
                     head {
