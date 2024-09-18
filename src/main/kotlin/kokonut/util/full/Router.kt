@@ -403,9 +403,7 @@ class Router {
 
                     //Check Index
                     if (block!!.index != blockchain.getLastBlock().index + 1) {
-                        println("New Block : ${block!!.index}")
-                        println("New Block : ${blockchain.getLastBlock().index + 1}")
-                        call.respond(HttpStatusCode.Created, "Block Add Failed : Invalid index")
+                        call.respond(HttpStatusCode.Created, "Block Add Failed : Invalid index, New Block index : ${block!!.index} / Last Block index ${blockchain.getLastBlock().index}")
                         return@post
                     }
 
