@@ -37,7 +37,7 @@ class Router {
 
     companion object {
 
-        lateinit var fullNode: FullNode
+        var fullNode = FullNode("","","",Weights(0,0))
         var miners : MutableSet<Miner> = mutableSetOf()
 
         fun Route.root() {

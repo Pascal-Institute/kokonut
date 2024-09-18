@@ -65,7 +65,7 @@ class Utility {
 
         fun isRegistered(fullNode: FullNode) : Boolean {
 
-            if(fullNode.equals(null)){
+            if(fullNode.ServiceID == ""){
                 return false
             }
 
