@@ -1,4 +1,4 @@
-import kokonut.URLBook.POLICY_NODE
+import kokonut.core.BlockChain.Companion.POLICY_NODE
 import kokonut.util.API.Companion.getPolicy
 
 fun main() {

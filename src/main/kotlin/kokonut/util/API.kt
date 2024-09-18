@@ -3,13 +3,18 @@ package kokonut.util
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
+import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
 import kokonut.Policy
 import kokonut.core.Block
+import kokonut.core.BlockChain
 import kokonut.util.Utility.Companion.writeFilePart
 import kokonut.util.Utility.Companion.writePart
+import kokonut.util.full.Router
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import java.io.BufferedReader
@@ -54,7 +59,6 @@ class API {
                     val reader = BufferedReader(InputStreamReader(inputStream))
                     val response = reader.use { it.readText() }
 
-                    // Deserialize JSON response to a list of blocks
                     Json.decodeFromString(response)
 
                 } else {
@@ -215,6 +219,17 @@ class API {
             }
 
             return true
+        }
+
+        fun URL.propagate(blockChain: BlockChain) {
+            val client = HttpClient(CIO) {
+                install(ContentNegotiation) {
+                    json(Json { prettyPrint = true })
+                }
+            }
+            runBlocking {
+                client.put(this@propagate.path + "/propagate?size=${blockChain.getChainSize()}&id=${Router.fullNode.ServiceID}&address=${Router.fullNode.ServiceAddress}")
+            }
         }
 
         fun URL.addBlock(jsonElement: JsonElement, publicKeyFile: File) {

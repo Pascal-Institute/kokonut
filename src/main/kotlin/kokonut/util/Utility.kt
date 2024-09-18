@@ -1,11 +1,9 @@
 package kokonut.util
 
 import io.ktor.client.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.call.*
 import io.ktor.client.request.*
-import io.ktor.serialization.kotlinx.json.*
-import kokonut.URLBook
+import io.ktor.client.statement.*
 import kokonut.core.Block
 import kokonut.util.API.Companion.getChain
 import kokonut.util.full.FullNode
@@ -19,7 +17,6 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.security.*
 import kotlin.math.*
-import kotlin.time.Duration.Companion.seconds
 
 class Utility {
     companion object {
@@ -50,25 +47,6 @@ class Utility {
         fun truncate(value: Double): Double {
             val scale = 10.0.pow(6)
             return floor(value * scale) / scale
-        }
-
-        fun getLongestChainFullNode() : FullNode {
-            runBlocking { URLBook.loadFullnodeServices() }
-
-            var maxSize = 0
-            var fullNodeChainSize = 0
-            lateinit var fullnode : FullNode
-
-            URLBook.fullNodes.forEach {
-
-                fullNodeChainSize = URL(it.ServiceAddress).getChain().size
-                if(fullNodeChainSize > maxSize){
-                    fullnode = it
-                    maxSize = fullNodeChainSize
-                }
-            }
-
-            return fullnode
         }
 
         fun findKokonutJar(): String {

@@ -1,21 +1,18 @@
-import kokonut.URLBook.FULL_NODE_0
-import kokonut.Wallet
+import kokonut.util.Wallet
 import kokonut.core.BlockChain
-import kokonut.core.Identity
+import kokonut.core.Version.libraryVersion
+import kokonut.core.Version.protocolVersion
 import java.io.File
 
 fun main() {
 
-   println(Identity.libraryVersion)
+   println(libraryVersion)
 
-   println(Identity.protocolVersion)
-
-   println(FULL_NODE_0)
+   println(protocolVersion)
 
    val blockChain = BlockChain()
-
+   println(blockChain.FULL_NODE)
    println(blockChain.getLastBlock())
-
    println(blockChain.getTotalCurrencyVolume())
 
    val wallet = Wallet(
