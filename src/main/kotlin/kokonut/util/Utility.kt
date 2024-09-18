@@ -55,12 +55,12 @@ class Utility {
             val client = HttpClient()
             val response: HttpResponse = client.get(URLBook.FUEL_NODE)
             client.close()
-            URLBook.fullNodes = try{
+            fullNodes = try{
                 URLBook.json.decodeFromString<List<FullNode>>(response.body())}
             catch (e : Exception){
                 emptyList<FullNode>()
             }
-            return URLBook.fullNodes
+            return fullNodes
         }
 
         fun isRegistered(fullNode: FullNode) : Boolean {

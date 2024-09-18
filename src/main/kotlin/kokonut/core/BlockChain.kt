@@ -11,6 +11,7 @@ import kokonut.state.MiningState
 import kokonut.state.Node
 import kokonut.util.GitHubFile
 import kokonut.URLBook
+import kokonut.URLBook.FULL_NODE_0
 import kokonut.util.SQLite
 import kokonut.URLBook.GENESIS_NODE
 import kokonut.URLBook.GENESIS_RAW_NODE
@@ -27,7 +28,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import java.net.URL
 
-class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0) {
+class BlockChain(val node: Node = Node.LIGHT, val url: URL = FULL_NODE_0) {
 
     var miningState = MiningState.READY
     val database = SQLite()
@@ -39,11 +40,11 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
                 if (fullNodes.isEmpty()) {
                     loadChainFromGenesisNode()
                 } else {
-                    loadChainFromFullNode()
+                    loadChainFromFullNode(FULL_NODE_0)
                 }
             }
 
-            Node.LIGHT -> loadChainFromFullNode()
+            Node.LIGHT -> loadChainFromFullNode(FULL_NODE_0)
         }
     }
 
@@ -81,24 +82,6 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
         println("Block Chain validity : ${isValid()}")
     }
 
-    fun loadChainFromFullNode() = runBlocking {
-        try {
-            val newChain = url.getChain()
-            val chain = database.fetch()
-
-            newChain.forEach { newBlock ->
-                if (newBlock !in chain) {
-                    database.insert(newBlock)
-                }
-            }
-        } catch (e: Exception) {
-            println("Aborted : ${e.message}")
-        }
-        syncChain()
-
-        println("Block Chain validity : ${isValid()}")
-    }
-
     fun loadChainFromFullNode(url: URL) = runBlocking {
         try {
             val newChain = url.getChain()
@@ -129,7 +112,7 @@ class BlockChain(val node: Node = Node.LIGHT, val url: URL = URLBook.FULL_NODE_0
     fun mine(wallet: Wallet, data: Data): Block {
         miningState = MiningState.MINING
 
-        loadChainFromFullNode()
+        loadChainFromFullNode(FULL_NODE_0)
 
         url.startMining(wallet.publicKeyFile)
 
