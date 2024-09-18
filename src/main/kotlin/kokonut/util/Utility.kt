@@ -1,10 +1,5 @@
 package kokonut.util
 
-import io.ktor.client.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.request.*
-import io.ktor.serialization.kotlinx.json.*
 import kokonut.URLBook
 import kokonut.core.Block
 import kokonut.util.API.Companion.getChain
@@ -19,7 +14,6 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.security.*
 import kotlin.math.*
-import kotlin.time.Duration.Companion.seconds
 
 class Utility {
     companion object {
@@ -52,24 +46,27 @@ class Utility {
             return floor(value * scale) / scale
         }
 
-        fun getLongestChainFullNode() : FullNode {
-            runBlocking { URLBook.loadFullnodeServices() }
-
+        fun getLongestChainFullNode(): FullNode {
             var maxSize = 0
             var fullNodeChainSize = 0
-            lateinit var fullnode : FullNode
+            lateinit var fullnode: FullNode
 
-            URLBook.fullNodes.forEach {
+            runBlocking {
+                val fullNodes = URLBook.loadFullnodeServices()
+                fullnode = fullNodes[0]
 
-                fullNodeChainSize = URL(it.ServiceAddress).getChain().size
-                if(fullNodeChainSize > maxSize){
-                    fullnode = it
-                    maxSize = fullNodeChainSize
+                for (it in fullNodes) {
+                    fullNodeChainSize = URL(it.ServiceAddress).getChain().size
+                    if (fullNodeChainSize > maxSize) {
+                        fullnode = it
+                        maxSize = fullNodeChainSize
+                    }
                 }
             }
 
             return fullnode
         }
+
 
         fun findKokonutJar(): String {
             val buildDir = File("build/libs")
