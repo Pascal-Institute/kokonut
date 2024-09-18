@@ -6,6 +6,7 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import kokonut.util.Utility
 import kokonut.util.Utility.Companion.getLongestChainFullNode
+import kokonut.util.Utility.Companion.loadFullnodeServices
 import kokonut.util.full.FullNode
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
@@ -25,23 +26,8 @@ object URLBook{
     val FUEL_NODE = URL("https://kokonut-oil.onrender.com/v1/catalog/service/knt_fullnode")
 
     init {
-        runBlocking {
-            loadFullnodeServices()
-        }
         if(fullNodes.isNotEmpty()){
             FULL_NODE_0 = URL(getLongestChainFullNode().ServiceAddress)
         }
-    }
-
-    suspend fun loadFullnodeServices(): List<FullNode> {
-        val client = HttpClient()
-        val response: HttpResponse = client.get(FUEL_NODE)
-        client.close()
-        fullNodes = try{
-            json.decodeFromString<List<FullNode>>(response.body())}
-        catch (e : Exception){
-            emptyList<FullNode>()
-        }
-        return  fullNodes
     }
 }

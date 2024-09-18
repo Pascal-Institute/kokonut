@@ -25,6 +25,7 @@ import kokonut.util.API.Companion.getPolicy
 import kokonut.util.API.Companion.propagate
 import kokonut.util.Miner
 import kokonut.util.Utility
+import kokonut.util.Utility.Companion.isRegistered
 import kotlinx.html.*
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -48,7 +49,7 @@ class Router {
                     }
                     body {
                         h1 { +"Welcome!" }
-                        h1 { +"Full Node Registration : ${Identity.isRegistered}" }
+                        h1 { +"Full Node Registration : ${isRegistered(fullNode)}" }
                         h1 { +"Kokonut Protocol Version : ${Identity.protocolVersion}" }
                         h1 { +"Kokonut Library Version : ${Identity.libraryVersion}" }
                         h1 { +"Timestamp : ${System.currentTimeMillis()}" }
@@ -332,7 +333,6 @@ class Router {
                         serviceRegData.Address,
                         Weights(1,1)
                     )
-                    isRegistered = true
                 }
 
                 Utility.createDirectory(keyPath)
