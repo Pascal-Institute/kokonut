@@ -398,12 +398,17 @@ class Router {
                     //Check Miner
                     if (block!!.data.miner != miner) {
                         call.respond(HttpStatusCode.Created, "Block Add Failed : Invalid miner")
+                        return@post
                     }
 
                     //Check Index
                     if (block!!.index != blockchain.getLastBlock().index + 1) {
+                        println("New Block : ${block!!.index}")
+                        println("New Block : ${blockchain.getLastBlock().index + 1}")
                         call.respond(HttpStatusCode.Created, "Block Add Failed : Invalid index")
+                        return@post
                     }
+
 
                     //Check Version
                     if (policy.version != block!!.version) {
@@ -411,6 +416,7 @@ class Router {
                             HttpStatusCode.Created,
                             "Block Add Failed : Fuel Node version ${policy.version} and Client version ${block!!.version} is different"
                         )
+                        return@post
                     }
 
                     //Check Difficulty
@@ -419,6 +425,7 @@ class Router {
                             HttpStatusCode.Created,
                             "Block Add Failed : Fuel Node difficulty ${policy.difficulty} and Client difficulty ${block!!.difficulty} is different"
                         )
+                        return@post
                     }
 
                     //Check Hash
@@ -444,9 +451,11 @@ class Router {
                             HttpStatusCode.Created,
                             "Block Add Failed : Invalid Block, calculatedHash : ${calculatedHash} blockHash : ${block!!.hash}"
                         )
+                        return@post
                     }
                 } else {
                     call.respondText("Missing block or miner public key", status = HttpStatusCode.BadRequest)
+                    return@post
                 }
                 Paths.get(keyPath).toFile().deleteRecursively()
             }

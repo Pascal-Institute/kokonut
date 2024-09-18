@@ -134,7 +134,7 @@ class SQLite {
         val resultSet = statement.executeQuery()
 
         while (resultSet.next()) {
-            val serializedBlock = resultSet.getString("block") // 직렬화된 블록 데이터
+            val serializedBlock = resultSet.getString("block")
             val block: Block = Json.decodeFromString(serializedBlock)
             newChain.add(block)
         }
