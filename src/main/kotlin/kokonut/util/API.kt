@@ -11,7 +11,6 @@ import io.ktor.serialization.kotlinx.json.*
 import kokonut.Policy
 import kokonut.core.Block
 import kokonut.core.BlockChain
-import kokonut.util.Utility.Companion.isRegistered
 import kokonut.util.Utility.Companion.writeFilePart
 import kokonut.util.Utility.Companion.writePart
 import kokonut.util.full.Router

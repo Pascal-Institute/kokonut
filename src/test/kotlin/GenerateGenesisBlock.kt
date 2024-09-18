@@ -1,7 +1,7 @@
 import kokonut.util.Utility.Companion.calculateHash
 import kokonut.core.Block
+import kokonut.core.BlockChain.Companion.TICKER
 import kokonut.core.Data
-import kokonut.core.Identity
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 import java.io.File
@@ -11,7 +11,7 @@ fun main() {
     val version = 4
     val totalReward = 0.0
     val hex = "123456789abcdef"
-    val ticker = Identity.ticker
+    val ticker = TICKER
     val difficulty = 48
     val miner =  "0".repeat(64)
 

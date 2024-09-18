@@ -1,10 +1,11 @@
 import kokonut.util.API.Companion.isHealthy
 import kokonut.core.*
+import kokonut.core.BlockChain.Companion.TICKER
 import kokonut.state.MiningState
+import kokonut.state.Node
 import kokonut.util.API.Companion.addBlock
 import kokonut.util.API.Companion.startMining
 import kokonut.util.API.Companion.stopMining
-import kokonut.util.Utility.Companion.getLongestChainFullNode
 import kokonut.util.Wallet
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
@@ -14,14 +15,14 @@ import java.net.URL
 
 fun main(): Unit = runBlocking{
 
-    val blockChain = BlockChain()
+    val blockChain = BlockChain(Node.LIGHT)
 
     val wallet = Wallet(
         File("C:\\Users\\public\\private_key.pem"),
         File("C:\\Users\\public\\public_key.pem")
     )
 
-    val fullNode = URL(getLongestChainFullNode().ServiceAddress)
+    val fullNode = URL(blockChain.getLongestChainFullNode().ServiceAddress)
 
     println(fullNode)
 
@@ -33,7 +34,7 @@ fun main(): Unit = runBlocking{
 
         val data =Data(
             0.0,
-            Identity.ticker,
+            TICKER,
             miner= wallet.miner,
             emptyList(),
             "Block Chain")

@@ -2,12 +2,11 @@ package kokonut.core
 
 import java.util.*
 
-object Identity {
+object Version {
     const val majorIndex = 0
-    const val ticker : String = "KNT"
 
     private val properties: Properties = Properties().apply {
-        Identity.javaClass.classLoader.getResourceAsStream("kokonut.properties")?.use { load(it) }
+        Version.javaClass.classLoader.getResourceAsStream("kokonut.properties")?.use { load(it) }
     }
 
     val libraryVersion : String
