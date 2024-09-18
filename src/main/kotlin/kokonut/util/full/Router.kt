@@ -19,7 +19,6 @@ import kokonut.util.Wallet
 import kokonut.core.Block
 import kokonut.core.BlockChain
 import kokonut.core.Identity
-import kokonut.core.Identity.isRegistered
 import kokonut.state.MiningState
 import kokonut.util.API.Companion.getPolicy
 import kokonut.util.API.Companion.propagate
