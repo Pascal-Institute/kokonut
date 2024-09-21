@@ -37,8 +37,8 @@ class Router {
 
     companion object {
 
-        var fullNode = FullNode("","","", Weights(0,0))
-        var miners : MutableSet<Miner> = mutableSetOf()
+        var fullNode = FullNode("", "", "", Weights(0, 0))
+        var miners: MutableSet<Miner> = mutableSetOf()
 
         fun Route.root(blockchain: BlockChain) {
             get("/") {
@@ -117,7 +117,7 @@ class Router {
             }
         }
 
-        fun Route.isValid(blockchain: BlockChain) : BlockChain {
+        fun Route.isValid(blockchain: BlockChain): BlockChain {
             get("/isValid") {
                 call.respondHtml(HttpStatusCode.OK) {
                     head {
@@ -162,7 +162,7 @@ class Router {
             }
         }
 
-        fun Route.getTotalCurrencyVolume(blockchain: BlockChain) : BlockChain {
+        fun Route.getTotalCurrencyVolume(blockchain: BlockChain): BlockChain {
             get("/getTotalCurrencyVolume") {
                 call.respondHtml(HttpStatusCode.OK) {
                     head {
@@ -185,7 +185,7 @@ class Router {
                         title("Kokonut Full Node")
                     }
                     body {
-                        h1 { + miners.toString() }
+                        h1 { +miners.toString() }
                     }
 
                 }
@@ -193,7 +193,7 @@ class Router {
         }
 
         fun Route.getReward() {
-            get("/getReward"){
+            get("/getReward") {
                 val value = call.request.queryParameters["index"]?.toLongOrNull()
 
                 // Mock reward value for demonstration
@@ -203,7 +203,7 @@ class Router {
             }
         }
 
-        fun Route.getChain(blockchain: BlockChain) : BlockChain {
+        fun Route.getChain(blockchain: BlockChain): BlockChain {
             get("/getChain") {
                 //Check chain
                 if (!blockchain.isValid()) {
@@ -239,7 +239,7 @@ class Router {
             }
         }
 
-        fun Route.submit(blockchain: BlockChain) : BlockChain {
+        fun Route.submit(blockchain: BlockChain): BlockChain {
             post("/submit") {
                 val keyPath = "/app/key"
                 Utility.createDirectory(keyPath)
@@ -336,7 +336,7 @@ class Router {
                         serviceRegData.ID,
                         serviceRegData.Name,
                         serviceRegData.Address,
-                        Weights(1,1)
+                        Weights(1, 1)
                     )
                 }
 
@@ -352,7 +352,7 @@ class Router {
             return blockchain
         }
 
-        fun Route.propagate(blockchain: BlockChain) : BlockChain {
+        fun Route.propagate(blockchain: BlockChain): BlockChain {
             post("/propagate") {
                 val size = call.request.queryParameters["size"]?.toLongOrNull()
                 val id = call.request.queryParameters["id"]
@@ -363,18 +363,18 @@ class Router {
                     return@post
                 }
 
-                if(blockchain.getChainSize() < size){
+                if (blockchain.getChainSize() < size) {
                     blockchain.loadChainFromFullNode(URL(address))
                     call.respond(HttpStatusCode.OK, "Propagate Succeed")
-                    blockchain.fullNodes.forEach{
+                    blockchain.fullNodes.forEach {
                         run {
-                            if(it.ServiceAddress != address && it.ServiceAddress != fullNode.ServiceAddress){
+                            if (it.ServiceAddress != address && it.ServiceAddress != fullNode.ServiceAddress) {
                                 URL(it.ServiceAddress).propagate(blockchain)
                             }
                         }
                     }
 
-                }else if(blockchain.getChainSize() == size){
+                } else if (blockchain.getChainSize() == size) {
 
                 }
 
@@ -384,7 +384,7 @@ class Router {
             return blockchain
         }
 
-        fun Route.addBlock(blockchain: BlockChain) : BlockChain {
+        fun Route.addBlock(blockchain: BlockChain): BlockChain {
             post("/addBlock") {
 
                 val keyPath = "/app/key"
@@ -438,7 +438,10 @@ class Router {
 
                     //Check Index
                     if (block!!.index != blockchain.getLastBlock().index + 1) {
-                        call.respond(HttpStatusCode.Created, "Block Add Failed : Invalid index, New Block index : ${block!!.index} / Last Block index ${blockchain.getLastBlock().index}")
+                        call.respond(
+                            HttpStatusCode.Created,
+                            "Block Add Failed : Invalid index, New Block index : ${block!!.index} / Last Block index ${blockchain.getLastBlock().index}"
+                        )
                         return@post
                     }
 
@@ -467,14 +470,20 @@ class Router {
 
                         blockchain.database.insert(block!!)
 
-                        //to do propagate
-                        blockchain.fullNodes.forEach{
+                        //propagate...
+                        blockchain.fullNodes.forEach {
                             run {
-                                if(it.ServiceAddress != fullNode.ServiceAddress){
-                                    URL(it.ServiceAddress).propagate(blockchain)
+                                if (it.ServiceAddress != fullNode.ServiceAddress) {
+                                    try {
+                                        URL(it.ServiceAddress).propagate(blockchain)
+                                    } catch (e: Exception) {
+                                        println("Propagation Failed at ${it.ServiceAddress} : $e")
+                                    }
                                 }
                             }
                         }
+
+
 
                         call.respond(
                             HttpStatusCode.Created,
