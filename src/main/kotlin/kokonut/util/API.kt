@@ -228,7 +228,7 @@ class API {
                 }
             }
             runBlocking {
-                client.put(this@propagate.path + "/propagate?size=${blockChain.getChainSize()}&id=${Router.fullNode.ServiceID}&address=${Router.fullNode.ServiceAddress}")
+                client.post(this@propagate.path + "/propagate?size=${blockChain.getChainSize()}&id=${Router.fullNode.ServiceID}&address=${Router.fullNode.ServiceAddress}")
             }
         }
 
