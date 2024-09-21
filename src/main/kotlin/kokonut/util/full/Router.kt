@@ -117,7 +117,7 @@ class Router {
             }
         }
 
-        fun Route.isValid(blockchain: BlockChain) {
+        fun Route.isValid(blockchain: BlockChain) : BlockChain {
             get("/isValid") {
                 call.respondHtml(HttpStatusCode.OK) {
                     head {
@@ -133,6 +133,8 @@ class Router {
                     }
                 }
             }
+
+            return blockchain
         }
 
         fun Route.getLastBlock(blockchain: BlockChain) {
@@ -160,7 +162,7 @@ class Router {
             }
         }
 
-        fun Route.getTotalCurrencyVolume(blockchain: BlockChain) {
+        fun Route.getTotalCurrencyVolume(blockchain: BlockChain) : BlockChain {
             get("/getTotalCurrencyVolume") {
                 call.respondHtml(HttpStatusCode.OK) {
                     head {
@@ -171,6 +173,8 @@ class Router {
                     }
                 }
             }
+
+            return blockchain
         }
 
         fun Route.getMiners() {
@@ -199,7 +203,7 @@ class Router {
             }
         }
 
-        fun Route.getChain(blockchain: BlockChain) {
+        fun Route.getChain(blockchain: BlockChain) : BlockChain {
             get("/getChain") {
                 //Check chain
                 if (!blockchain.isValid()) {
@@ -207,6 +211,8 @@ class Router {
                 }
                 call.respond(blockchain.getChain())
             }
+
+            return blockchain
         }
 
         fun Route.startMining() {
@@ -233,7 +239,7 @@ class Router {
             }
         }
 
-        fun Route.submit(blockchain: BlockChain) {
+        fun Route.submit(blockchain: BlockChain) : BlockChain {
             post("/submit") {
                 val keyPath = "/app/key"
                 Utility.createDirectory(keyPath)
@@ -342,9 +348,11 @@ class Router {
 
                 client.close()
             }
+
+            return blockchain
         }
 
-        fun Route.propagate(blockchain: BlockChain) {
+        fun Route.propagate(blockchain: BlockChain) : BlockChain {
             post("/propagate") {
                 val size = call.request.queryParameters["size"]?.toLongOrNull()
                 val id = call.request.queryParameters["id"]
@@ -372,9 +380,11 @@ class Router {
 
                 call.respond(HttpStatusCode.Created, "Propagate Failed")
             }
+
+            return blockchain
         }
 
-        fun Route.addBlock(blockchain: BlockChain) {
+        fun Route.addBlock(blockchain: BlockChain) : BlockChain {
             post("/addBlock") {
 
                 val keyPath = "/app/key"
@@ -484,6 +494,8 @@ class Router {
                 }
                 Paths.get(keyPath).toFile().deleteRecursively()
             }
+
+            return blockchain
         }
 
         fun Route.stopMining() {
