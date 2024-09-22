@@ -21,12 +21,14 @@ import kokonut.core.BlockChain.Companion.POLICY_NODE
 import kokonut.core.Version.libraryVersion
 import kokonut.core.Version.protocolVersion
 import kokonut.state.MiningState
+import kokonut.util.API.Companion.addBlock
 import kokonut.util.API.Companion.getPolicy
 import kokonut.util.API.Companion.propagate
 import kokonut.util.Miner
 import kokonut.util.Utility
 import kotlinx.html.*
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.encodeToJsonElement
 import java.io.File
 import java.net.URL
 import java.nio.file.Paths
@@ -479,7 +481,7 @@ class Router {
                         blockchain.fullNodes.forEach {
                             if (it.ServiceAddress != fullNode.ServiceAddress) {
                                 try {
-                                    URL(it.ServiceAddress).propagate(blockchain)
+                                    URL(it.ServiceAddress).addBlock(Json.encodeToJsonElement(block), publicKeyFile!!)
                                 } catch (e: Exception) {
                                     println("Propagation Failed at ${it.ServiceAddress} : $e")
                                 }
