@@ -40,7 +40,7 @@ class Router {
         var fullNode = FullNode("", "", "", Weights(0, 0))
         var miners: MutableSet<Miner> = mutableSetOf()
 
-        fun Route.root(blockchain: BlockChain) {
+        fun Route.root(blockchain: BlockChain): BlockChain {
             get("/") {
                 call.respondHtml(HttpStatusCode.OK) {
                     head {
@@ -62,6 +62,8 @@ class Router {
 
                 }
             }
+
+            return blockchain
         }
 
         fun Route.register() {
@@ -137,7 +139,7 @@ class Router {
             return blockchain
         }
 
-        fun Route.getLastBlock(blockchain: BlockChain) {
+        fun Route.getLastBlock(blockchain: BlockChain): BlockChain {
             get("/getLastBlock") {
 
                 val lastBlock = blockchain.getLastBlock()
@@ -160,6 +162,8 @@ class Router {
                     }
                 }
             }
+
+            return blockchain
         }
 
         fun Route.getTotalCurrencyVolume(blockchain: BlockChain): BlockChain {
@@ -376,9 +380,9 @@ class Router {
 
                 } else if (blockchain.getChainSize() == size) {
 
+                } else {
+                    call.respond(HttpStatusCode.Created, "Propagate Failed")
                 }
-
-                call.respond(HttpStatusCode.Created, "Propagate Failed")
             }
 
             return blockchain
