@@ -373,7 +373,8 @@ class Router {
                     blockchain.fullNodes.forEach {
                         run {
                             if (it.ServiceAddress != address && it.ServiceAddress != fullNode.ServiceAddress) {
-                                URL(it.ServiceAddress).propagate(blockchain)
+                                val response = URL(it.ServiceAddress).propagate(blockchain)
+                                println(response)
                             }
                         }
                     }
@@ -476,13 +477,11 @@ class Router {
 
                         //propagate...
                         blockchain.fullNodes.forEach {
-                            run {
-                                if (it.ServiceAddress != fullNode.ServiceAddress) {
-                                    try {
-                                        URL(it.ServiceAddress).propagate(blockchain)
-                                    } catch (e: Exception) {
-                                        println("Propagation Failed at ${it.ServiceAddress} : $e")
-                                    }
+                            if (it.ServiceAddress != fullNode.ServiceAddress) {
+                                try {
+                                    URL(it.ServiceAddress).propagate(blockchain)
+                                } catch (e: Exception) {
+                                    println("Propagation Failed at ${it.ServiceAddress} : $e")
                                 }
                             }
                         }

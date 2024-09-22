@@ -221,15 +221,20 @@ class API {
             return true
         }
 
-        fun URL.propagate(blockChain: BlockChain) {
+        fun URL.propagate(blockChain: BlockChain) : HttpResponse {
             val client = HttpClient(CIO) {
                 install(ContentNegotiation) {
                     json(Json { prettyPrint = true })
                 }
             }
+
+            val response : HttpResponse
+
             runBlocking {
-                client.post(this@propagate.path + "/propagate?size=${blockChain.getChainSize()}&id=${Router.fullNode.ServiceID}&address=${Router.fullNode.ServiceAddress}")
+               response = client.post(this@propagate.path + "/propagate?size=${blockChain.getChainSize()}&id=${Router.fullNode.ServiceID}&address=${Router.fullNode.ServiceAddress}")
             }
+
+            return response
         }
 
         fun URL.addBlock(jsonElement: JsonElement, publicKeyFile: File) {
