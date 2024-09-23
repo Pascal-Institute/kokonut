@@ -2,7 +2,6 @@ import kokonut.util.API.Companion.isHealthy
 import kokonut.core.*
 import kokonut.core.BlockChain.TICKER
 import kokonut.state.MiningState
-import kokonut.state.Node
 import kokonut.util.API.Companion.addBlock
 import kokonut.util.API.Companion.startMining
 import kokonut.util.API.Companion.stopMining

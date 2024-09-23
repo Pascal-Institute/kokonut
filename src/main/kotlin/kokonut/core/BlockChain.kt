@@ -8,7 +8,6 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
 import kokonut.state.MiningState
-import kokonut.state.Node
 import kokonut.util.GitHubFile
 import kokonut.util.SQLite
 import kokonut.util.Wallet
@@ -36,7 +35,7 @@ object BlockChain {
     val GENESIS_RAW_NODE = URL("https://raw.githubusercontent.com/Pascal-Institute/genesis_node/main/")
     val FUEL_NODE = URL("https://kokonut-oil.onrender.com/v1/catalog/service/knt_fullnode")
     var FULL_NODE = URL("https://github.com")
-    var fullNodes :List<FullNode> = emptyList()
+    var fullNodes: List<FullNode> = emptyList()
 
     var miningState = MiningState.READY
     val database = SQLite()
@@ -47,7 +46,7 @@ object BlockChain {
             loadFullnodeServices()
         }
 
-        if(fullNodes.isNotEmpty()){
+        if (fullNodes.isNotEmpty()) {
             FULL_NODE = URL(getLongestChainFullNode().ServiceAddress)
         }
 
@@ -55,16 +54,10 @@ object BlockChain {
     }
 
     private fun loadChain() {
-        when (Node.FULL) {
-            Node.FULL -> {
-                if (fullNodes.isEmpty()) {
-                    loadChainFromGenesisNode()
-                } else {
-                    loadChainFromFullNode(FULL_NODE)
-                }
-            }
-
-            Node.LIGHT -> loadChainFromFullNode(FULL_NODE)
+        if (fullNodes.isEmpty()) {
+            loadChainFromGenesisNode()
+        } else {
+            loadChainFromFullNode(FULL_NODE)
         }
     }
 
@@ -105,9 +98,9 @@ object BlockChain {
         val client = HttpClient()
         val response: HttpResponse = client.get(FUEL_NODE)
         client.close()
-        fullNodes = try{
-            json.decodeFromString<List<FullNode>>(response.body())}
-        catch (e : Exception){
+        fullNodes = try {
+            json.decodeFromString<List<FullNode>>(response.body())
+        } catch (e: Exception) {
             emptyList<FullNode>()
         }
         return fullNodes
@@ -115,7 +108,7 @@ object BlockChain {
 
     fun loadChainFromFullNode(url: URL) = runBlocking {
         try {
-            val chainFromFullNode = runBlocking {  url.getChain() }
+            val chainFromFullNode = runBlocking { url.getChain() }
             val chain = getChain()
 
             chainFromFullNode.forEach { block ->
@@ -132,16 +125,13 @@ object BlockChain {
         println("Block Chain validity : ${isValid()}")
     }
 
-    fun isRegistered(fullNode: FullNode) : Boolean {
-        if(Node.LIGHT == Node.LIGHT){
+    fun isRegistered(fullNode: FullNode): Boolean {
+
+        if (fullNode.ServiceID == "") {
             return false
         }
 
-        if(fullNode.ServiceID == ""){
-            return false
-        }
-
-        fullNodes = runBlocking {loadFullnodeServices()}
+        fullNodes = runBlocking { loadFullnodeServices() }
         return fullNodes.contains(fullNode)
     }
 
@@ -235,11 +225,11 @@ object BlockChain {
         return miningBlock
     }
 
-    fun getChain() : MutableList<Block> {
+    fun getChain(): MutableList<Block> {
         return database.fetch()
     }
 
-    fun getChainSize() : Long{
+    fun getChainSize(): Long {
         return (cachedChain!!.size).toLong()
     }
 
