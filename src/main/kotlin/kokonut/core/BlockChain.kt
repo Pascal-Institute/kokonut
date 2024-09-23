@@ -45,11 +45,7 @@ object BlockChain {
 
     init {
         runBlocking {
-            updateFullnodeServices()
-        }
-
-        if (fullNodes.isNotEmpty()) {
-           updateLongestChainFullNode()
+            updateLongestChainFullNode()
         }
 
         loadChain()
@@ -124,9 +120,6 @@ object BlockChain {
 
     fun loadChainFromFullNode() = runBlocking {
         try {
-
-            updateLongestChainFullNode()
-
             val chainFromFullNode = runBlocking { URL(fullNode.ServiceAddress).getChain() }
             val chain = getChain()
 
@@ -157,19 +150,21 @@ object BlockChain {
         return fullNodes.contains(fullNode)
     }
 
-    fun updateLongestChainFullNode(){
+    fun updateLongestChainFullNode() {
         var maxSize = 0
         var fullNodeChainSize = 0
+
         runBlocking {
             updateFullnodeServices()
-            fullNode = fullNodes[0]
+        }
 
-            for (it in fullNodes) {
-                fullNodeChainSize = URL(it.ServiceAddress).getChain().size
-                if (fullNodeChainSize > maxSize) {
-                    fullNode = it
-                    maxSize = fullNodeChainSize
-                }
+        fullNode = fullNodes[0]
+
+        for (it in fullNodes) {
+            fullNodeChainSize = URL(it.ServiceAddress).getChain().size
+            if (fullNodeChainSize > maxSize) {
+                fullNode = it
+                maxSize = fullNodeChainSize
             }
         }
     }
