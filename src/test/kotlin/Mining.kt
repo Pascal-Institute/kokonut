@@ -1,6 +1,7 @@
 import kokonut.util.API.Companion.isHealthy
 import kokonut.core.*
 import kokonut.core.BlockChain.TICKER
+import kokonut.core.BlockChain.fullNode
 import kokonut.state.MiningState
 import kokonut.util.API.Companion.addBlock
 import kokonut.util.API.Companion.startMining
@@ -19,11 +20,9 @@ fun main(): Unit = runBlocking{
         File("C:\\Users\\public\\public_key.pem")
     )
 
-    val fullNode = URL(BlockChain.getLongestChainFullNode().ServiceAddress)
-
     println(fullNode)
 
-    if(wallet.isValid() && fullNode.isHealthy()){
+    if(wallet.isValid() && URL(fullNode.ServiceAddress).isHealthy()){
 
         if(!BlockChain.isValid()){
             throw IllegalStateException("Chain is Invaild")
@@ -37,14 +36,14 @@ fun main(): Unit = runBlocking{
             "Block Chain")
 
         try {
-            fullNode.startMining(wallet.publicKeyFile)
+            URL(fullNode.ServiceAddress).startMining(wallet.publicKeyFile)
             val newBlock : Block = BlockChain.mine(wallet, data)
             val json = Json.encodeToJsonElement(newBlock)
-            fullNode.addBlock(json, wallet.publicKeyFile)
+            URL(fullNode.ServiceAddress).addBlock(json, wallet.publicKeyFile)
             BlockChain.miningState = MiningState.MINED
         }catch (e : Exception){
             BlockChain.miningState = MiningState.FAILED
-            fullNode.stopMining(wallet.publicKeyFile)
+            URL(fullNode.ServiceAddress).stopMining(wallet.publicKeyFile)
         }
     }
 

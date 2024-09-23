@@ -49,7 +49,7 @@ object BlockChain {
         }
 
         if (fullNodes.isNotEmpty()) {
-            fullNode = getLongestChainFullNode()
+           updateLongestChainFullNode()
         }
 
         loadChain()
@@ -100,11 +100,7 @@ object BlockChain {
         val client = HttpClient()
         val response: HttpResponse = client.get(FUEL_NODE)
         client.close()
-        fullNodes = try {
-            json.decodeFromString<List<FullNode>>(response.body())
-        } catch (e: Exception) {
-            emptyList<FullNode>()
-        }
+        fullNodes = json.decodeFromString<List<FullNode>>(response.body())
     }
 
     fun loadChainFromFullNode(url: URL) = runBlocking {
@@ -128,7 +124,10 @@ object BlockChain {
 
     fun loadChainFromFullNode() = runBlocking {
         try {
-            val chainFromFullNode = runBlocking { URL(getLongestChainFullNode().ServiceAddress).getChain() }
+
+            updateLongestChainFullNode()
+
+            val chainFromFullNode = runBlocking { URL(fullNode.ServiceAddress).getChain() }
             val chain = getChain()
 
             chainFromFullNode.forEach { block ->
@@ -158,13 +157,12 @@ object BlockChain {
         return fullNodes.contains(fullNode)
     }
 
-    fun getLongestChainFullNode(): FullNode {
+    fun updateLongestChainFullNode(){
         var maxSize = 0
         var fullNodeChainSize = 0
-        var fullnode :FullNode
         runBlocking {
             updateFullnodeServices()
-            fullnode = fullNodes[0]
+            fullNode = fullNodes[0]
 
             for (it in fullNodes) {
                 fullNodeChainSize = URL(it.ServiceAddress).getChain().size
@@ -174,8 +172,6 @@ object BlockChain {
                 }
             }
         }
-
-        return fullnode
     }
 
     fun getGenesisBlock(): Block = cachedChain?.firstOrNull() ?: throw IllegalStateException("Chain is Empty")

@@ -7,9 +7,7 @@ import java.io.File
 fun main() {
 
    println(libraryVersion)
-
    println(protocolVersion)
-
    println(BlockChain.getLastBlock())
    println(BlockChain.getTotalCurrencyVolume())
 
