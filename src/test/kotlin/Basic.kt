@@ -10,7 +10,6 @@ fun main() {
 
    println(protocolVersion)
 
-   println(BlockChain.FULL_NODE)
    println(BlockChain.getLastBlock())
    println(BlockChain.getTotalCurrencyVolume())
 

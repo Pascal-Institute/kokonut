@@ -35,20 +35,21 @@ object BlockChain {
     val GENESIS_NODE = URL("https://api.github.com/repos/Pascal-Institute/genesis_node/contents/")
     val GENESIS_RAW_NODE = URL("https://raw.githubusercontent.com/Pascal-Institute/genesis_node/main/")
     val FUEL_NODE = URL("https://kokonut-oil.onrender.com/v1/catalog/service/knt_fullnode")
-    var FULL_NODE = URL("https://github.com")
-    var fullNodes: List<FullNode> = emptyList()
+
     var fullNode = FullNode("", "", "", Weights(0, 0))
+    var fullNodes: List<FullNode> = emptyList()
+
     var miningState = MiningState.READY
     val database = SQLite()
     private var cachedChain: List<Block>? = null
 
     init {
         runBlocking {
-            loadFullnodeServices()
+            updateFullnodeServices()
         }
 
         if (fullNodes.isNotEmpty()) {
-            FULL_NODE = URL(getLongestChainFullNode().ServiceAddress)
+            fullNode = getLongestChainFullNode()
         }
 
         loadChain()
@@ -58,7 +59,7 @@ object BlockChain {
         if (fullNodes.isEmpty()) {
             loadChainFromGenesisNode()
         } else {
-            loadChainFromFullNode(FULL_NODE)
+            loadChainFromFullNode()
         }
     }
 
@@ -95,7 +96,7 @@ object BlockChain {
         println("Block Chain validity : ${isValid()}")
     }
 
-    suspend fun loadFullnodeServices(): List<FullNode> {
+    suspend fun updateFullnodeServices() {
         val client = HttpClient()
         val response: HttpResponse = client.get(FUEL_NODE)
         client.close()
@@ -104,7 +105,6 @@ object BlockChain {
         } catch (e: Exception) {
             emptyList<FullNode>()
         }
-        return fullNodes
     }
 
     fun loadChainFromFullNode(url: URL) = runBlocking {
@@ -126,29 +126,50 @@ object BlockChain {
         println("Block Chain validity : ${isValid()}")
     }
 
-    fun isRegistered(fullNode: FullNode): Boolean {
+    fun loadChainFromFullNode() = runBlocking {
+        try {
+            val chainFromFullNode = runBlocking { URL(getLongestChainFullNode().ServiceAddress).getChain() }
+            val chain = getChain()
+
+            chainFromFullNode.forEach { block ->
+                if (block !in chain) {
+                    database.insert(block)
+                }
+            }
+        } catch (e: Exception) {
+            println("Aborted : ${e.message}")
+        }
+
+        syncChain()
+
+        println("Block Chain validity : ${isValid()}")
+    }
+
+    fun isRegistered(): Boolean {
 
         if (fullNode.ServiceID == "") {
             return false
         }
 
-        fullNodes = runBlocking { loadFullnodeServices() }
+        runBlocking {
+            updateFullnodeServices()
+        }
+
         return fullNodes.contains(fullNode)
     }
 
     fun getLongestChainFullNode(): FullNode {
         var maxSize = 0
         var fullNodeChainSize = 0
-        lateinit var fullnode: FullNode
-
+        var fullnode :FullNode
         runBlocking {
-            fullNodes = loadFullnodeServices()
+            updateFullnodeServices()
             fullnode = fullNodes[0]
 
             for (it in fullNodes) {
                 fullNodeChainSize = URL(it.ServiceAddress).getChain().size
                 if (fullNodeChainSize > maxSize) {
-                    fullnode = it
+                    fullNode = it
                     maxSize = fullNodeChainSize
                 }
             }
@@ -169,9 +190,9 @@ object BlockChain {
     fun mine(wallet: Wallet, data: Data): Block {
         miningState = MiningState.MINING
 
-        loadChainFromFullNode(FULL_NODE)
+        loadChainFromFullNode()
 
-        FULL_NODE.startMining(wallet.publicKeyFile)
+        URL(fullNode.ServiceAddress).startMining(wallet.publicKeyFile)
 
         if (!isValid()) {
             miningState = MiningState.FAILED
@@ -201,7 +222,7 @@ object BlockChain {
         )
 
         data.reward = Utility.setReward(miningBlock.index)
-        val fullNodeReward = FULL_NODE.getReward(miningBlock.index)
+        val fullNodeReward = URL(fullNode.ServiceAddress).getReward(miningBlock.index)
 
         if (data.reward != fullNodeReward) {
             miningState = MiningState.FAILED

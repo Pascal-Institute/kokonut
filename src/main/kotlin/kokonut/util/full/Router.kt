@@ -50,9 +50,9 @@ class Router {
                     }
                     body {
                         h1 { +"Welcome!" }
-                        h1 { +"Full Node Registration : ${BlockChain.isRegistered(fullNode)}" }
-                        h1 { +"Kokonut Protocol Version : ${protocolVersion}" }
-                        h1 { +"Kokonut Library Version : ${libraryVersion}" }
+                        h1 { +"Full Node Registration : ${BlockChain.isRegistered()}" }
+                        h1 { +"Kokonut Protocol Version : $protocolVersion" }
+                        h1 { +"Kokonut Library Version : $libraryVersion" }
                         h1 { +"Timestamp : ${System.currentTimeMillis()}" }
                         h1 { +"Get Chain : /getChain" }
                         h1 { +"Get Miners : /getMiners" }
