@@ -11,6 +11,7 @@ import io.ktor.serialization.kotlinx.json.*
 import kokonut.Policy
 import kokonut.core.Block
 import kokonut.core.BlockChain
+import kokonut.core.BlockChain.fullNode
 import kokonut.util.Utility.Companion.writeFilePart
 import kokonut.util.Utility.Companion.writePart
 import kokonut.util.full.Router
@@ -231,7 +232,7 @@ class API {
             val response : HttpResponse
 
             runBlocking {
-               response = client.post(this@propagate.path + "/propagate?size=${BlockChain.getChainSize()}&id=${Router.fullNode.ServiceID}&address=${Router.fullNode.ServiceAddress}")
+               response = client.post(this@propagate.path + "/propagate?size=${BlockChain.getChainSize()}&id=${fullNode.ServiceID}&address=${fullNode.ServiceAddress}")
             }
 
             return response

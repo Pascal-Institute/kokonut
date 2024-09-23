@@ -18,6 +18,7 @@ import kokonut.util.Wallet
 import kokonut.core.Block
 import kokonut.core.BlockChain
 import kokonut.core.BlockChain.POLICY_NODE
+import kokonut.core.BlockChain.fullNode
 import kokonut.core.Version.libraryVersion
 import kokonut.core.Version.protocolVersion
 import kokonut.state.MiningState
@@ -39,7 +40,6 @@ class Router {
 
     companion object {
 
-        var fullNode = FullNode("", "", "", Weights(0, 0))
         var miners: MutableSet<Miner> = mutableSetOf()
 
         fun Route.root() {

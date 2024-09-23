@@ -18,6 +18,7 @@ import kokonut.util.API.Companion.startMining
 import kokonut.util.Utility
 import kokonut.util.Utility.Companion.truncate
 import kokonut.util.full.FullNode
+import kokonut.util.full.Weights
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import java.net.URL
@@ -36,7 +37,7 @@ object BlockChain {
     val FUEL_NODE = URL("https://kokonut-oil.onrender.com/v1/catalog/service/knt_fullnode")
     var FULL_NODE = URL("https://github.com")
     var fullNodes: List<FullNode> = emptyList()
-
+    var fullNode = FullNode("", "", "", Weights(0, 0))
     var miningState = MiningState.READY
     val database = SQLite()
     private var cachedChain: List<Block>? = null
