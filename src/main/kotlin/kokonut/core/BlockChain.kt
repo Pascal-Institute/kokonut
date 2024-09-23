@@ -45,10 +45,32 @@ object BlockChain {
 
     init {
         runBlocking {
-            updateLongestChainFullNode()
+            loadFullNodes()
         }
 
         loadChain()
+    }
+
+    fun loadFullNodes() {
+        var maxSize = 0
+        var fullNodeChainSize = 0
+
+        runBlocking {
+            val client = HttpClient()
+            val response: HttpResponse = client.get(FUEL_NODE)
+            client.close()
+            fullNodes = json.decodeFromString<List<FullNode>>(response.body())
+        }
+
+        fullNode = fullNodes[0]
+
+        for (it in fullNodes) {
+            fullNodeChainSize = URL(it.ServiceAddress).getChain().size
+            if (fullNodeChainSize > maxSize) {
+                fullNode = it
+                maxSize = fullNodeChainSize
+            }
+        }
     }
 
     private fun loadChain() {
@@ -90,13 +112,6 @@ object BlockChain {
         syncChain()
 
         println("Block Chain validity : ${isValid()}")
-    }
-
-    suspend fun updateFullnodeServices() {
-        val client = HttpClient()
-        val response: HttpResponse = client.get(FUEL_NODE)
-        client.close()
-        fullNodes = json.decodeFromString<List<FullNode>>(response.body())
     }
 
     fun loadChainFromFullNode(url: URL) = runBlocking {
@@ -144,29 +159,10 @@ object BlockChain {
         }
 
         runBlocking {
-            updateFullnodeServices()
+            loadFullNodes()
         }
 
         return fullNodes.contains(fullNode)
-    }
-
-    fun updateLongestChainFullNode() {
-        var maxSize = 0
-        var fullNodeChainSize = 0
-
-        runBlocking {
-            updateFullnodeServices()
-        }
-
-        fullNode = fullNodes[0]
-
-        for (it in fullNodes) {
-            fullNodeChainSize = URL(it.ServiceAddress).getChain().size
-            if (fullNodeChainSize > maxSize) {
-                fullNode = it
-                maxSize = fullNodeChainSize
-            }
-        }
     }
 
     fun getGenesisBlock(): Block = cachedChain?.firstOrNull() ?: throw IllegalStateException("Chain is Empty")

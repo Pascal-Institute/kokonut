@@ -423,6 +423,11 @@ class Router {
                     val publicKey: PublicKey = Wallet.loadPublicKey(publicKeyFile!!.path)
                     val miner: String = Utility.calculateHash(publicKey)
 
+                    if (block!!.index == BlockChain.getLastBlock().index) {
+                        call.respond(HttpStatusCode.Created, "Block Already Propagated")
+                        return@post
+                    }
+
                     //Check Miner
                     if (block!!.data.miner != miner) {
                         call.respond(HttpStatusCode.Created, "Block Add Failed : Invalid miner")
