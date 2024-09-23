@@ -1,22 +1,20 @@
 import kokonut.core.BlockChain
 
 fun main(){
-    val blockChain = BlockChain()
-
     try {
         val tableName = "kovault"
-        if (blockChain.database.tableExists(tableName)) {
+        if (BlockChain.database.tableExists(tableName)) {
             println("Table '$tableName' exists.")
 
             println("Table structure:")
-            blockChain.database.printTableStructure(tableName)
+            BlockChain.database.printTableStructure(tableName)
 
             println("Table data:")
-            blockChain.database.printTableData(tableName)
+            BlockChain.database.printTableData(tableName)
         } else {
             println("Table '$tableName' does not exist.")
         }
     } finally {
-        blockChain.database.connection.close()
+        BlockChain.database.connection.close()
     }
 }

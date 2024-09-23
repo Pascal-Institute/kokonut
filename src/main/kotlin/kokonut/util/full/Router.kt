@@ -17,7 +17,7 @@ import io.ktor.server.routing.*
 import kokonut.util.Wallet
 import kokonut.core.Block
 import kokonut.core.BlockChain
-import kokonut.core.BlockChain.Companion.POLICY_NODE
+import kokonut.core.BlockChain.POLICY_NODE
 import kokonut.core.Version.libraryVersion
 import kokonut.core.Version.protocolVersion
 import kokonut.state.MiningState
@@ -42,7 +42,7 @@ class Router {
         var fullNode = FullNode("", "", "", Weights(0, 0))
         var miners: MutableSet<Miner> = mutableSetOf()
 
-        fun Route.root(blockchain: BlockChain): BlockChain {
+        fun Route.root() {
             get("/") {
                 call.respondHtml(HttpStatusCode.OK) {
                     head {
@@ -50,7 +50,7 @@ class Router {
                     }
                     body {
                         h1 { +"Welcome!" }
-                        h1 { +"Full Node Registration : ${blockchain.isRegistered(fullNode)}" }
+                        h1 { +"Full Node Registration : ${BlockChain.isRegistered(fullNode)}" }
                         h1 { +"Kokonut Protocol Version : ${protocolVersion}" }
                         h1 { +"Kokonut Library Version : ${libraryVersion}" }
                         h1 { +"Timestamp : ${System.currentTimeMillis()}" }
@@ -64,8 +64,6 @@ class Router {
 
                 }
             }
-
-            return blockchain
         }
 
         fun Route.register() {
@@ -121,7 +119,7 @@ class Router {
             }
         }
 
-        fun Route.isValid(blockchain: BlockChain): BlockChain {
+        fun Route.isValid() {
             get("/isValid") {
                 call.respondHtml(HttpStatusCode.OK) {
                     head {
@@ -129,7 +127,7 @@ class Router {
                     }
 
                     body {
-                        if (blockchain.isValid()) {
+                        if (BlockChain.isValid()) {
                             h1 { +"Valid" }
                         } else {
                             h1 { +"Invalid" }
@@ -137,14 +135,12 @@ class Router {
                     }
                 }
             }
-
-            return blockchain
         }
 
-        fun Route.getLastBlock(blockchain: BlockChain): BlockChain {
+        fun Route.getLastBlock() {
             get("/getLastBlock") {
 
-                val lastBlock = blockchain.getLastBlock()
+                val lastBlock = BlockChain.getLastBlock()
 
                 call.respondHtml(HttpStatusCode.OK) {
 
@@ -164,23 +160,19 @@ class Router {
                     }
                 }
             }
-
-            return blockchain
         }
 
-        fun Route.getTotalCurrencyVolume(blockchain: BlockChain): BlockChain {
+        fun Route.getTotalCurrencyVolume() {
             get("/getTotalCurrencyVolume") {
                 call.respondHtml(HttpStatusCode.OK) {
                     head {
                         title("Get Last Block")
                     }
                     body {
-                        h1 { +"Total Currency Volume : ${blockchain.getTotalCurrencyVolume()} KNT" }
+                        h1 { +"Total Currency Volume : ${BlockChain.getTotalCurrencyVolume()} KNT" }
                     }
                 }
             }
-
-            return blockchain
         }
 
         fun Route.getMiners() {
@@ -209,16 +201,14 @@ class Router {
             }
         }
 
-        fun Route.getChain(blockchain: BlockChain): BlockChain {
+        fun Route.getChain() {
             get("/getChain") {
                 //Check chain
-                if (!blockchain.isValid()) {
+                if (!BlockChain.isValid()) {
                     call.respond(HttpStatusCode.Created, "Get Chain Failed : Server block chain is invalid")
                 }
-                call.respond(blockchain.getChain())
+                call.respond(BlockChain.getChain())
             }
-
-            return blockchain
         }
 
         fun Route.startMining() {
@@ -245,7 +235,7 @@ class Router {
             }
         }
 
-        fun Route.submit(blockchain: BlockChain): BlockChain {
+        fun Route.submit() {
             post("/submit") {
                 val keyPath = "/app/key"
                 Utility.createDirectory(keyPath)
@@ -354,11 +344,9 @@ class Router {
 
                 client.close()
             }
-
-            return blockchain
         }
 
-        fun Route.propagate(blockchain: BlockChain): BlockChain {
+        fun Route.propagate() {
             post("/propagate") {
                 val size = call.request.queryParameters["size"]?.toLongOrNull()
                 val id = call.request.queryParameters["id"]
@@ -369,29 +357,27 @@ class Router {
                     return@post
                 }
 
-                if (blockchain.getChainSize() < size) {
-                    blockchain.loadChainFromFullNode(URL(address))
+                if (BlockChain.getChainSize() < size) {
+                    BlockChain.loadChainFromFullNode(URL(address))
                     call.respond(HttpStatusCode.OK, "Propagate Succeed")
-                    blockchain.fullNodes.forEach {
+                    BlockChain.fullNodes.forEach {
                         run {
                             if (it.ServiceAddress != address && it.ServiceAddress != fullNode.ServiceAddress) {
-                                val response = URL(it.ServiceAddress).propagate(blockchain)
+                                val response = URL(it.ServiceAddress).propagate()
                                 println(response)
                             }
                         }
                     }
 
-                } else if (blockchain.getChainSize() == size) {
+                } else if (BlockChain.getChainSize() == size) {
 
                 } else {
                     call.respond(HttpStatusCode.Created, "Propagate Failed")
                 }
             }
-
-            return blockchain
         }
 
-        fun Route.addBlock(blockchain: BlockChain): BlockChain {
+        fun Route.addBlock() {
             post("/addBlock") {
 
                 val keyPath = "/app/key"
@@ -399,7 +385,7 @@ class Router {
 
                 val policy = POLICY_NODE.getPolicy()
 
-                if (!blockchain.isValid()) {
+                if (!BlockChain.isValid()) {
                     call.respond(HttpStatusCode.Created, "Block Add Failed : Server block chain is invalid")
                 }
 
@@ -444,10 +430,10 @@ class Router {
                     }
 
                     //Check Index
-                    if (block!!.index != blockchain.getLastBlock().index + 1) {
+                    if (block!!.index != BlockChain.getLastBlock().index + 1) {
                         call.respond(
                             HttpStatusCode.Created,
-                            "Block Add Failed : Invalid index, New Block index : ${block!!.index} / Last Block index ${blockchain.getLastBlock().index}"
+                            "Block Add Failed : Invalid index, New Block index : ${block!!.index} / Last Block index ${BlockChain.getLastBlock().index}"
                         )
                         return@post
                     }
@@ -475,10 +461,10 @@ class Router {
                     val calculatedHash = block!!.calculateHash()
                     if (block!!.hash == calculatedHash) {
 
-                        blockchain.database.insert(block!!)
+                        BlockChain.database.insert(block!!)
 
                         //propagate...
-                        blockchain.fullNodes.forEach {
+                        BlockChain.fullNodes.forEach {
                             if (it.ServiceAddress != fullNode.ServiceAddress) {
                                 try {
                                     URL(it.ServiceAddress).addBlock(Json.encodeToJsonElement(block), publicKeyFile!!)
@@ -508,8 +494,6 @@ class Router {
                 }
                 Paths.get(keyPath).toFile().deleteRecursively()
             }
-
-            return blockchain
         }
 
         fun Route.stopMining() {

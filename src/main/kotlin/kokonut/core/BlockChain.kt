@@ -23,14 +23,12 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import java.net.URL
 
-class BlockChain(val node: Node = Node.LIGHT) {
+object BlockChain {
 
-    companion object {
-        const val TICKER = "KNT"
-        val POLICY_NODE = URL("https://pascal-institute.github.io/kokonut-oil-station")
-    }
+    const val TICKER = "KNT"
+    val POLICY_NODE = URL("https://pascal-institute.github.io/kokonut-oil-station")
 
-    val json = Json {
+    private val json = Json {
         ignoreUnknownKeys = true
     }
 
@@ -53,7 +51,11 @@ class BlockChain(val node: Node = Node.LIGHT) {
             FULL_NODE = URL(getLongestChainFullNode().ServiceAddress)
         }
 
-        when (node) {
+        loadChain()
+    }
+
+    private fun loadChain() {
+        when (Node.FULL) {
             Node.FULL -> {
                 if (fullNodes.isEmpty()) {
                     loadChainFromGenesisNode()
@@ -67,7 +69,6 @@ class BlockChain(val node: Node = Node.LIGHT) {
     }
 
     fun loadChainFromGenesisNode() = runBlocking {
-
         val client = HttpClient(CIO) {
             install(ContentNegotiation) {
                 json(Json { ignoreUnknownKeys = true })
@@ -132,8 +133,7 @@ class BlockChain(val node: Node = Node.LIGHT) {
     }
 
     fun isRegistered(fullNode: FullNode) : Boolean {
-
-        if(node == Node.LIGHT){
+        if(Node.LIGHT == Node.LIGHT){
             return false
         }
 
@@ -268,5 +268,4 @@ class BlockChain(val node: Node = Node.LIGHT) {
     private fun syncChain() {
         cachedChain = database.fetch().sortedBy { it.index }
     }
-
 }

@@ -10,10 +10,9 @@ fun main() {
 
    println(protocolVersion)
 
-   val blockChain = BlockChain()
-   println(blockChain.FULL_NODE)
-   println(blockChain.getLastBlock())
-   println(blockChain.getTotalCurrencyVolume())
+   println(BlockChain.FULL_NODE)
+   println(BlockChain.getLastBlock())
+   println(BlockChain.getTotalCurrencyVolume())
 
    val wallet = Wallet(
        File("C:\\Users\\public\\private_key.pem"),
