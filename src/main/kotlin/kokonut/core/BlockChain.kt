@@ -62,9 +62,8 @@ object BlockChain {
             fullNodes = json.decodeFromString<List<FullNode>>(response.body())
         }
 
-        fullNode = fullNodes[0]
-
         for (it in fullNodes) {
+            fullNode = fullNodes[0]
             fullNodeChainSize = URL(it.ServiceAddress).getChain().size
             if (fullNodeChainSize > maxSize) {
                 fullNode = it
