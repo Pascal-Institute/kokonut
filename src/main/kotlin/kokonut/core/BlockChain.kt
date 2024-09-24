@@ -135,9 +135,9 @@ object BlockChain {
         println("Block Chain validity : ${isValid()}")
     }
 
-    fun loadChainFromFullNode() = runBlocking {
+    fun loadChainFromFullNode() {
         try {
-            val chainFromFullNode = runBlocking { URL(fullNode.ServiceAddress).getChain() }
+            val chainFromFullNode = URL(fullNode.ServiceAddress).getChain()
             val chain = getChain()
 
             chainFromFullNode.forEach { block ->
