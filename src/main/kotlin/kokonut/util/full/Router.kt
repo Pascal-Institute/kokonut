@@ -18,6 +18,7 @@ import kokonut.util.Wallet
 import kokonut.core.Block
 import kokonut.core.BlockChain
 import kokonut.core.BlockChain.POLICY_NODE
+import kokonut.core.BlockChain.SERVICE_ADDRESS
 import kokonut.core.BlockChain.fullNode
 import kokonut.core.Version.libraryVersion
 import kokonut.core.Version.protocolVersion
@@ -327,13 +328,17 @@ class Router {
                 println("Response Status: ${response.status}")
                 println("Response Body: $response")
 
-                if (response.status == HttpStatusCode.OK) {
-                    fullNode = FullNode(
-                        serviceRegData.ID,
-                        serviceRegData.Name,
-                        serviceRegData.Address,
-                        Weights(1, 1)
-                    )
+//                if (response.status == HttpStatusCode.OK) {
+//                    fullNode = FullNode(
+//                        serviceRegData.ID,
+//                        serviceRegData.Name,
+//                        serviceRegData.Address,
+//                        Weights(1, 1)
+//                    )
+//                }
+
+                if(response.status == HttpStatusCode.OK){
+                    SERVICE_ADDRESS = serviceRegData.Address
                 }
 
                 Utility.createDirectory(keyPath)

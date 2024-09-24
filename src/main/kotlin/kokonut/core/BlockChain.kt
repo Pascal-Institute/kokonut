@@ -36,7 +36,10 @@ object BlockChain {
     val GENESIS_RAW_NODE = URL("https://raw.githubusercontent.com/Pascal-Institute/genesis_node/main/")
     val FUEL_NODE = URL("https://kokonut-oil.onrender.com/v1/catalog/service/knt_fullnode")
 
+    var SERVICE_ADDRESS = ""
+
     var fullNode = FullNode("", "", "", Weights(0, 0))
+
     var fullNodes: List<FullNode> = emptyList()
 
     var miningState = MiningState.READY
@@ -61,10 +64,13 @@ object BlockChain {
 
         for (it in fullNodes) {
             fullNode = fullNodes[0]
-            fullNodeChainSize = URL(it.ServiceAddress).getChain().size
-            if (fullNodeChainSize > maxSize) {
-                fullNode = it
-                maxSize = fullNodeChainSize
+
+            if(SERVICE_ADDRESS != it.ServiceAddress){
+                fullNodeChainSize = URL(it.ServiceAddress).getChain().size
+                if (fullNodeChainSize > maxSize) {
+                    fullNode = it
+                    maxSize = fullNodeChainSize
+                }
             }
         }
     }
