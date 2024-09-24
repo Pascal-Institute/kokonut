@@ -44,10 +44,7 @@ object BlockChain {
     private var cachedChain: List<Block>? = null
 
     init {
-        runBlocking {
-            loadFullNodes()
-        }
-
+        loadFullNodes()
         loadChain()
     }
 
@@ -157,11 +154,13 @@ object BlockChain {
             return false
         }
 
-        runBlocking {
-            loadFullNodes()
+        loadFullNodes()
+
+        if(fullNodes.isNotEmpty()){
+            return fullNodes.contains(fullNode)
         }
 
-        return fullNodes.contains(fullNode)
+       return false
     }
 
     fun getGenesisBlock(): Block = cachedChain?.firstOrNull() ?: throw IllegalStateException("Chain is Empty")
