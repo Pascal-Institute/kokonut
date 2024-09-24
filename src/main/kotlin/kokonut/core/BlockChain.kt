@@ -14,6 +14,7 @@ import kokonut.util.Wallet
 import kokonut.util.API.Companion.getChain
 import kokonut.util.API.Companion.getPolicy
 import kokonut.util.API.Companion.getReward
+import kokonut.util.API.Companion.isHealthy
 import kokonut.util.API.Companion.startMining
 import kokonut.util.Utility
 import kokonut.util.Utility.Companion.truncate
@@ -51,7 +52,7 @@ object BlockChain {
         loadChain()
     }
 
-    fun loadFullNodes() {
+    private fun loadFullNodes() {
         var maxSize = 0
         var fullNodeChainSize = 0
 
@@ -60,7 +61,10 @@ object BlockChain {
             val response: HttpResponse = client.get(FUEL_NODE)
             client.close()
             fullNodes = json.decodeFromString<List<FullNode>>(response.body())
+            fullNodes = fullNodes.filter { URL(it.ServiceAddress).isHealthy() }
         }
+
+
 
         for (it in fullNodes) {
             fullNode = fullNodes[0]
