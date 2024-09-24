@@ -30,7 +30,7 @@ class API {
         suspend fun URL.isHealthy(): Boolean {
             val client = HttpClient(CIO) {
                 install(HttpTimeout) {
-                    requestTimeoutMillis = 3000
+                    requestTimeoutMillis = 1500
                 }
                 expectSuccess = false
             }

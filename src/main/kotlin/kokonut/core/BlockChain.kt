@@ -52,7 +52,7 @@ object BlockChain {
         loadChain()
     }
 
-    private fun loadFullNodes() {
+    internal fun loadFullNodes() {
         var maxSize = 0
         var fullNodeChainSize = 0
 

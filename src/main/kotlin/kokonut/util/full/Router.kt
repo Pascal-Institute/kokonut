@@ -20,6 +20,7 @@ import kokonut.core.BlockChain
 import kokonut.core.BlockChain.POLICY_NODE
 import kokonut.core.BlockChain.SERVICE_ADDRESS
 import kokonut.core.BlockChain.fullNode
+import kokonut.core.BlockChain.loadFullNodes
 import kokonut.core.Version.libraryVersion
 import kokonut.core.Version.protocolVersion
 import kokonut.state.MiningState
@@ -384,6 +385,8 @@ class Router {
 
         fun Route.addBlock() {
             post("/addBlock") {
+
+                loadFullNodes()
 
                 val keyPath = "/app/key"
                 Utility.createDirectory(keyPath)
