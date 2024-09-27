@@ -61,10 +61,7 @@ object BlockChain {
             val response: HttpResponse = client.get(FUEL_NODE)
             client.close()
             fullNodes = json.decodeFromString<List<FullNode>>(response.body())
-            fullNodes = fullNodes.filter { URL(it.ServiceAddress).isHealthy() }
         }
-
-
 
         for (it in fullNodes) {
             fullNode = fullNodes[0]
