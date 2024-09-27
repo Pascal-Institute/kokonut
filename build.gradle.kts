@@ -20,6 +20,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-html-jvm:0.8.0")
     implementation("io.ktor:ktor-server-core-jvm:2.3.4")
     implementation("io.ktor:ktor-server-html-builder:2.3.4")
+    implementation("io.ktor:ktor-server-netty-jvm:2.3.4")
+    implementation("io.ktor:ktor-server-content-negotiation-jvm:2.3.4")
     implementation("io.ktor:ktor-client-core:2.3.4")
     implementation("io.ktor:ktor-client-cio:2.3.4")
     implementation("io.ktor:ktor-client-content-negotiation:2.3.4")
