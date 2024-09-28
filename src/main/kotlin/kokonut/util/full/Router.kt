@@ -24,14 +24,12 @@ import kokonut.core.BlockChain.loadFullNodes
 import kokonut.core.Version.libraryVersion
 import kokonut.core.Version.protocolVersion
 import kokonut.state.MiningState
-import kokonut.util.API.Companion.addBlock
 import kokonut.util.API.Companion.getPolicy
 import kokonut.util.API.Companion.propagate
 import kokonut.util.Miner
 import kokonut.util.Utility
 import kotlinx.html.*
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.encodeToJsonElement
 import java.io.File
 import java.net.URL
 import java.nio.file.Paths
@@ -433,13 +431,11 @@ class Router {
 
                     if (block!!.index == BlockChain.getLastBlock().index) {
                         call.respond(HttpStatusCode.Created, "Block Already Propagated")
-                        return@post
                     }
 
                     //Check Miner
                     if (block!!.data.miner != miner) {
                         call.respond(HttpStatusCode.Created, "Block Add Failed : Invalid miner")
-                        return@post
                     }
 
                     //Check Index
@@ -448,7 +444,6 @@ class Router {
                             HttpStatusCode.Created,
                             "Block Add Failed : Invalid index, New Block index : ${block!!.index} / Last Block index ${BlockChain.getLastBlock().index}"
                         )
-                        return@post
                     }
 
 
@@ -458,7 +453,6 @@ class Router {
                             HttpStatusCode.Created,
                             "Block Add Failed : Fuel Node version ${policy.version} and Client version ${block!!.version} is different"
                         )
-                        return@post
                     }
 
                     //Check Difficulty
@@ -467,7 +461,6 @@ class Router {
                             HttpStatusCode.Created,
                             "Block Add Failed : Fuel Node difficulty ${policy.difficulty} and Client difficulty ${block!!.difficulty} is different"
                         )
-                        return@post
                     }
 
                     //Check Hash
@@ -486,11 +479,9 @@ class Router {
                             HttpStatusCode.Created,
                             "Block Add Failed : Invalid Block, calculatedHash : ${calculatedHash} blockHash : ${block!!.hash}"
                         )
-                        return@post
                     }
                 } else {
                     call.respondText("Missing block or miner public key", status = HttpStatusCode.BadRequest)
-                    return@post
                 }
                 Paths.get(keyPath).toFile().deleteRecursively()
             }

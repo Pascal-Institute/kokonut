@@ -33,7 +33,7 @@ fun main(): Unit = runBlocking{
             TICKER,
             miner= wallet.miner,
             emptyList(),
-            "Block Chain")
+            "Propagate Vision of Pascal Institute")
 
         try {
             URL(fullNode.ServiceAddress).startMining(wallet.publicKeyFile)
