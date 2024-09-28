@@ -1,8 +1,8 @@
 import kokonut.util.API.Companion.isHealthy
 import kokonut.core.*
-import kokonut.core.BlockChain.Companion.TICKER
+import kokonut.core.BlockChain.TICKER
+import kokonut.core.BlockChain.fullNode
 import kokonut.state.MiningState
-import kokonut.state.Node
 import kokonut.util.API.Companion.addBlock
 import kokonut.util.API.Companion.startMining
 import kokonut.util.API.Companion.stopMining
@@ -15,20 +15,16 @@ import java.net.URL
 
 fun main(): Unit = runBlocking{
 
-    val blockChain = BlockChain(Node.LIGHT)
-
     val wallet = Wallet(
         File("C:\\Users\\public\\private_key.pem"),
         File("C:\\Users\\public\\public_key.pem")
     )
 
-    val fullNode = URL(blockChain.getLongestChainFullNode().ServiceAddress)
-
     println(fullNode)
 
-    if(wallet.isValid() && fullNode.isHealthy()){
+    if(wallet.isValid() && URL(fullNode.ServiceAddress).isHealthy()){
 
-        if(!blockChain.isValid()){
+        if(!BlockChain.isValid()){
             throw IllegalStateException("Chain is Invaild")
         }
 
@@ -37,19 +33,29 @@ fun main(): Unit = runBlocking{
             TICKER,
             miner= wallet.miner,
             emptyList(),
-            "Block Chain")
+            "Propagate Vision of Pascal Institute")
 
         try {
-            fullNode.startMining(wallet.publicKeyFile)
-            val newBlock : Block = blockChain.mine(wallet, data)
+            URL(fullNode.ServiceAddress).startMining(wallet.publicKeyFile)
+            val newBlock : Block = BlockChain.mine(wallet, data)
             val json = Json.encodeToJsonElement(newBlock)
-            fullNode.addBlock(json, wallet.publicKeyFile)
-            blockChain.miningState = MiningState.MINED
+
+            //propagate...
+            BlockChain.fullNodes.forEach {
+
+                    try {
+                        URL(it.ServiceAddress).addBlock(json, wallet.publicKeyFile)
+                    } catch (e: Exception) {
+                        println("Propagation Failed at ${it.ServiceAddress} : $e")
+                    }
+
+            }
+            BlockChain.miningState = MiningState.MINED
         }catch (e : Exception){
-            blockChain.miningState = MiningState.FAILED
-            fullNode.stopMining(wallet.publicKeyFile)
+            BlockChain.miningState = MiningState.FAILED
+            URL(fullNode.ServiceAddress).stopMining(wallet.publicKeyFile)
         }
     }
 
-    blockChain.miningState = MiningState.READY
+    BlockChain.miningState = MiningState.READY
 }

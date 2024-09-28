@@ -1,6 +1,6 @@
 import kokonut.util.Utility.Companion.calculateHash
 import kokonut.core.Block
-import kokonut.core.BlockChain.Companion.TICKER
+import kokonut.core.BlockChain.TICKER
 import kokonut.core.Data
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString

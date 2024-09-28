@@ -8,66 +8,83 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
 import kokonut.state.MiningState
-import kokonut.state.Node
 import kokonut.util.GitHubFile
 import kokonut.util.SQLite
 import kokonut.util.Wallet
 import kokonut.util.API.Companion.getChain
 import kokonut.util.API.Companion.getPolicy
 import kokonut.util.API.Companion.getReward
+import kokonut.util.API.Companion.isHealthy
 import kokonut.util.API.Companion.startMining
 import kokonut.util.Utility
 import kokonut.util.Utility.Companion.truncate
 import kokonut.util.full.FullNode
+import kokonut.util.full.Weights
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import java.net.URL
 
-class BlockChain(val node: Node = Node.LIGHT) {
+object BlockChain {
 
-    companion object {
-        const val TICKER = "KNT"
-        val POLICY_NODE = URL("https://pascal-institute.github.io/kokonut-oil-station")
-    }
+    const val TICKER = "KNT"
+    val POLICY_NODE = URL("https://pascal-institute.github.io/kokonut-oil-station")
 
-    val json = Json {
+    private val json = Json {
         ignoreUnknownKeys = true
     }
 
     val GENESIS_NODE = URL("https://api.github.com/repos/Pascal-Institute/genesis_node/contents/")
     val GENESIS_RAW_NODE = URL("https://raw.githubusercontent.com/Pascal-Institute/genesis_node/main/")
     val FUEL_NODE = URL("https://kokonut-oil.onrender.com/v1/catalog/service/knt_fullnode")
-    var FULL_NODE = URL("https://github.com")
-    var fullNodes :List<FullNode> = emptyList()
+
+    var SERVICE_ADDRESS = ""
+
+    var fullNode = FullNode("", "", "", Weights(0, 0))
+
+    var fullNodes: List<FullNode> = emptyList()
 
     var miningState = MiningState.READY
     val database = SQLite()
     private var cachedChain: List<Block>? = null
 
     init {
+        loadFullNodes()
+        loadChain()
+    }
+
+    internal fun loadFullNodes() {
+        var maxSize = 0
+        var fullNodeChainSize = 0
+
         runBlocking {
-            loadFullnodeServices()
+            val client = HttpClient()
+            val response: HttpResponse = client.get(FUEL_NODE)
+            client.close()
+            fullNodes = json.decodeFromString<List<FullNode>>(response.body())
         }
 
-        if(fullNodes.isNotEmpty()){
-            FULL_NODE = URL(getLongestChainFullNode().ServiceAddress)
-        }
+        for (it in fullNodes) {
+            fullNode = fullNodes[0]
 
-        when (node) {
-            Node.FULL -> {
-                if (fullNodes.isEmpty()) {
-                    loadChainFromGenesisNode()
-                } else {
-                    loadChainFromFullNode(FULL_NODE)
+            if(SERVICE_ADDRESS != it.ServiceAddress){
+                fullNodeChainSize = URL(it.ServiceAddress).getChain().size
+                if (fullNodeChainSize > maxSize) {
+                    fullNode = it
+                    maxSize = fullNodeChainSize
                 }
             }
+        }
+    }
 
-            Node.LIGHT -> loadChainFromFullNode(FULL_NODE)
+    private fun loadChain() {
+        if (fullNodes.isEmpty()) {
+            loadChainFromGenesisNode()
+        } else {
+            loadChainFromFullNode()
         }
     }
 
     fun loadChainFromGenesisNode() = runBlocking {
-
         val client = HttpClient(CIO) {
             install(ContentNegotiation) {
                 json(Json { ignoreUnknownKeys = true })
@@ -100,21 +117,9 @@ class BlockChain(val node: Node = Node.LIGHT) {
         println("Block Chain validity : ${isValid()}")
     }
 
-    suspend fun loadFullnodeServices(): List<FullNode> {
-        val client = HttpClient()
-        val response: HttpResponse = client.get(FUEL_NODE)
-        client.close()
-        fullNodes = try{
-            json.decodeFromString<List<FullNode>>(response.body())}
-        catch (e : Exception){
-            emptyList<FullNode>()
-        }
-        return fullNodes
-    }
-
     fun loadChainFromFullNode(url: URL) = runBlocking {
         try {
-            val chainFromFullNode = runBlocking {  url.getChain() }
+            val chainFromFullNode = runBlocking { url.getChain() }
             val chain = getChain()
 
             chainFromFullNode.forEach { block ->
@@ -131,39 +136,38 @@ class BlockChain(val node: Node = Node.LIGHT) {
         println("Block Chain validity : ${isValid()}")
     }
 
-    fun isRegistered(fullNode: FullNode) : Boolean {
+    fun loadChainFromFullNode() {
+        try {
+            val chainFromFullNode = URL(fullNode.ServiceAddress).getChain()
+            val chain = getChain()
 
-        if(node == Node.LIGHT){
-            return false
-        }
-
-        if(fullNode.ServiceID == ""){
-            return false
-        }
-
-        fullNodes = runBlocking {loadFullnodeServices()}
-        return fullNodes.contains(fullNode)
-    }
-
-    fun getLongestChainFullNode(): FullNode {
-        var maxSize = 0
-        var fullNodeChainSize = 0
-        lateinit var fullnode: FullNode
-
-        runBlocking {
-            fullNodes = loadFullnodeServices()
-            fullnode = fullNodes[0]
-
-            for (it in fullNodes) {
-                fullNodeChainSize = URL(it.ServiceAddress).getChain().size
-                if (fullNodeChainSize > maxSize) {
-                    fullnode = it
-                    maxSize = fullNodeChainSize
+            chainFromFullNode.forEach { block ->
+                if (block !in chain) {
+                    database.insert(block)
                 }
             }
+        } catch (e: Exception) {
+            println("Aborted : ${e.message}")
         }
 
-        return fullnode
+        syncChain()
+
+        println("Block Chain validity : ${isValid()}")
+    }
+
+    fun isRegistered(): Boolean {
+
+        if (fullNode.ServiceID == "") {
+            return false
+        }
+
+        loadFullNodes()
+
+        if(fullNodes.isNotEmpty()){
+            return fullNodes.contains(fullNode)
+        }
+
+       return false
     }
 
     fun getGenesisBlock(): Block = cachedChain?.firstOrNull() ?: throw IllegalStateException("Chain is Empty")
@@ -178,9 +182,9 @@ class BlockChain(val node: Node = Node.LIGHT) {
     fun mine(wallet: Wallet, data: Data): Block {
         miningState = MiningState.MINING
 
-        loadChainFromFullNode(FULL_NODE)
+        loadChainFromFullNode()
 
-        FULL_NODE.startMining(wallet.publicKeyFile)
+        URL(fullNode.ServiceAddress).startMining(wallet.publicKeyFile)
 
         if (!isValid()) {
             miningState = MiningState.FAILED
@@ -210,7 +214,7 @@ class BlockChain(val node: Node = Node.LIGHT) {
         )
 
         data.reward = Utility.setReward(miningBlock.index)
-        val fullNodeReward = FULL_NODE.getReward(miningBlock.index)
+        val fullNodeReward = URL(fullNode.ServiceAddress).getReward(miningBlock.index)
 
         if (data.reward != fullNodeReward) {
             miningState = MiningState.FAILED
@@ -235,11 +239,11 @@ class BlockChain(val node: Node = Node.LIGHT) {
         return miningBlock
     }
 
-    fun getChain() : MutableList<Block> {
+    fun getChain(): MutableList<Block> {
         return database.fetch()
     }
 
-    fun getChainSize() : Long{
+    fun getChainSize(): Long {
         return (cachedChain!!.size).toLong()
     }
 
@@ -268,5 +272,4 @@ class BlockChain(val node: Node = Node.LIGHT) {
     private fun syncChain() {
         cachedChain = database.fetch().sortedBy { it.index }
     }
-
 }

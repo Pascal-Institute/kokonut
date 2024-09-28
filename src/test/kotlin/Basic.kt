@@ -7,13 +7,9 @@ import java.io.File
 fun main() {
 
    println(libraryVersion)
-
    println(protocolVersion)
-
-   val blockChain = BlockChain()
-   println(blockChain.FULL_NODE)
-   println(blockChain.getLastBlock())
-   println(blockChain.getTotalCurrencyVolume())
+   println(BlockChain.getLastBlock())
+   println(BlockChain.getTotalCurrencyVolume())
 
    val wallet = Wallet(
        File("C:\\Users\\public\\private_key.pem"),

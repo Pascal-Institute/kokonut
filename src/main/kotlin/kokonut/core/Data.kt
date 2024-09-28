@@ -1,6 +1,6 @@
 package kokonut.core
 
-import kokonut.core.BlockChain.Companion.TICKER
+import kokonut.core.BlockChain.TICKER
 import kotlinx.serialization.Serializable
 
 @Serializable

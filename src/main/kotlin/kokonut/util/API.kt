@@ -11,6 +11,7 @@ import io.ktor.serialization.kotlinx.json.*
 import kokonut.Policy
 import kokonut.core.Block
 import kokonut.core.BlockChain
+import kokonut.core.BlockChain.fullNode
 import kokonut.util.Utility.Companion.writeFilePart
 import kokonut.util.Utility.Companion.writePart
 import kokonut.util.full.Router
@@ -29,7 +30,7 @@ class API {
         suspend fun URL.isHealthy(): Boolean {
             val client = HttpClient(CIO) {
                 install(HttpTimeout) {
-                    requestTimeoutMillis = 3000
+                    requestTimeoutMillis = 1500
                 }
                 expectSuccess = false
             }
@@ -221,15 +222,20 @@ class API {
             return true
         }
 
-        fun URL.propagate(blockChain: BlockChain) {
+        fun URL.propagate() : HttpResponse {
             val client = HttpClient(CIO) {
                 install(ContentNegotiation) {
                     json(Json { prettyPrint = true })
                 }
             }
+
+            val response : HttpResponse
+
             runBlocking {
-                client.put(this@propagate.path + "/propagate?size=${blockChain.getChainSize()}&id=${Router.fullNode.ServiceID}&address=${Router.fullNode.ServiceAddress}")
+               response = client.post(this@propagate.path + "/propagate?size=${BlockChain.getChainSize()}&id=${fullNode.ServiceID}&address=${fullNode.ServiceAddress}")
             }
+
+            return response
         }
 
         fun URL.addBlock(jsonElement: JsonElement, publicKeyFile: File) {
