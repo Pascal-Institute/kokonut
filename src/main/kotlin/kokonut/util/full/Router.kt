@@ -476,19 +476,6 @@ class Router {
 
                         BlockChain.database.insert(block!!)
 
-                        //propagate...
-                        BlockChain.fullNodes.forEach {
-                            if (it.ServiceAddress != fullNode.ServiceAddress) {
-                                try {
-                                    URL(it.ServiceAddress).addBlock(Json.encodeToJsonElement(block), publicKeyFile!!)
-                                } catch (e: Exception) {
-                                    println("Propagation Failed at ${it.ServiceAddress} : $e")
-                                }
-                            }
-                        }
-
-
-
                         call.respond(
                             HttpStatusCode.Created,
                             "Block Add Succeed and Reward ${block!!.data.reward} KNT is Recorded..."

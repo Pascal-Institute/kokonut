@@ -39,7 +39,17 @@ fun main(): Unit = runBlocking{
             URL(fullNode.ServiceAddress).startMining(wallet.publicKeyFile)
             val newBlock : Block = BlockChain.mine(wallet, data)
             val json = Json.encodeToJsonElement(newBlock)
-            URL(fullNode.ServiceAddress).addBlock(json, wallet.publicKeyFile)
+
+            //propagate...
+            BlockChain.fullNodes.forEach {
+
+                    try {
+                        URL(it.ServiceAddress).addBlock(json, wallet.publicKeyFile)
+                    } catch (e: Exception) {
+                        println("Propagation Failed at ${it.ServiceAddress} : $e")
+                    }
+
+            }
             BlockChain.miningState = MiningState.MINED
         }catch (e : Exception){
             BlockChain.miningState = MiningState.FAILED
