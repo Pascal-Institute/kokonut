@@ -1,5 +1,6 @@
 [![](https://jitpack.io/v/Pascal-Institute/kokonut.svg)](https://jitpack.io/#Pascal-Institute/kokonut)
 [![](https://jitpack.io/v/Pascal-Institute/kokonut/month.svg)](https://jitpack.io/#Pascal-Institute/kokonut)
+![Docker Pulls](https://img.shields.io/docker/v/volta2030/knt_fullnode?label=knt_fullnode&sort=semver)
 
 # What is Kokonut...?
 
