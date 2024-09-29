@@ -127,43 +127,6 @@ class API {
             }
         }
 
-        fun URL.getPolicy(): Policy {
-            val conn = this.openConnection() as HttpURLConnection
-            conn.requestMethod = "GET"
-
-            val responseCode = conn.responseCode
-            if (responseCode == 200) {
-                val `in` = BufferedReader(InputStreamReader(conn.inputStream))
-                val response = StringBuffer()
-
-                var inputLine: String?
-                while (`in`.readLine().also { inputLine = it } != null) {
-                    response.append(inputLine)
-                }
-                `in`.close()
-
-                val html = response.toString()
-
-                // Extract values using regular expressions
-                val versionRegex = Regex("version : (\\d+)")
-                val difficultyRegex = Regex("difficulty : (\\d+)")
-
-                val versionMatch = versionRegex.find(html)
-                val difficultyMatch = difficultyRegex.find(html)
-
-                // Check if matches are found and extract values
-                val version = versionMatch?.groups?.get(1)?.value?.toIntOrNull()
-                    ?: throw IOException("Failed to parse the protocol version")
-                val difficulty = difficultyMatch?.groups?.get(1)?.value?.toIntOrNull()
-                    ?: throw IOException("Failed to parse the mining difficulty")
-
-                // Create Policy data class instance
-                return Policy(version, difficulty)
-            } else {
-                throw IOException("GET request failed with response code: $responseCode")
-            }
-        }
-
         fun URL.getCertified(byteArray: ByteArray, publicKeyFile: File) {
             val boundary = "Boundary-${System.currentTimeMillis()}"
             val connection = this.openConnection() as HttpURLConnection
