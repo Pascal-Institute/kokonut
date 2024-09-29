@@ -25,7 +25,6 @@ import kokonut.core.BlockChain.updateDifficulty
 import kokonut.core.Version.libraryVersion
 import kokonut.core.Version.protocolVersion
 import kokonut.state.MiningState
-import kokonut.util.API.Companion.getPolicy
 import kokonut.util.API.Companion.propagate
 import kokonut.util.Miner
 import kokonut.util.Utility

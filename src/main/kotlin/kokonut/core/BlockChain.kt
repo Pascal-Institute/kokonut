@@ -13,9 +13,7 @@ import kokonut.util.SQLite
 import kokonut.util.Wallet
 import kokonut.util.API.Companion.getChain
 import kokonut.util.API.Companion.getDifficulty
-import kokonut.util.API.Companion.getPolicy
 import kokonut.util.API.Companion.getReward
-import kokonut.util.API.Companion.isHealthy
 import kokonut.util.API.Companion.startMining
 import kokonut.util.Utility
 import kokonut.util.Utility.Companion.truncate
