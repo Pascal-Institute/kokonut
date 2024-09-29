@@ -52,9 +52,10 @@ class Router {
                     body {
                         h1 { +"Welcome!" }
                         h1 { +"Full Node Registration : ${BlockChain.isRegistered()}" }
-                        h1 { +"Kokonut Protocol Version : $protocolVersion" }
+                        h1 { +"Kokonut Protocol Version : $protocolVersion /getVersion" }
                         h1 { +"Kokonut Library Version : $libraryVersion" }
                         h1 { +"Timestamp : ${System.currentTimeMillis()}" }
+                        h1 { +"Get Difficulty : /getDifficulty"}
                         h1 { +"Get Chain : /getChain" }
                         h1 { +"Get Miners : /getMiners" }
                         h1 { +"Get Last Block : /getLastBlock" }
@@ -69,7 +70,6 @@ class Router {
 
         fun Route.getVersion() {
             get("/getVersion") {
-                updateDifficulty()
                 call.respondHtml(HttpStatusCode.OK) {
                     head {
                         title("Get kokonut protocol version")
@@ -82,13 +82,14 @@ class Router {
         }
 
         fun Route.getDifficulty() {
-            get("/getTotalCurrencyVolume") {
+            get("/getDifficulty") {
+                updateDifficulty()
                 call.respondHtml(HttpStatusCode.OK) {
                     head {
-                        title("Get Last Block")
+                        title("Get Difficulty")
                     }
                     body {
-                        h1 { +"Total Currency Volume : ${BlockChain.getTotalCurrencyVolume()} KNT" }
+                        h1 { +"Difficulty : $DIFFICULTY" }
                     }
                 }
             }

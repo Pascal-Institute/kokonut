@@ -8,7 +8,6 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
-import kokonut.Policy
 import kokonut.core.Block
 import kokonut.core.BlockChain
 import kokonut.core.BlockChain.fullNode
@@ -44,6 +43,33 @@ class API {
                 false
             } finally {
                 client.close()
+            }
+        }
+
+        fun URL.getDifficulty() : Int {
+            val url = URL("${this}/getDifficulty")
+            val conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+
+            return try {
+                val responseCode = conn.responseCode
+
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    val inputStream = conn.inputStream
+                    val reader = BufferedReader(InputStreamReader(inputStream))
+                    val response = reader.use { it.readText() }
+                    val regex = Regex("<h1.*?>(.*?)</h1>", RegexOption.DOT_MATCHES_ALL)
+                    val matchResult = regex.find(response)
+                    val difficultyText = matchResult?.groups?.get(1)?.value
+                    difficultyText?.replace("Difficulty : ", "")?.toInt() ?: 0
+                } else {
+                    throw RuntimeException("GET request failed with response code $responseCode")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                throw e
+            } finally {
+                conn.disconnect()
             }
         }
 

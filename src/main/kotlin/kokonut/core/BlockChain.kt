@@ -12,6 +12,7 @@ import kokonut.util.GitHubFile
 import kokonut.util.SQLite
 import kokonut.util.Wallet
 import kokonut.util.API.Companion.getChain
+import kokonut.util.API.Companion.getDifficulty
 import kokonut.util.API.Companion.getPolicy
 import kokonut.util.API.Companion.getReward
 import kokonut.util.API.Companion.isHealthy
@@ -27,7 +28,6 @@ import java.net.URL
 object BlockChain {
 
     const val TICKER = "KNT"
-    val POLICY_NODE = URL("https://pascal-institute.github.io/kokonut-oil-station")
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -36,7 +36,7 @@ object BlockChain {
     val GENESIS_NODE = URL("https://api.github.com/repos/Pascal-Institute/genesis_node/contents/")
     val GENESIS_RAW_NODE = URL("https://raw.githubusercontent.com/Pascal-Institute/genesis_node/main/")
     val FUEL_NODE = URL("https://kokonut-oil.onrender.com/v1/catalog/service/knt_fullnode")
-
+    var DIFFICULTY = 5
     var SERVICE_ADDRESS = ""
 
     var fullNode = FullNode("", "", "", Weights(0, 0))
@@ -50,6 +50,7 @@ object BlockChain {
     init {
         loadFullNodes()
         loadChain()
+        updateDifficulty()
     }
 
     internal fun loadFullNodes() {
@@ -74,6 +75,10 @@ object BlockChain {
                 }
             }
         }
+    }
+
+    fun updateDifficulty() {
+        DIFFICULTY = 5
     }
 
     private fun loadChain() {
@@ -191,15 +196,13 @@ object BlockChain {
             throw IllegalStateException("Chain is Invalid. Stop Mining...")
         }
 
-        val policy = POLICY_NODE.getPolicy()
-
         val lastBlock = getLastBlock()
 
         val version = Version.protocolVersion
         val index = lastBlock.index + 1
         val previousHash = lastBlock.hash
         var timestamp = System.currentTimeMillis()
-        val difficulty = policy.difficulty
+        val difficulty = URL(fullNode.ServiceAddress).getDifficulty()
         var nonce: Long = 0
 
         val miningBlock = Block(
@@ -225,7 +228,7 @@ object BlockChain {
 
         var miningHash = miningBlock.calculateHash()
 
-        while (policy.difficulty > countLeadingZeros(miningHash)) {
+        while (difficulty > countLeadingZeros(miningHash)) {
             timestamp = System.currentTimeMillis()
             nonce++
 
