@@ -17,10 +17,11 @@ import io.ktor.server.routing.*
 import kokonut.util.Wallet
 import kokonut.core.Block
 import kokonut.core.BlockChain
-import kokonut.core.BlockChain.POLICY_NODE
+import kokonut.core.BlockChain.DIFFICULTY
 import kokonut.core.BlockChain.SERVICE_ADDRESS
 import kokonut.core.BlockChain.fullNode
 import kokonut.core.BlockChain.loadFullNodes
+import kokonut.core.BlockChain.updateDifficulty
 import kokonut.core.Version.libraryVersion
 import kokonut.core.Version.protocolVersion
 import kokonut.state.MiningState
@@ -62,6 +63,33 @@ class Router {
                         h1 { +"Get Reward : /getReward?index=index" }
                     }
 
+                }
+            }
+        }
+
+        fun Route.getVersion() {
+            get("/getVersion") {
+                updateDifficulty()
+                call.respondHtml(HttpStatusCode.OK) {
+                    head {
+                        title("Get kokonut protocol version")
+                    }
+                    body {
+                        h1 { +"Protocol Version : ${protocolVersion}" }
+                    }
+                }
+            }
+        }
+
+        fun Route.getDifficulty() {
+            get("/getTotalCurrencyVolume") {
+                call.respondHtml(HttpStatusCode.OK) {
+                    head {
+                        title("Get Last Block")
+                    }
+                    body {
+                        h1 { +"Total Currency Volume : ${BlockChain.getTotalCurrencyVolume()} KNT" }
+                    }
                 }
             }
         }
@@ -327,15 +355,6 @@ class Router {
                 println("Response Status: ${response.status}")
                 println("Response Body: $response")
 
-//                if (response.status == HttpStatusCode.OK) {
-//                    fullNode = FullNode(
-//                        serviceRegData.ID,
-//                        serviceRegData.Name,
-//                        serviceRegData.Address,
-//                        Weights(1, 1)
-//                    )
-//                }
-
                 if(response.status == HttpStatusCode.OK){
                     SERVICE_ADDRESS = serviceRegData.Address
                 }
@@ -388,8 +407,6 @@ class Router {
 
                 val keyPath = "/app/key"
                 Utility.createDirectory(keyPath)
-
-                val policy = POLICY_NODE.getPolicy()
 
                 if (!BlockChain.isValid()) {
                     call.respond(HttpStatusCode.Created, "Block Add Failed : Server block chain is invalid")
@@ -448,18 +465,18 @@ class Router {
 
 
                     //Check Version
-                    if (policy.version != block!!.version) {
+                    if (protocolVersion != block!!.version) {
                         call.respond(
                             HttpStatusCode.Created,
-                            "Block Add Failed : Fuel Node version ${policy.version} and Client version ${block!!.version} is different"
+                            "Block Add Failed : Fuel Node version ${protocolVersion} is bigger than Client version ${block!!.version}"
                         )
                     }
 
                     //Check Difficulty
-                    if (policy.difficulty != block!!.difficulty) {
+                    if (DIFFICULTY != block!!.difficulty) {
                         call.respond(
                             HttpStatusCode.Created,
-                            "Block Add Failed : Fuel Node difficulty ${policy.difficulty} and Client difficulty ${block!!.difficulty} is different"
+                            "Block Add Failed : Fuel Node difficulty ${DIFFICULTY} and Client difficulty ${block!!.difficulty} is different"
                         )
                     }
 
