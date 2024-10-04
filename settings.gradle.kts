@@ -3,4 +3,4 @@ plugins {
 }
 
 include("library")
-include("fullnode")
+//include("fullnode")
