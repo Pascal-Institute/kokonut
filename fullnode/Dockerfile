@@ -10,7 +10,7 @@ COPY . .
 # Build the application
 RUN mkdir -p app/src/main/dist
 
-RUN gradle installDist --info
+RUN gradle installDist
 
 # Use a lightweight Java runtime image
 FROM openjdk:17-jdk-slim
