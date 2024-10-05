@@ -1,5 +1,5 @@
 # Use the official Kotlin image as the base image
-FROM gradle:jdk17 as builder
+FROM gradle:jdk17 AS builder
 
 # Set the working directory
 WORKDIR /app
@@ -8,15 +8,12 @@ WORKDIR /app
 COPY . .
 
 # Build the application
-RUN gradle installDist
+RUN mkdir -p app/src/main/dist
 
-RUN apt-get update && apt-get install -y git
+RUN gradle installDist --info
 
 # Use a lightweight Java runtime image
 FROM openjdk:17-jdk-slim
-
-# Set the working directory
-WORKDIR /app
 
 # Copy the built application from the builder stage
 COPY --from=builder /app/build/install/fullnode /app
