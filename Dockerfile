@@ -1,3 +1,5 @@
+###This dockerfile for fullnode please don't move this into fullnode###
+
 # Use the official Kotlin image as the base image
 FROM gradle:jdk17 AS builder
 
@@ -5,7 +7,7 @@ FROM gradle:jdk17 AS builder
 WORKDIR /app
 
 # Copy the Gradle wrapper and project files
-COPY . .
+COPY fullnode .
 
 # Build the application
 RUN gradle installDist
