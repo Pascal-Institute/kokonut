@@ -9,8 +9,6 @@ application {
     mainClass.set("server.ApplicationKt")
 }
 
-version = "1.0.2"
-
 repositories {
     mavenCentral()
     maven{
