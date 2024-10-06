@@ -8,15 +8,15 @@ WORKDIR /app
 COPY . .
 
 # Build the application
-RUN mkdir -p app/src/main/dist
-
 RUN gradle installDist
 
 # Use a lightweight Java runtime image
 FROM openjdk:17-jdk-slim
 
+WORKDIR /app
+
 # Copy the built application from the builder stage
-COPY --from=builder /app/build/install/fullnode /app
+COPY --from=builder /app/build/install/app /app
 
 RUN apt-get update && apt-get install -y git
 
@@ -28,4 +28,4 @@ RUN chmod -R 777 /app
 EXPOSE 80
 
 # Command to run the application
-CMD ["/app/bin/fullnode"]
+CMD ["/app/bin/app"]
