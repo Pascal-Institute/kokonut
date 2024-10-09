@@ -6,6 +6,7 @@ build/
 
 /library/build/
 /fullnode/build/
+/lightnode/build/
 
 ### IntelliJ IDEA ###
 .idea/modules.xml
