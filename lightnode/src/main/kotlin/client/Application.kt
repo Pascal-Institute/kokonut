@@ -2,6 +2,7 @@ package client
 
 import java.awt.GridLayout
 import javax.swing.JButton
+import javax.swing.JFileChooser
 import javax.swing.JFrame
 import javax.swing.JLabel
 import javax.swing.JPanel
@@ -25,6 +26,20 @@ fun main() {
     panel.add(publicKeyPathTF)
 
     val publickKeyFileLoadBT = JButton("Load...")
+    publickKeyFileLoadBT.addActionListener {
+        val fileChooser = JFileChooser()
+
+        fileChooser.dialogTitle = "Select Public Key File"
+
+        val result = fileChooser.showOpenDialog(null)
+
+        if (result == JFileChooser.APPROVE_OPTION) {
+            val selectedFile = fileChooser.selectedFile
+            val filePath = selectedFile.absolutePath
+            publicKeyPathTF.text = filePath
+        }
+    }
+
     panel.add(publickKeyFileLoadBT)
 
     panel.add(JLabel(" "))
@@ -36,6 +51,19 @@ fun main() {
     panel.add(privateKeyPathTF)
 
     val privatekKeyFileLoadBT = JButton("Load...")
+    privatekKeyFileLoadBT.addActionListener {
+        val fileChooser = JFileChooser()
+
+        fileChooser.dialogTitle = "Select Private Key File"
+
+        val result = fileChooser.showOpenDialog(null)
+
+        if (result == JFileChooser.APPROVE_OPTION) {
+            val selectedFile = fileChooser.selectedFile
+            val filePath = selectedFile.absolutePath
+            privateKeyPathTF.text = filePath
+        }
+    }
     panel.add(privatekKeyFileLoadBT)
 
     frame.add(panel)
