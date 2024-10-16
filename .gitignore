@@ -6,6 +6,8 @@ build/
 
 /library/build/
 /fullnode/build/
+/lightnode/build/
+/lightnode/.gradle/
 
 ### IntelliJ IDEA ###
 .idea/modules.xml
