@@ -5,6 +5,10 @@ plugins {
     id("org.jetbrains.compose") version "1.6.0"
 }
 
+kotlin {
+    jvmToolchain(17)
+}
+
 group = "io.github.pascal-institute"
 version = "1.0-SNAPSHOT"
 

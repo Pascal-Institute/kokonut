@@ -5,6 +5,10 @@ plugins {
     application
 }
 
+kotlin {
+    jvmToolchain(17)
+}
+
 application {
     mainClass.set("server.ApplicationKt")
 }
@@ -17,8 +21,6 @@ repositories {
 }
 
 dependencies {
-    testImplementation(kotlin("test"))
-
     implementation(project(":library"))
 
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
