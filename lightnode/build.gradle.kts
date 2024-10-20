@@ -20,6 +20,7 @@ dependencies {
     // compose.desktop.currentOs should be used in launcher-sourceSet
     // (in a separate module for demo project and in testMain).
     // With compose.desktop.common you will also lose @Preview functionality
+    implementation(project(":library"))
     implementation(compose.desktop.currentOs)
 }
 
@@ -34,3 +35,5 @@ compose.desktop {
         }
     }
 }
+
+tasks.register("prepareKotlinBuildScriptModel"){}
