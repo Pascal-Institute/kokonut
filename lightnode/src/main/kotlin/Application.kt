@@ -3,6 +3,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.AlertDialog
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -15,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import kokonut.core.BlockChain
+import kokonut.util.Wallet
 import java.awt.FileDialog
 import java.awt.Frame
 import java.io.File
@@ -24,6 +27,8 @@ import java.io.File
 fun App() {
     var selectedPublicKeyFilePath by remember { mutableStateOf<String?>("Please load a public key...") }
     var selectedPrivateKeyFilePath by remember { mutableStateOf<String?>("Please load a private key...") }
+
+    var showSuccessDialog by remember { mutableStateOf(false) }
 
     MaterialTheme {
         Column {
@@ -64,15 +69,35 @@ fun App() {
             }
 
             Button(onClick = {
-                //TODO wallet login logic
+                val wallet = Wallet(privateKeyFile = File(selectedPrivateKeyFilePath), publicKeyFile = File(selectedPublicKeyFilePath))
+
+                if(wallet.isValid()){
+                    showSuccessDialog = true
+                }
+
             }) {
                 Text("Login")
+            }
+
+            if (showSuccessDialog) {
+                AlertDialog(
+                    onDismissRequest = { showSuccessDialog = false },
+                    title = { Text("Login Succeed") },
+                    text = { Text("You have successfully logged in!") },
+                    confirmButton = {
+                        Button(onClick = { showSuccessDialog = false }) {
+                            Text("OK")
+                        }
+                    }
+                )
             }
         }
     }
 }
 
 fun main() = application {
+
+    BlockChain.isValid()
 
     Window(onCloseRequest = ::exitApplication, title = "Kokonut Lightnode") {
         App()
