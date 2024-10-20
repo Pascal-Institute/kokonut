@@ -7,7 +7,7 @@ import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
 import java.util.*
 
-class Wallet(privateKeyFile : File, val publicKeyFile: File) {
+class Wallet(val privateKeyFile : File, val publicKeyFile: File) {
 
     companion object {
         fun generateKey(): KeyPair {
