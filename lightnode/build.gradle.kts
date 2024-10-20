@@ -1,12 +1,8 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
-    kotlin("jvm") version "1.9.22"
+    kotlin("jvm")
     id("org.jetbrains.compose") version "1.6.0"
-}
-
-kotlin {
-    jvmToolchain(17)
 }
 
 group = "io.github.pascal-institute"
@@ -17,6 +13,10 @@ repositories {
     mavenCentral()
     maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
     google()
+}
+
+kotlin {
+    jvmToolchain(17)
 }
 
 dependencies {
@@ -30,7 +30,7 @@ dependencies {
 
 compose.desktop {
     application {
-        mainClass = "MainKt"
+        mainClass = "ApplicationKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
@@ -39,5 +39,3 @@ compose.desktop {
         }
     }
 }
-
-tasks.register("prepareKotlinBuildScriptModel"){}
