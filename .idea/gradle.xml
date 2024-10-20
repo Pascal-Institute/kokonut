@@ -10,6 +10,7 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/fullnode" />
             <option value="$PROJECT_DIR$/library" />
+            <option value="$PROJECT_DIR$/lightnode" />
           </set>
         </option>
       </GradleProjectSettings>
