@@ -14,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.min
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import kokonut.core.BlockChain
@@ -28,10 +29,18 @@ fun App() {
     var selectedPublicKeyFilePath by remember { mutableStateOf<String?>("Please load a public key...") }
     var selectedPrivateKeyFilePath by remember { mutableStateOf<String?>("Please load a private key...") }
 
+    var minerID by remember { mutableStateOf("") }
+
     var showSuccessDialog by remember { mutableStateOf(false) }
 
     MaterialTheme {
         Column {
+
+            Row {
+                Text("Miner ID : ")
+                Text(minerID)
+            }
+
             Row {
                 Text(
                     modifier = Modifier.width(250.dp).height(25.dp),
@@ -73,10 +82,12 @@ fun App() {
 
                 if(wallet.isValid()){
                     showSuccessDialog = true
+                    minerID = wallet.miner
                 }
 
             }) {
                 Text("Login")
+
             }
 
             if (showSuccessDialog) {
@@ -96,8 +107,6 @@ fun App() {
 }
 
 fun main() = application {
-
-    BlockChain.isValid()
 
     Window(onCloseRequest = ::exitApplication, title = "Kokonut Lightnode") {
         App()
