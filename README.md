@@ -133,13 +133,14 @@ It is called genesis block which follows below :
 ![image](https://github.com/user-attachments/assets/631d3d02-c8c6-491f-8ed0-073b11eb8fd5)
 
 ## Node
-- Configuration is 3 parts. Genesis, Full and Light Nodes
+- Configuration is 3 parts. Fuel, Full and Light Nodes
 
 ### Genesis Node
 
-### Fuel Node (Will be deprecated)
+### Fuel Node
 
 - URL : https://kokonut-oil.onrender.com
+- It contains genesis node
 - Synchronize full nodes
 - Supplies important information to cross validation between full & light node
 
