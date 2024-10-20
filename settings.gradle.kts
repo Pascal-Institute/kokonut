@@ -3,5 +3,5 @@ plugins {
 }
 
 rootProject.name = "kokonut"
-include(":lightnode", ":library")
+include(":fullnode", ":lightnode", ":library")
 

@@ -19,8 +19,7 @@ repositories {
 dependencies {
     testImplementation(kotlin("test"))
 
-    //Disable kokonut implementation when develop mode :)
-    implementation("com.github.Pascal-Institute:kokonut:2c28c03314")
+    implementation(project(":library"))
 
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
     implementation("io.ktor:ktor-server-html-builder:2.3.4")
