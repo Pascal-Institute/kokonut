@@ -9,7 +9,7 @@ kotlin {
 }
 
 application {
-    mainClass.set("server.ApplicationKt")
+    mainClass.set("ApplicationKt")
 }
 
 repositories {

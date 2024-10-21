@@ -50,12 +50,12 @@ fun main(): Unit = runBlocking{
                     }
 
             }
-            BlockChain.miningState = MiningState.MINED
+            wallet.miningState = MiningState.MINED
         }catch (e : Exception){
-            BlockChain.miningState = MiningState.FAILED
+            wallet.miningState = MiningState.FAILED
             URL(fullNode.ServiceAddress).stopMining(wallet.publicKeyFile)
         }
     }
 
-    BlockChain.miningState = MiningState.READY
+    wallet.miningState = MiningState.READY
 }
