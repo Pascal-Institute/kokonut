@@ -43,7 +43,6 @@ object BlockChain {
 
     var fullNodes: List<FullNode> = emptyList()
 
-    var miningState = MiningState.READY
     val database = SQLite()
     private var cachedChain: List<Block>? = null
 
@@ -180,14 +179,14 @@ object BlockChain {
     }
 
     fun mine(wallet: Wallet, data: Data): Block {
-        miningState = MiningState.MINING
+        wallet.miningState = MiningState.MINING
 
         loadChainFromFullNode()
 
         URL(fullNode.ServiceAddress).startMining(wallet.publicKeyFile)
 
         if (!isValid()) {
-            miningState = MiningState.FAILED
+            wallet.miningState = MiningState.FAILED
             throw IllegalStateException("Chain is Invalid. Stop Mining...")
         }
 
@@ -217,7 +216,7 @@ object BlockChain {
         val fullNodeReward = URL(fullNode.ServiceAddress).getReward(miningBlock.index)
 
         if (data.reward != fullNodeReward) {
-            miningState = MiningState.FAILED
+            wallet.miningState = MiningState.FAILED
             throw Exception("Reward Is Invalid...")
         } else {
             println("Reward Is Valid")
