@@ -1,5 +1,6 @@
 import kokonut.util.Wallet
 import kokonut.core.BlockChain
+import kokonut.core.Version.genesisBlockID
 import kokonut.core.Version.libraryVersion
 import kokonut.core.Version.protocolVersion
 import java.io.File
@@ -8,6 +9,7 @@ fun main() {
 
    println(libraryVersion)
    println(protocolVersion)
+   println(genesisBlockID)
    println(BlockChain.getLastBlock())
    println(BlockChain.getTotalCurrencyVolume())
 
