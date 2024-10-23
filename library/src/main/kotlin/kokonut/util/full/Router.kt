@@ -21,6 +21,7 @@ import kokonut.core.BlockChain.POLICY_NODE
 import kokonut.core.BlockChain.SERVICE_ADDRESS
 import kokonut.core.BlockChain.fullNode
 import kokonut.core.BlockChain.loadFullNodes
+import kokonut.core.Version.genesisBlockID
 import kokonut.core.Version.libraryVersion
 import kokonut.core.Version.protocolVersion
 import kokonut.state.MiningState
@@ -133,6 +134,20 @@ class Router {
                             h1 { +"Invalid" }
                         }
                     }
+                }
+            }
+        }
+
+        fun Route.getGenesisBlock() {
+            get("/getGenesisBlock") {
+                val classLoader = Thread.currentThread().contextClassLoader
+                val resource = classLoader.getResource("${genesisBlockID}.json")
+
+                if (resource != null) {
+                    val file = File(resource.toURI())
+                    val jsonString = file.readText()
+                    val genesisBlock : Block = Json.decodeFromString<Block>(jsonString)
+                    call.respond(genesisBlock)
                 }
             }
         }
