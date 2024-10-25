@@ -8,15 +8,11 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
 import kokonut.state.MiningState
-import kokonut.util.GitHubFile
-import kokonut.util.SQLite
-import kokonut.util.Wallet
+import kokonut.util.*
 import kokonut.util.API.Companion.getChain
 import kokonut.util.API.Companion.getPolicy
 import kokonut.util.API.Companion.getReward
-import kokonut.util.API.Companion.isHealthy
 import kokonut.util.API.Companion.startMining
-import kokonut.util.Utility
 import kokonut.util.Utility.Companion.truncate
 import kokonut.util.full.FullNode
 import kokonut.util.full.Weights
@@ -28,11 +24,8 @@ object BlockChain {
 
     const val TICKER = "KNT"
     val POLICY_NODE = URL("https://pascal-institute.github.io/kokonut-oil-station")
-
-    private val json = Json {
-        ignoreUnknownKeys = true
-    }
-
+    val database = SQLite()
+    private val json = Json { ignoreUnknownKeys = true }
     val GENESIS_NODE = URL("https://api.github.com/repos/Pascal-Institute/genesis_node/contents/")
     val GENESIS_RAW_NODE = URL("https://raw.githubusercontent.com/Pascal-Institute/genesis_node/main/")
     val FUEL_NODE = URL("https://kokonut-oil.onrender.com/v1/catalog/service/knt_fullnode")
@@ -43,7 +36,6 @@ object BlockChain {
 
     var fullNodes: List<FullNode> = emptyList()
 
-    val database = SQLite()
     private var cachedChain: List<Block>? = null
 
     init {

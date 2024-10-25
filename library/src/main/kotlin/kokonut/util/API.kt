@@ -14,7 +14,6 @@ import kokonut.core.BlockChain
 import kokonut.core.BlockChain.fullNode
 import kokonut.util.Utility.Companion.writeFilePart
 import kokonut.util.Utility.Companion.writePart
-import kokonut.util.full.Router
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement

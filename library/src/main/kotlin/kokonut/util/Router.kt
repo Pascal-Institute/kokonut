@@ -1,4 +1,4 @@
-package kokonut.util.full
+package kokonut.util
 
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
@@ -14,7 +14,6 @@ import io.ktor.server.plugins.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import kokonut.util.Wallet
 import kokonut.core.Block
 import kokonut.core.BlockChain
 import kokonut.core.BlockChain.POLICY_NODE
@@ -27,8 +26,9 @@ import kokonut.core.Version.protocolVersion
 import kokonut.state.MiningState
 import kokonut.util.API.Companion.getPolicy
 import kokonut.util.API.Companion.propagate
-import kokonut.util.Miner
-import kokonut.util.Utility
+import kokonut.state.Node
+import kokonut.util.full.HealthCheck
+import kokonut.util.full.ServiceRegData
 import kotlinx.html.*
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -43,26 +43,43 @@ class Router {
 
         var miners: MutableSet<Miner> = mutableSetOf()
 
-        fun Route.root() {
-            get("/") {
-                call.respondHtml(HttpStatusCode.OK) {
-                    head {
-                        title("Kokonut Full Node")
-                    }
-                    body {
-                        h1 { +"Welcome!" }
-                        h1 { +"Full Node Registration : ${BlockChain.isRegistered()}" }
-                        h1 { +"Kokonut Protocol Version : $protocolVersion" }
-                        h1 { +"Kokonut Library Version : $libraryVersion" }
-                        h1 { +"Timestamp : ${System.currentTimeMillis()}" }
-                        h1 { +"Get Chain : /getChain" }
-                        h1 { +"Get Miners : /getMiners" }
-                        h1 { +"Get Last Block : /getLastBlock" }
-                        h1 { +"Chain Validation : /isValid" }
-                        h1 { +"Get Total Currency Volume : /getTotalCurrencyVolume" }
-                        h1 { +"Get Reward : /getReward?index=index" }
-                    }
+        fun Route.root(node: Node) {
+            if(node == Node.FULL) {
+                get("/") {
+                    call.respondHtml(HttpStatusCode.OK) {
+                        head {
+                            title("Kokonut Full Node")
+                        }
+                        body {
+                            h1 { +"Full Node Registration : ${BlockChain.isRegistered()}" }
+                            h1 { +"Kokonut Protocol Version : $protocolVersion" }
+                            h1 { +"Kokonut Library Version : $libraryVersion" }
+                            h1 { +"Timestamp : ${System.currentTimeMillis()}" }
+                            h1 { +"Get Chain : /getChain" }
+                            h1 { +"Get Miners : /getMiners" }
+                            h1 { +"Get Last Block : /getLastBlock" }
+                            h1 { +"Chain Validation : /isValid" }
+                            h1 { +"Get Total Currency Volume : /getTotalCurrencyVolume" }
+                            h1 { +"Get Reward : /getReward?index=index" }
+                        }
 
+                    }
+                }
+            } else {
+                get("/") {
+                    call.respondHtml(HttpStatusCode.OK) {
+                        head {
+                            title("Kokonut Full Node")
+                        }
+                        body {
+                            h1 { +"Kokonut Protocol Version : $protocolVersion" }
+                            h1 { +"Kokonut Library Version : $libraryVersion" }
+                            h1 { +"Timestamp : ${System.currentTimeMillis()}" }
+                            h1 { +"Get Full Nodes : /getFullNodes" }
+                            h1 { +"Get Last Block : /getLastBlock" }
+                        }
+
+                    }
                 }
             }
         }
