@@ -109,27 +109,5 @@ class Utility {
             Files.copy(file.toPath(), outputStream)
             outputStream.write("\r\n".toByteArray(Charsets.UTF_8))
         }
-
-        suspend fun recordToFuelNode(block: Block) {
-            withContext(Dispatchers.IO) {
-                val token = System.getenv("KEY")
-                val remoteUrl = "https://$token@github.com/Pascal-Institute/kovault.git"
-                val repoPath = "/app/repo"
-                val jsonFilePath = "$repoPath/${block.hash}.json"  // JSON 파일 경로
-                val jsonContent = Json.encodeToString(block)
-
-                createDirectory(repoPath)
-
-                val github = GitHub(remoteUrl, repoPath)
-                println(github.clone())
-                println(github.remote())
-                println(github.configEmail("pascal-inst@googlegroups.com"))
-                println(github.configName("P1750A"))
-                createFile(jsonFilePath, jsonContent)
-                println(github.add())
-                println(github.commit(block))
-                println(github.push())
-            }
-        }
     }
 }

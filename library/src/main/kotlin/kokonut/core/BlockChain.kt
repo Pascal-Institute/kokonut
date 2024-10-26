@@ -10,6 +10,8 @@ import io.ktor.serialization.kotlinx.json.*
 import kokonut.state.MiningState
 import kokonut.util.*
 import kokonut.util.API.Companion.getChain
+import kokonut.util.API.Companion.getFullNodes
+import kokonut.util.API.Companion.getGenesisBlock
 import kokonut.util.API.Companion.getPolicy
 import kokonut.util.API.Companion.getReward
 import kokonut.util.API.Companion.startMining
@@ -47,10 +49,7 @@ object BlockChain {
         var fullNodeChainSize = 0
 
         runBlocking {
-            val client = HttpClient()
-            val response: HttpResponse = client.get(FUEL_NODE)
-            client.close()
-            fullNodes = json.decodeFromString<List<FullNode>>(response.body())
+            fullNodes = FUEL_NODE.getFullNodes()
         }
 
         for (it in fullNodes) {
@@ -68,38 +67,26 @@ object BlockChain {
 
     private fun loadChain() {
         if (fullNodes.isEmpty()) {
-            loadChainFromGenesisNode()
+            loadChainFromFuelNode()
         } else {
             loadChainFromFullNode()
         }
     }
 
-    fun loadChainFromGenesisNode() = runBlocking {
-        val client = HttpClient(CIO) {
-            install(ContentNegotiation) {
-                json(Json { ignoreUnknownKeys = true })
-            }
-        }
-
+    fun loadChainFromFuelNode() = runBlocking {
         try {
-            val files: List<GitHubFile> = client.get(GENESIS_NODE).body()
+            val genesisBlock = runBlocking { FUEL_NODE.getGenesisBlock() }
+            val chain = getChain()
+            val blockChain = mutableListOf<Block>()
+            blockChain.add(genesisBlock)
 
-            val jsonUrls = files.filter { it.type == "file" && it.name.endsWith(".json") }
-                .map { "${GENESIS_RAW_NODE}${it.path}" }
-
-            for (url in jsonUrls) {
-                val response: HttpResponse = client.get(url)
-                try {
-                    val block: Block = Json.decodeFromString(response.body())
+            blockChain.forEach { block ->
+                if (block !in chain) {
                     database.insert(block)
-                } catch (e: Exception) {
-                    println("JSON Passer Error: ${e.message}")
                 }
             }
         } catch (e: Exception) {
-            println("Error! : ${e.message}")
-        } finally {
-            client.close()
+            println("Aborted : ${e.message}")
         }
 
         syncChain()
