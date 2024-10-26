@@ -12,6 +12,7 @@ import kokonut.Policy
 import kokonut.core.Block
 import kokonut.core.BlockChain
 import kokonut.core.BlockChain.fullNode
+import kokonut.util.API.Companion.getFullNodes
 import kokonut.util.Utility.Companion.writeFilePart
 import kokonut.util.Utility.Companion.writePart
 import kotlinx.coroutines.runBlocking
@@ -46,7 +47,33 @@ class API {
             }
         }
 
-        fun URL.getFullNodes(): List<FullNode>{
+        fun URL.getGenesisBlock(): Block {
+            val url = URL("${this}/getGenesisBlock")
+            val conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+
+            return try {
+                val responseCode = conn.responseCode
+
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    val inputStream = conn.inputStream
+                    val reader = BufferedReader(InputStreamReader(inputStream))
+                    val response = reader.use { it.readText() }
+
+                    Json.decodeFromString(response)
+
+                } else {
+                    throw RuntimeException("GET request failed with response code $responseCode")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                throw e
+            } finally {
+                conn.disconnect()
+            }
+        }
+
+        fun URL.getFullNodes(): List<FullNode> {
             val url = URL("${this}/getFullNodes")
             val conn = url.openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
