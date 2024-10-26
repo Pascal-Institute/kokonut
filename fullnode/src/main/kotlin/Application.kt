@@ -30,7 +30,6 @@ fun main() {
         routing {
             root(NodeType.FULL)
             register()
-            submit()
             isValid()
             getLastBlock()
             getTotalCurrencyVolume()
