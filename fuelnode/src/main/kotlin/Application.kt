@@ -4,7 +4,7 @@ import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.routing.*
-import kokonut.state.Node
+import kokonut.util.NodeType
 import kokonut.util.Router.Companion.getGenesisBlock
 import kokonut.util.Router.Companion.root
 
@@ -14,7 +14,7 @@ fun main() {
             json()
         }
         routing {
-            root(Node.FUEL)
+            root(NodeType.FUEL)
             getGenesisBlock()
         }
     }.start(true)

@@ -1,13 +1,7 @@
 package kokonut.util
 
-import io.ktor.client.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.http.content.*
-import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.html.*
 import io.ktor.server.plugins.*
@@ -17,7 +11,6 @@ import io.ktor.server.routing.*
 import kokonut.core.Block
 import kokonut.core.BlockChain
 import kokonut.core.BlockChain.POLICY_NODE
-import kokonut.core.BlockChain.SERVICE_ADDRESS
 import kokonut.core.BlockChain.fullNode
 import kokonut.core.BlockChain.loadFullNodes
 import kokonut.core.Version.genesisBlockID
@@ -26,9 +19,6 @@ import kokonut.core.Version.protocolVersion
 import kokonut.state.MiningState
 import kokonut.util.API.Companion.getPolicy
 import kokonut.util.API.Companion.propagate
-import kokonut.state.Node
-import kokonut.util.full.HealthCheck
-import kokonut.util.full.ServiceRegData
 import kotlinx.html.*
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -44,8 +34,8 @@ class Router {
 
         var miners: MutableSet<Miner> = mutableSetOf()
 
-        fun Route.root(node: Node) {
-            if(node == Node.FULL) {
+        fun Route.root(node: NodeType) {
+            if(node == NodeType.FULL) {
                 get("/") {
                     call.respondHtml(HttpStatusCode.OK) {
                         head {
@@ -315,10 +305,10 @@ class Router {
                 val isValid = Wallet.verifySignature(data, signatureBytes, wallet.publicKey)
 
                 if (!isValid) {
-                    call.respondText("Configuration Registration Successfully: ${HttpStatusCode.BadRequest}")
+                    call.respondText("Registration failed: ${HttpStatusCode.BadRequest}")
                     return@post
                 } else {
-                    call.respondText("Configuration Registration Successfully: ${HttpStatusCode.OK}")
+                    call.respondText("Registration succeed.: ${HttpStatusCode.OK}")
                 }
             }
         }
@@ -339,8 +329,8 @@ class Router {
                     call.respond(HttpStatusCode.OK, "Propagate Succeed")
                     BlockChain.fullNodes.forEach {
                         run {
-                            if (it.ServiceAddress != address && it.ServiceAddress != fullNode.ServiceAddress) {
-                                val response = URL(it.ServiceAddress).propagate()
+                            if (it.address != address && it.address != fullNode.address) {
+                                val response = URL(it.address).propagate()
                                 println(response)
                             }
                         }

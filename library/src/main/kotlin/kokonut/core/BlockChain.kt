@@ -14,8 +14,7 @@ import kokonut.util.API.Companion.getPolicy
 import kokonut.util.API.Companion.getReward
 import kokonut.util.API.Companion.startMining
 import kokonut.util.Utility.Companion.truncate
-import kokonut.util.full.FullNode
-import kokonut.util.full.Weights
+import kokonut.util.FullNode
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import java.net.URL
@@ -28,11 +27,11 @@ object BlockChain {
     private val json = Json { ignoreUnknownKeys = true }
     val GENESIS_NODE = URL("https://api.github.com/repos/Pascal-Institute/genesis_node/contents/")
     val GENESIS_RAW_NODE = URL("https://raw.githubusercontent.com/Pascal-Institute/genesis_node/main/")
-    val FUEL_NODE = URL("https://kokonut-oil.onrender.com/v1/catalog/service/knt_fullnode")
+    val FUEL_NODE = URL("https://kokonut-fuelnode.onrender.com")
 
     var SERVICE_ADDRESS = ""
 
-    var fullNode = FullNode("", "", "", Weights(0, 0))
+    var fullNode = FullNode("", "")
 
     var fullNodes: List<FullNode> = emptyList()
 
@@ -57,8 +56,8 @@ object BlockChain {
         for (it in fullNodes) {
             fullNode = fullNodes[0]
 
-            if(SERVICE_ADDRESS != it.ServiceAddress){
-                fullNodeChainSize = URL(it.ServiceAddress).getChain().size
+            if(SERVICE_ADDRESS != it.address){
+                fullNodeChainSize = URL(it.address).getChain().size
                 if (fullNodeChainSize > maxSize) {
                     fullNode = it
                     maxSize = fullNodeChainSize
@@ -129,7 +128,7 @@ object BlockChain {
 
     fun loadChainFromFullNode() {
         try {
-            val chainFromFullNode = URL(fullNode.ServiceAddress).getChain()
+            val chainFromFullNode = URL(fullNode.address).getChain()
             val chain = getChain()
 
             chainFromFullNode.forEach { block ->
@@ -148,7 +147,7 @@ object BlockChain {
 
     fun isRegistered(): Boolean {
 
-        if (fullNode.ServiceID == "") {
+        if (fullNode.id == "") {
             return false
         }
 
@@ -175,7 +174,7 @@ object BlockChain {
 
         loadChainFromFullNode()
 
-        URL(fullNode.ServiceAddress).startMining(wallet.publicKeyFile)
+        URL(fullNode.address).startMining(wallet.publicKeyFile)
 
         if (!isValid()) {
             wallet.miningState = MiningState.FAILED
@@ -205,7 +204,7 @@ object BlockChain {
         )
 
         data.reward = Utility.setReward(miningBlock.index)
-        val fullNodeReward = URL(fullNode.ServiceAddress).getReward(miningBlock.index)
+        val fullNodeReward = URL(fullNode.address).getReward(miningBlock.index)
 
         if (data.reward != fullNodeReward) {
             wallet.miningState = MiningState.FAILED

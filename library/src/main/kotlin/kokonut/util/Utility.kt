@@ -1,18 +1,11 @@
 package kokonut.util
 
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
 import kokonut.core.Block
-import kokonut.util.API.Companion.getChain
-import kokonut.util.full.FullNode
 import kotlinx.coroutines.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.*
 import java.net.URI
-import java.net.URL
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.security.*

@@ -22,7 +22,7 @@ fun main(): Unit = runBlocking{
 
     println(fullNode)
 
-    if(wallet.isValid() && URL(fullNode.ServiceAddress).isHealthy()){
+    if(wallet.isValid() && URL(fullNode.address).isHealthy()){
 
         if(!BlockChain.isValid()){
             throw IllegalStateException("Chain is Invaild")
@@ -36,7 +36,7 @@ fun main(): Unit = runBlocking{
             "Propagate Vision of Pascal Institute")
 
         try {
-            URL(fullNode.ServiceAddress).startMining(wallet.publicKeyFile)
+            URL(fullNode.address).startMining(wallet.publicKeyFile)
             val newBlock : Block = BlockChain.mine(wallet, data)
             val json = Json.encodeToJsonElement(newBlock)
 
@@ -44,16 +44,16 @@ fun main(): Unit = runBlocking{
             BlockChain.fullNodes.forEach {
 
                     try {
-                        URL(it.ServiceAddress).addBlock(json, wallet.publicKeyFile)
+                        URL(it.address).addBlock(json, wallet.publicKeyFile)
                     } catch (e: Exception) {
-                        println("Propagation Failed at ${it.ServiceAddress} : $e")
+                        println("Propagation Failed at ${it.address} : $e")
                     }
 
             }
             wallet.miningState = MiningState.MINED
         }catch (e : Exception){
             wallet.miningState = MiningState.FAILED
-            URL(fullNode.ServiceAddress).stopMining(wallet.publicKeyFile)
+            URL(fullNode.address).stopMining(wallet.publicKeyFile)
         }
     }
 

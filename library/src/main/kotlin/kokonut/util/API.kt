@@ -46,6 +46,11 @@ class API {
             }
         }
 
+        fun URL.getFullNodes(): List<FullNode>{
+            val url = URL("${this}/getFullNodes")
+            return emptyList<FullNode>()
+        }
+
         fun URL.getChain(): MutableList<Block> {
             val url = URL("${this}/getChain")
             val conn = url.openConnection() as HttpURLConnection
@@ -231,7 +236,7 @@ class API {
             val response : HttpResponse
 
             runBlocking {
-               response = client.post(this@propagate.path + "/propagate?size=${BlockChain.getChainSize()}&id=${fullNode.ServiceID}&address=${fullNode.ServiceAddress}")
+               response = client.post(this@propagate.path + "/propagate?size=${BlockChain.getChainSize()}&id=${fullNode.id}&address=${fullNode.address}")
             }
 
             return response
