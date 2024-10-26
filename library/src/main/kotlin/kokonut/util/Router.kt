@@ -80,13 +80,11 @@ class Router {
 
                 val fullnodeIp = call.request.origin.remoteHost // 클라이언트 IP 가져오기
 
-                // IP를 도메인 이름으로 변환
                 val fullnodeDomain : String = try {
                     InetAddress.getByName(fullnodeIp).canonicalHostName
                 } catch (e: Exception) {
-                    fullnodeIp // 변환에 실패하면 IP 주소를 그대로 사용
+                    fullnodeIp
                 }
-
 
                 call.respondHtml(HttpStatusCode.OK) {
                     head {
@@ -144,6 +142,12 @@ class Router {
                         }
                     }
                 }
+            }
+        }
+
+        fun Route.getFullNodes(fullNodes: List<FullNode>) {
+            get("/getFullNodes") {
+                call.respond(fullNodes)
             }
         }
 
