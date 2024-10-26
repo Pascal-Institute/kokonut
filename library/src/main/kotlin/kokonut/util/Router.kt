@@ -75,8 +75,7 @@ class Router {
                             h1 { +"Kokonut Protocol Version : $protocolVersion" }
                             h1 { +"Kokonut Library Version : $libraryVersion" }
                             h1 { +"Timestamp : ${System.currentTimeMillis()}" }
-                            h1 { +"Get Full Nodes : /getFullNodes" }
-                            h1 { +"Get Last Block : /getLastBlock" }
+                            h1 { +"Get Genesis Block : /getFullNodes" }
                         }
 
                     }
