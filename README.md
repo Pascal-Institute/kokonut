@@ -135,24 +135,34 @@ It is called genesis block which follows below :
 ## Node
 - Configuration is 3 parts. Fuel, Full and Light Nodes
 
-### Genesis Node
+### Status
+
+* VALID : Able to internet connect & verified by wallet is valid
+* INVALID : Able to internet connect but, non-verified by wallet is invalid
+* DISCONNECTED : Status of not being able to internet connect to node
+
+### State Machine Diagram
+![image](https://github.com/user-attachments/assets/ef25bf2d-73bc-4501-8915-a7551439d591)
+
 
 ### Fuel Node
 
-- URL : https://kokonut-oil.onrender.com
-- It contains genesis node
+- URL : https://kokonut-fuelnode.onrender.com
+- It contains genesis block
+- Service full node lists
 - Synchronize full nodes
 - Supplies important information to cross validation between full & light node
 
 ### Full Node
 
-- URL :
+- URL : -
 - DockerHub : https://hub.docker.com/r/volta2030/knt_fullnode
 - Validate Block and Add to Chain. powered by kokonut
 - Check Chain is valid
 
 ### Light Node
 
+- Client Application for block chain system
 - Mine Block. powered by kokonut
 - Check Chain is valid
 
