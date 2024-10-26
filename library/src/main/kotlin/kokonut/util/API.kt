@@ -48,7 +48,28 @@ class API {
 
         fun URL.getFullNodes(): List<FullNode>{
             val url = URL("${this}/getFullNodes")
-            return emptyList<FullNode>()
+            val conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+
+            return try {
+                val responseCode = conn.responseCode
+
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    val inputStream = conn.inputStream
+                    val reader = BufferedReader(InputStreamReader(inputStream))
+                    val response = reader.use { it.readText() }
+
+                    Json.decodeFromString(response)
+
+                } else {
+                    throw RuntimeException("GET request failed with response code $responseCode")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                throw e
+            } finally {
+                conn.disconnect()
+            }
         }
 
         fun URL.getChain(): MutableList<Block> {
