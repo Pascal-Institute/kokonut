@@ -1,5 +1,9 @@
 plugins {
-    kotlin("jvm")
+    //develop
+    //kotlin("jvm")
+    //production
+    kotlin("jvm") version "1.9.22"
+
     id("io.ktor.plugin") version "2.3.4"
     application
 }
@@ -9,7 +13,7 @@ kotlin {
 }
 
 application {
-    mainClass.set("server.ApplicationKt")
+    mainClass.set("ApplicationKt")
 }
 
 repositories {
@@ -20,8 +24,12 @@ repositories {
 }
 
 dependencies {
+    //develop
     implementation(project(":library"))
+    //production
+    //implementation("com.github.Pascal-Institute:kokonut:2cd1f29528")
 
+    implementation("io.ktor:ktor-server-html-builder:2.3.4")
     implementation("io.ktor:ktor-server-html-builder:2.3.4")
     implementation("io.ktor:ktor-server-core-jvm:2.3.4")
     implementation("io.ktor:ktor-server-netty-jvm:2.3.4")
