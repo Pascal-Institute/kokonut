@@ -5,7 +5,7 @@ import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.routing.*
 import kokonut.core.BlockChain
-import kokonut.state.Node
+import kokonut.util.NodeType
 import kokonut.util.Router.Companion.addBlock
 import kokonut.util.Router.Companion.getChain
 import kokonut.util.Router.Companion.getLastBlock
@@ -28,9 +28,8 @@ fun main() {
         }
 
         routing {
-            root(Node.FULL)
+            root(NodeType.FULL)
             register()
-            submit()
             isValid()
             getLastBlock()
             getTotalCurrencyVolume()

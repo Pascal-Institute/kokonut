@@ -1,6 +1,6 @@
 plugins {
     java
-    kotlin("jvm") version "1.9.22"
+    kotlin("jvm")
     kotlin("plugin.serialization") version "1.9.22"
     `maven-publish`
 }
