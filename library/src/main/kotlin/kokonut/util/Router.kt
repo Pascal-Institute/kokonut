@@ -315,52 +315,11 @@ class Router {
                 val isValid = Wallet.verifySignature(data, signatureBytes, wallet.publicKey)
 
                 if (!isValid) {
-                    call.respondText("Invalid fullnode.")
+                    call.respondText("Configuration Registration Successfully: ${HttpStatusCode.BadRequest}")
                     return@post
+                } else {
+                    call.respondText("Configuration Registration Successfully: ${HttpStatusCode.OK}")
                 }
-
-                val serviceRegData = ServiceRegData(
-                    Name = "",
-                    ID = Utility.calculateHash(wallet.publicKey),
-                    Address = address,
-                    Port = 8080,
-                    Check = HealthCheck(
-                        HTTP = address,
-                        Interval = "300s",
-                        Timeout = "30s",
-                        DeregisterCriticalServiceAfter = "10m"
-                    )
-                )
-
-                val client = HttpClient(CIO) {
-                    install(ContentNegotiation) {
-                        json(Json { prettyPrint = true })
-                    }
-                }
-
-                val requestBody = Json.encodeToString(ServiceRegData.serializer(), serviceRegData)
-                println("Request Body: $requestBody")
-
-                val response: HttpResponse =
-                    client.put("https://kokonut-fullnode.onrender.com/submit") {
-                        contentType(ContentType.Application.Json)
-                        setBody(serviceRegData)
-                    }
-
-                println("Response Status: ${response.status}")
-                println("Response Body: $response")
-
-                if(response.status == HttpStatusCode.OK){
-                    SERVICE_ADDRESS = serviceRegData.Address
-                }
-
-                Utility.createDirectory(keyPath)
-
-                File(keyPath).deleteRecursively()
-
-                call.respondText("Configuration Registration Successfully: ${response.status}")
-
-                client.close()
             }
         }
 
