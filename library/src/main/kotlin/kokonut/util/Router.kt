@@ -258,14 +258,15 @@ class Router {
             }
         }
 
-        fun Route.submit() {
+        fun Route.submit() : FullNode {
+            var address = ""
+            var wallet : Wallet? = null
             post("/submit") {
                 val keyPath = "/app/key"
                 Utility.createDirectory(keyPath)
-                val multipartData = call.receiveMultipart()
-                var address = ""
                 var publicKey: File? = null
                 var privateKey: File? = null
+                val multipartData = call.receiveMultipart()
 
                 multipartData.forEachPart { part ->
                     when (part) {
@@ -298,11 +299,11 @@ class Router {
                     part.dispose()
                 }
 
-                val wallet = Wallet(privateKey!!, publicKey!!)
+                wallet = Wallet(privateKey!!, publicKey!!)
 
                 val data = "verify fullnode".toByteArray()
-                val signatureBytes = Wallet.signData(data, wallet.privateKey)
-                val isValid = Wallet.verifySignature(data, signatureBytes, wallet.publicKey)
+                val signatureBytes = Wallet.signData(data, wallet!!.privateKey)
+                val isValid = Wallet.verifySignature(data, signatureBytes, wallet!!.publicKey)
 
                 if (!isValid) {
                     call.respondText("Registration failed: ${HttpStatusCode.BadRequest}")
@@ -311,6 +312,7 @@ class Router {
                     call.respondText("Registration succeed.: ${HttpStatusCode.OK}")
                 }
             }
+            return FullNode(id = Utility.calculateHash(wallet!!.publicKey), address = address)
         }
 
         fun Route.propagate() {
