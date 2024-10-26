@@ -63,10 +63,11 @@ class Router {
                             title("Kokonut Full Node")
                         }
                         body {
-                            h1 { +"Kokonut Protocol Version : $protocolVersion" }
-                            h1 { +"Kokonut Library Version : $libraryVersion" }
+                            h1 { +"Kokonut protocol version : $protocolVersion" }
+                            h1 { +"Kokonut library version : $libraryVersion" }
                             h1 { +"Timestamp : ${System.currentTimeMillis()}" }
-                            h1 { +"Get Genesis Block : /getFullNodes" }
+                            h1 { +"Get genesis block : /getGenesisBlock" }
+                            h1 { +"Get full nodes : /getFullNodes" }
                         }
 
                     }
