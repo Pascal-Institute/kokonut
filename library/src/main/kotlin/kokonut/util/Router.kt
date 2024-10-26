@@ -32,6 +32,7 @@ import kokonut.util.full.ServiceRegData
 import kotlinx.html.*
 import kotlinx.serialization.json.Json
 import java.io.File
+import java.net.InetAddress
 import java.net.URL
 import java.nio.file.Paths
 import java.security.PublicKey
@@ -85,6 +86,17 @@ class Router {
 
         fun Route.register() {
             get("/register") {
+
+                val fullnodeIp = call.request.origin.remoteHost // 클라이언트 IP 가져오기
+
+                // IP를 도메인 이름으로 변환
+                val fullnodeDomain : String = try {
+                    InetAddress.getByName(fullnodeIp).canonicalHostName
+                } catch (e: Exception) {
+                    fullnodeIp // 변환에 실패하면 IP 주소를 그대로 사용
+                }
+
+
                 call.respondHtml(HttpStatusCode.OK) {
                     head {
                         title { +"Service Configuration" }
@@ -92,17 +104,19 @@ class Router {
                     body {
                         h1 { +"Configure Your Service" }
                         form(
-                            action = "/submit",
+                            action = "https://kokonut-fullnode.onrender.com/submit",
                             method = FormMethod.post,
                             encType = FormEncType.multipartFormData
                         ) {
                             p {
-                                label { +"Service Name: " }
-                                textInput(name = "serviceName") {
+                                label { +"Address: " }
+                                textInput(name = "address") {
+                                    placeholder = "Enter Service Domain or IP Address"
+                                    value = fullnodeDomain
                                     readonly = true
-                                    value = "knt_fullnode"
                                 }
                             }
+
                             p {
                                 label { +"Service ID: " }
                                 label { +"Public Key (.pem) : " }
@@ -114,19 +128,7 @@ class Router {
                                     placeholder = "Enter Directory your Wallet Public Key file"
                                 }
                             }
-                            p {
-                                label { +"Service Address: " }
-                                textInput(name = "serviceAddress") {
-                                    placeholder = "Enter Service Domain or IP Address"
-                                }
-                            }
-                            p {
-                                label { +"Service Port: " }
-                                textInput(name = "servicePort") {
-                                    placeholder = "8080"
-                                    value = "8080"
-                                }
-                            }
+
                             p {
                                 submitInput { value = "Submit" }
                             }
@@ -271,25 +273,15 @@ class Router {
                 val keyPath = "/app/key"
                 Utility.createDirectory(keyPath)
                 val multipartData = call.receiveMultipart()
-                var serviceName = "knt_fullnode"
-                var serviceAddress = ""
-                var servicePort = ""
+                var address = ""
                 var publicKey: File? = null
                 var privateKey: File? = null
 
                 multipartData.forEachPart { part ->
                     when (part) {
                         is PartData.FormItem -> {
-                            if (part.name == "serviceName") {
-                                serviceName = part.value
-                            }
-
-                            if (part.name == "serviceAddress") {
-                                serviceAddress = part.value
-                            }
-
-                            if (part.name == "servicePort") {
-                                servicePort = part.value
+                            if (part.name == "address") {
+                                address = part.value
                             }
                         }
 
@@ -318,22 +310,22 @@ class Router {
 
                 val wallet = Wallet(privateKey!!, publicKey!!)
 
-                val data = "verify operator".toByteArray()
+                val data = "verify fullnode".toByteArray()
                 val signatureBytes = Wallet.signData(data, wallet.privateKey)
                 val isValid = Wallet.verifySignature(data, signatureBytes, wallet.publicKey)
 
                 if (!isValid) {
-                    call.respondText("Invalid Wallet")
+                    call.respondText("Invalid fullnode.")
                     return@post
                 }
 
                 val serviceRegData = ServiceRegData(
-                    Name = serviceName,
+                    Name = "",
                     ID = Utility.calculateHash(wallet.publicKey),
-                    Address = serviceAddress,
-                    Port = servicePort.toInt(),
+                    Address = address,
+                    Port = 8080,
                     Check = HealthCheck(
-                        HTTP = serviceAddress,
+                        HTTP = address,
                         Interval = "300s",
                         Timeout = "30s",
                         DeregisterCriticalServiceAfter = "10m"
@@ -350,22 +342,13 @@ class Router {
                 println("Request Body: $requestBody")
 
                 val response: HttpResponse =
-                    client.put("https://kokonut-oil.onrender.com/v1/agent/service/register") {
+                    client.put("https://kokonut-fullnode.onrender.com/submit") {
                         contentType(ContentType.Application.Json)
                         setBody(serviceRegData)
                     }
 
                 println("Response Status: ${response.status}")
                 println("Response Body: $response")
-
-//                if (response.status == HttpStatusCode.OK) {
-//                    fullNode = FullNode(
-//                        serviceRegData.ID,
-//                        serviceRegData.Name,
-//                        serviceRegData.Address,
-//                        Weights(1, 1)
-//                    )
-//                }
 
                 if(response.status == HttpStatusCode.OK){
                     SERVICE_ADDRESS = serviceRegData.Address
