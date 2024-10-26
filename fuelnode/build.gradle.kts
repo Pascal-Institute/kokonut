@@ -1,8 +1,8 @@
 plugins {
     //develop
-    //kotlin("jvm")
+    kotlin("jvm")
     //production
-    kotlin("jvm") version "1.9.22"
+    //kotlin("jvm") version "1.9.22"
 
     id("io.ktor.plugin") version "2.3.4"
     application
