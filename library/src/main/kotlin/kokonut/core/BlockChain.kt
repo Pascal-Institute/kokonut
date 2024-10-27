@@ -26,12 +26,7 @@ object BlockChain {
     const val TICKER = "KNT"
     val POLICY_NODE = URL("https://pascal-institute.github.io/kokonut-oil-station")
     val database = SQLite()
-    private val json = Json { ignoreUnknownKeys = true }
-    val GENESIS_NODE = URL("https://api.github.com/repos/Pascal-Institute/genesis_node/contents/")
-    val GENESIS_RAW_NODE = URL("https://raw.githubusercontent.com/Pascal-Institute/genesis_node/main/")
     val FUEL_NODE = URL("https://kokonut-fuelnode.onrender.com")
-
-    var SERVICE_ADDRESS = ""
 
     var fullNode = FullNode("", "")
 
@@ -54,13 +49,10 @@ object BlockChain {
 
         for (it in fullNodes) {
             fullNode = fullNodes[0]
-
-            if(SERVICE_ADDRESS != it.address){
-                fullNodeChainSize = URL(it.address).getChain().size
-                if (fullNodeChainSize > maxSize) {
-                    fullNode = it
-                    maxSize = fullNodeChainSize
-                }
+            fullNodeChainSize = URL(it.address).getChain().size
+            if (fullNodeChainSize > maxSize) {
+                fullNode = it
+                maxSize = fullNodeChainSize
             }
         }
     }
