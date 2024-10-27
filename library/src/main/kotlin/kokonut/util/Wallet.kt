@@ -1,5 +1,6 @@
 package kokonut.util
 
+import kokonut.state.MiningState
 import kokonut.util.Utility.Companion.calculateHash
 import java.io.File
 import java.security.*
@@ -9,7 +10,10 @@ import java.util.*
 
 class Wallet(val privateKeyFile : File, val publicKeyFile: File) {
 
+    var miningState = MiningState.READY
+
     companion object {
+
         fun generateKey(): KeyPair {
             val keyPairGenerator = KeyPairGenerator.getInstance("RSA")
             keyPairGenerator.initialize(2048)

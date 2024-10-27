@@ -14,4 +14,7 @@ object Version {
 
     val protocolVersion: Int
         get() = libraryVersion.split(".")[majorIndex].toInt()
+
+    val genesisBlockID : String
+        get() = properties.getProperty("kokonut_genesis_block")
 }

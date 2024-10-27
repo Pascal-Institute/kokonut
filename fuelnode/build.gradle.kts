@@ -30,7 +30,6 @@ dependencies {
     implementation("com.github.Pascal-Institute:kokonut:0a4e5e1a95")
 
     implementation("io.ktor:ktor-server-html-builder:2.3.4")
-    implementation("io.ktor:ktor-server-html-builder:2.3.4")
     implementation("io.ktor:ktor-server-core-jvm:2.3.4")
     implementation("io.ktor:ktor-server-netty-jvm:2.3.4")
     implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:2.3.4")

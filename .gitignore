@@ -5,6 +5,7 @@ build/
 !**/src/test/**/build/
 
 /library/build/
+/fuelnode/build/
 /fullnode/build/
 /lightnode/build/
 /lightnode/.gradle/

@@ -1,18 +1,11 @@
 package kokonut.util
 
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
 import kokonut.core.Block
-import kokonut.util.API.Companion.getChain
-import kokonut.util.full.FullNode
 import kotlinx.coroutines.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.*
 import java.net.URI
-import java.net.URL
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.security.*
@@ -115,28 +108,6 @@ class Utility {
             outputStream.write("Content-Type: $contentType\r\n\r\n".toByteArray(Charsets.UTF_8))
             Files.copy(file.toPath(), outputStream)
             outputStream.write("\r\n".toByteArray(Charsets.UTF_8))
-        }
-
-        suspend fun recordToFuelNode(block: Block) {
-            withContext(Dispatchers.IO) {
-                val token = System.getenv("KEY")
-                val remoteUrl = "https://$token@github.com/Pascal-Institute/kovault.git"
-                val repoPath = "/app/repo"
-                val jsonFilePath = "$repoPath/${block.hash}.json"  // JSON 파일 경로
-                val jsonContent = Json.encodeToString(block)
-
-                createDirectory(repoPath)
-
-                val github = GitHub(remoteUrl, repoPath)
-                println(github.clone())
-                println(github.remote())
-                println(github.configEmail("pascal-inst@googlegroups.com"))
-                println(github.configName("P1750A"))
-                createFile(jsonFilePath, jsonContent)
-                println(github.add())
-                println(github.commit(block))
-                println(github.push())
-            }
         }
     }
 }

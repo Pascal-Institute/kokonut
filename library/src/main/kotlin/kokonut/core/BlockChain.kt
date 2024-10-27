@@ -8,18 +8,15 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
 import kokonut.state.MiningState
-import kokonut.util.GitHubFile
-import kokonut.util.SQLite
-import kokonut.util.Wallet
+import kokonut.util.*
 import kokonut.util.API.Companion.getChain
+import kokonut.util.API.Companion.getFullNodes
+import kokonut.util.API.Companion.getGenesisBlock
 import kokonut.util.API.Companion.getPolicy
 import kokonut.util.API.Companion.getReward
-import kokonut.util.API.Companion.isHealthy
 import kokonut.util.API.Companion.startMining
-import kokonut.util.Utility
 import kokonut.util.Utility.Companion.truncate
-import kokonut.util.full.FullNode
-import kokonut.util.full.Weights
+import kokonut.util.FullNode
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import java.net.URL
@@ -28,23 +25,18 @@ object BlockChain {
 
     const val TICKER = "KNT"
     val POLICY_NODE = URL("https://pascal-institute.github.io/kokonut-oil-station")
-
-    private val json = Json {
-        ignoreUnknownKeys = true
-    }
-
+    val database = SQLite()
+    private val json = Json { ignoreUnknownKeys = true }
     val GENESIS_NODE = URL("https://api.github.com/repos/Pascal-Institute/genesis_node/contents/")
     val GENESIS_RAW_NODE = URL("https://raw.githubusercontent.com/Pascal-Institute/genesis_node/main/")
-    val FUEL_NODE = URL("https://kokonut-oil.onrender.com/v1/catalog/service/knt_fullnode")
+    val FUEL_NODE = URL("https://kokonut-fuelnode.onrender.com")
 
     var SERVICE_ADDRESS = ""
 
-    var fullNode = FullNode("", "", "", Weights(0, 0))
+    var fullNode = FullNode("", "")
 
     var fullNodes: List<FullNode> = emptyList()
 
-    var miningState = MiningState.READY
-    val database = SQLite()
     private var cachedChain: List<Block>? = null
 
     init {
@@ -57,17 +49,14 @@ object BlockChain {
         var fullNodeChainSize = 0
 
         runBlocking {
-            val client = HttpClient()
-            val response: HttpResponse = client.get(FUEL_NODE)
-            client.close()
-            fullNodes = json.decodeFromString<List<FullNode>>(response.body())
+            fullNodes = FUEL_NODE.getFullNodes()
         }
 
         for (it in fullNodes) {
             fullNode = fullNodes[0]
 
-            if(SERVICE_ADDRESS != it.ServiceAddress){
-                fullNodeChainSize = URL(it.ServiceAddress).getChain().size
+            if(SERVICE_ADDRESS != it.address){
+                fullNodeChainSize = URL(it.address).getChain().size
                 if (fullNodeChainSize > maxSize) {
                     fullNode = it
                     maxSize = fullNodeChainSize
@@ -78,38 +67,26 @@ object BlockChain {
 
     private fun loadChain() {
         if (fullNodes.isEmpty()) {
-            loadChainFromGenesisNode()
+            loadChainFromFuelNode()
         } else {
             loadChainFromFullNode()
         }
     }
 
-    fun loadChainFromGenesisNode() = runBlocking {
-        val client = HttpClient(CIO) {
-            install(ContentNegotiation) {
-                json(Json { ignoreUnknownKeys = true })
-            }
-        }
-
+    fun loadChainFromFuelNode() = runBlocking {
         try {
-            val files: List<GitHubFile> = client.get(GENESIS_NODE).body()
+            val genesisBlock = runBlocking { FUEL_NODE.getGenesisBlock() }
+            val chain = getChain()
+            val blockChain = mutableListOf<Block>()
+            blockChain.add(genesisBlock)
 
-            val jsonUrls = files.filter { it.type == "file" && it.name.endsWith(".json") }
-                .map { "${GENESIS_RAW_NODE}${it.path}" }
-
-            for (url in jsonUrls) {
-                val response: HttpResponse = client.get(url)
-                try {
-                    val block: Block = Json.decodeFromString(response.body())
+            blockChain.forEach { block ->
+                if (block !in chain) {
                     database.insert(block)
-                } catch (e: Exception) {
-                    println("JSON Passer Error: ${e.message}")
                 }
             }
         } catch (e: Exception) {
-            println("Error! : ${e.message}")
-        } finally {
-            client.close()
+            println("Aborted : ${e.message}")
         }
 
         syncChain()
@@ -138,7 +115,7 @@ object BlockChain {
 
     fun loadChainFromFullNode() {
         try {
-            val chainFromFullNode = URL(fullNode.ServiceAddress).getChain()
+            val chainFromFullNode = URL(fullNode.address).getChain()
             val chain = getChain()
 
             chainFromFullNode.forEach { block ->
@@ -157,7 +134,7 @@ object BlockChain {
 
     fun isRegistered(): Boolean {
 
-        if (fullNode.ServiceID == "") {
+        if (fullNode.id == "") {
             return false
         }
 
@@ -180,14 +157,14 @@ object BlockChain {
     }
 
     fun mine(wallet: Wallet, data: Data): Block {
-        miningState = MiningState.MINING
+        wallet.miningState = MiningState.MINING
 
         loadChainFromFullNode()
 
-        URL(fullNode.ServiceAddress).startMining(wallet.publicKeyFile)
+        URL(fullNode.address).startMining(wallet.publicKeyFile)
 
         if (!isValid()) {
-            miningState = MiningState.FAILED
+            wallet.miningState = MiningState.FAILED
             throw IllegalStateException("Chain is Invalid. Stop Mining...")
         }
 
@@ -214,10 +191,10 @@ object BlockChain {
         )
 
         data.reward = Utility.setReward(miningBlock.index)
-        val fullNodeReward = URL(fullNode.ServiceAddress).getReward(miningBlock.index)
+        val fullNodeReward = URL(fullNode.address).getReward(miningBlock.index)
 
         if (data.reward != fullNodeReward) {
-            miningState = MiningState.FAILED
+            wallet.miningState = MiningState.FAILED
             throw Exception("Reward Is Invalid...")
         } else {
             println("Reward Is Valid")

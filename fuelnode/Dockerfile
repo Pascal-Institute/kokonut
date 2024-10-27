@@ -7,7 +7,7 @@ FROM gradle:jdk17 AS builder
 WORKDIR /app
 
 # Copy the Gradle wrapper and project files
-COPY fullnode .
+COPY . .
 
 # Build the application
 RUN gradle installDist

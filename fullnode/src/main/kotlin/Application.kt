@@ -5,21 +5,22 @@ import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.routing.*
 import kokonut.core.BlockChain
-import kokonut.util.full.Router.Companion.getChain
-import kokonut.util.full.Router.Companion.getLastBlock
-import kokonut.util.full.Router.Companion.getReward
-import kokonut.util.full.Router.Companion.getTotalCurrencyVolume
-import kokonut.util.full.Router.Companion.isValid
-import kokonut.util.full.Router.Companion.startMining
-import kokonut.util.full.Router.Companion.stopMining
-import kokonut.util.full.Router.Companion.addBlock
-import kokonut.util.full.Router.Companion.register
-import kokonut.util.full.Router.Companion.root
-import kokonut.util.full.Router.Companion.submit
+import kokonut.util.NodeType
+import kokonut.util.Router.Companion.addBlock
+import kokonut.util.Router.Companion.getChain
+import kokonut.util.Router.Companion.getLastBlock
+import kokonut.util.Router.Companion.getReward
+import kokonut.util.Router.Companion.getTotalCurrencyVolume
+import kokonut.util.Router.Companion.isValid
+import kokonut.util.Router.Companion.register
+import kokonut.util.Router.Companion.startMining
+import kokonut.util.Router.Companion.stopMining
+import kokonut.util.Router.Companion.submit
+import kokonut.util.Router.Companion.root
 
 fun main() {
 
-    BlockChain.isRegistered()
+    BlockChain.isValid()
 
     embeddedServer(Netty, host = "0.0.0.0", port = 8080) {
         install(ContentNegotiation) {
@@ -27,9 +28,8 @@ fun main() {
         }
 
         routing {
-            root()
+            root(NodeType.FULL)
             register()
-            submit()
             isValid()
             getLastBlock()
             getTotalCurrencyVolume()
