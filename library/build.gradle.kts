@@ -30,8 +30,10 @@ dependencies {
     implementation("org.xerial:sqlite-jdbc:3.41.2.2")
 }
 
-tasks.test {
-    useJUnitPlatform()
+tasks.withType<ProcessResources> {
+    from("src/main/resources/0000000000000000000000000000000000000000000000009fece4dc7e1d108d.json") {
+        into("resources")
+    }
 }
 
 kotlin {
