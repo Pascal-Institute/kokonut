@@ -154,13 +154,14 @@ class Router {
         fun Route.getGenesisBlock() {
             get("/getGenesisBlock") {
                 val classLoader = Thread.currentThread().contextClassLoader
-                val resource = classLoader.getResource("${genesisBlockID}.json")
+                val inputStream = classLoader.getResourceAsStream("${genesisBlockID}.json")
 
-                if (resource != null) {
-                    val file = File(resource.toURI())
-                    val jsonString = file.readText()
+                inputStream?.use { stream ->
+                    val jsonString = stream.bufferedReader().use { it.readText() }
                     val genesisBlock : Block = Json.decodeFromString<Block>(jsonString)
                     call.respond(genesisBlock)
+                } ?: run {
+                    println("Resource not found: ${genesisBlockID}.json")
                 }
             }
         }
