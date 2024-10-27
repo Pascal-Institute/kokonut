@@ -13,7 +13,7 @@ import kokonut.util.Router.Companion.submit
 
 fun main() {
 
-    val fullNodes = mutableListOf<FullNode>()
+    var fullNodes = mutableListOf<FullNode>()
 
     embeddedServer(Netty, host = "0.0.0.0", port = 8080) {
         install(ContentNegotiation) {
@@ -21,7 +21,7 @@ fun main() {
         }
         routing {
             root(NodeType.FUEL)
-            fullNodes.add(submit())
+            fullNodes = submit(fullNodes)
             getGenesisBlock()
             getFullNodes(fullNodes)
         }
