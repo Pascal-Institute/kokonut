@@ -263,7 +263,7 @@ class Router {
             }
         }
 
-        fun Route.submit() : FullNode {
+        fun Route.submit(fullNodes: MutableList<FullNode>) : MutableList<FullNode> {
             var address = ""
             var wallet : Wallet? = null
             post("/submit") {
@@ -315,9 +315,10 @@ class Router {
                     return@post
                 } else {
                     call.respondText("Registration succeed.: ${HttpStatusCode.OK}")
+                    fullNodes.add(FullNode(id = Utility.calculateHash(wallet!!.publicKey), address = address))
                 }
             }
-            return FullNode(id = Utility.calculateHash(wallet!!.publicKey), address = address)
+            return fullNodes
         }
 
         fun Route.propagate() {
