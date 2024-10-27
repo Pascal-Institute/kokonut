@@ -5,8 +5,8 @@ plugins {
 
 rootProject.name = "kokonut"
 
-//develop
+//production
 include(":library")
 
-//production
+//develop
 //include(":fuelnode", ":fullnode", ":lightnode", ":library")
