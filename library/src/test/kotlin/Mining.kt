@@ -15,6 +15,8 @@ import java.net.URL
 
 fun main(): Unit = runBlocking{
 
+    val blockchain = BlockChain()
+
     val wallet = Wallet(
         File("C:\\Users\\public\\private_key.pem"),
         File("C:\\Users\\public\\public_key.pem")
@@ -22,7 +24,7 @@ fun main(): Unit = runBlocking{
 
     if(wallet.isValid() && URL(fullNode.address).isHealthy()){
 
-        if(!BlockChain.isValid()){
+        if(!blockchain.isValid()){
             throw IllegalStateException("Chain is Invaild")
         }
 
@@ -35,7 +37,7 @@ fun main(): Unit = runBlocking{
 
         try {
             URL(fullNode.address).startMining(wallet.publicKeyFile)
-            val newBlock : Block = BlockChain.mine(wallet, data)
+            val newBlock : Block = blockchain.mine(wallet, data)
             val json = Json.encodeToJsonElement(newBlock)
 
             //propagate...

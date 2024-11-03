@@ -5,6 +5,7 @@ import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.routing.*
 import kokonut.core.BlockChain
+import kokonut.core.BlockChain.Companion.isValid
 import kokonut.util.NodeType
 import kokonut.util.Router.Companion.addBlock
 import kokonut.util.Router.Companion.getChain
@@ -19,8 +20,8 @@ import kokonut.util.Router.Companion.submit
 import kokonut.util.Router.Companion.root
 
 fun main() {
-
-    BlockChain.isValid()
+    val blockchain = BlockChain()
+    isValid()
 
     embeddedServer(Netty, host = "0.0.0.0", port = 8080) {
         install(ContentNegotiation) {
