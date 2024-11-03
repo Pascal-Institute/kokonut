@@ -19,6 +19,7 @@ import kokonut.core.Version.genesisBlockID
 import kokonut.core.Version.libraryVersion
 import kokonut.core.Version.protocolVersion
 import kokonut.state.MiningState
+import kokonut.util.API.Companion.getGenesisBlock
 import kokonut.util.API.Companion.getPolicy
 import kokonut.util.API.Companion.propagate
 import kotlinx.html.*
@@ -87,7 +88,7 @@ class Router {
                     body {
                         h1 { +"Configure Your Service" }
                         form(
-                            action = "https://kokonut-fullnode.onrender.com/submit",
+                            action = "${FUEL_NODE}/submit",
                             method = FormMethod.post,
                             encType = FormEncType.multipartFormData
                         ) {
