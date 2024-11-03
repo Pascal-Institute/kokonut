@@ -153,7 +153,7 @@ class API {
         }
 
         fun URL.getPolicy(): Policy {
-            val url = URL("${this}/getChain")
+            val url = URL("${this}/getPolicy")
             val conn = url.openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
 
