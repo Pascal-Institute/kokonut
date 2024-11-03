@@ -79,15 +79,6 @@ class Router {
 
         fun Route.register() {
             get("/register") {
-
-                val fullnodeIp = call.request.origin.remoteHost // 클라이언트 IP 가져오기
-
-                val fullnodeDomain : String = try {
-                    InetAddress.getByName(fullnodeIp).canonicalHostName
-                } catch (e: Exception) {
-                    fullnodeIp
-                }
-
                 call.respondHtml(HttpStatusCode.OK) {
                     head {
                         title { +"Service Configuration" }
@@ -99,14 +90,6 @@ class Router {
                             method = FormMethod.post,
                             encType = FormEncType.multipartFormData
                         ) {
-                            p {
-                                label { +"Address: " }
-                                textInput(name = "address") {
-                                    placeholder = "Enter Service Domain or IP Address"
-                                    value = fullnodeDomain
-                                    readonly = true
-                                }
-                            }
 
                             p {
                                 label { +"Service ID: " }
@@ -274,7 +257,6 @@ class Router {
         }
 
         fun Route.submit(fullNodes: MutableList<FullNode>) : MutableList<FullNode> {
-            var address = ""
             var wallet : Wallet? = null
             post("/submit") {
                 val keyPath = "/app/key"
@@ -282,15 +264,9 @@ class Router {
                 var publicKey: File? = null
                 var privateKey: File? = null
                 val multipartData = call.receiveMultipart()
-
+                val address = call.request.uri
                 multipartData.forEachPart { part ->
                     when (part) {
-                        is PartData.FormItem -> {
-                            if (part.name == "address") {
-                                address = part.value
-                            }
-                        }
-
                         is PartData.FileItem -> {
 
                             if (part.name == "publicKey") {
