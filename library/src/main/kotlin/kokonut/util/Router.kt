@@ -266,7 +266,7 @@ class Router {
                 var publicKey: File? = null
                 var privateKey: File? = null
                 val multipartData = call.receiveMultipart()
-                val address = call.request.uri
+                val address : String = call.request.headers["Origin"]!!
                 multipartData.forEachPart { part ->
                     when (part) {
                         is PartData.FileItem -> {
