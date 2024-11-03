@@ -22,8 +22,6 @@ WORKDIR /app
 # Copy the built application from the builder stage
 COPY --from=builder /app/build/install/app /app
 
-RUN apt-get update && apt-get install -y git
-
 RUN apt-get update && apt-get install -y curl
 
 RUN chmod -R 777 /app
