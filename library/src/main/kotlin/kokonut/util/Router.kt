@@ -11,9 +11,9 @@ import io.ktor.server.routing.*
 import kokonut.Policy
 import kokonut.core.Block
 import kokonut.core.BlockChain
-import kokonut.core.BlockChain.FUEL_NODE
-import kokonut.core.BlockChain.fullNode
-import kokonut.core.BlockChain.loadFullNodes
+import kokonut.core.BlockChain.Companion.FUEL_NODE
+import kokonut.core.BlockChain.Companion.fullNode
+import kokonut.core.BlockChain.Companion.loadFullNodes
 import kokonut.core.Version
 import kokonut.core.Version.genesisBlockID
 import kokonut.core.Version.libraryVersion

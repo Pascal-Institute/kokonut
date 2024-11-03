@@ -1,7 +1,9 @@
 import kokonut.util.API.Companion.isHealthy
 import kokonut.core.*
-import kokonut.core.BlockChain.TICKER
-import kokonut.core.BlockChain.fullNode
+import kokonut.core.BlockChain.Companion.TICKER
+import kokonut.core.BlockChain.Companion.fullNode
+import kokonut.core.BlockChain.Companion.isValid
+import kokonut.core.BlockChain.Companion.mine
 import kokonut.state.MiningState
 import kokonut.util.API.Companion.addBlock
 import kokonut.util.API.Companion.startMining
@@ -15,16 +17,16 @@ import java.net.URL
 
 fun main(): Unit = runBlocking{
 
+    val blockchain = BlockChain()
+
     val wallet = Wallet(
         File("C:\\Users\\public\\private_key.pem"),
         File("C:\\Users\\public\\public_key.pem")
     )
 
-    println(fullNode)
-
     if(wallet.isValid() && URL(fullNode.address).isHealthy()){
 
-        if(!BlockChain.isValid()){
+        if(!isValid()){
             throw IllegalStateException("Chain is Invaild")
         }
 
@@ -37,7 +39,7 @@ fun main(): Unit = runBlocking{
 
         try {
             URL(fullNode.address).startMining(wallet.publicKeyFile)
-            val newBlock : Block = BlockChain.mine(wallet, data)
+            val newBlock : Block = mine(wallet, data)
             val json = Json.encodeToJsonElement(newBlock)
 
             //propagate...
