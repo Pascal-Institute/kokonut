@@ -1,12 +1,4 @@
 package kokonut.core
-
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.request.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.statement.*
-import io.ktor.serialization.kotlinx.json.*
 import kokonut.state.MiningState
 import kokonut.util.*
 import kokonut.util.API.Companion.getChain
@@ -18,20 +10,13 @@ import kokonut.util.API.Companion.startMining
 import kokonut.util.Utility.Companion.truncate
 import kokonut.util.FullNode
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.json.Json
 import java.net.URL
 
 object BlockChain {
 
     const val TICKER = "KNT"
-    val POLICY_NODE = URL("https://pascal-institute.github.io/kokonut-oil-station")
     val database = SQLite()
-    private val json = Json { ignoreUnknownKeys = true }
-    val GENESIS_NODE = URL("https://api.github.com/repos/Pascal-Institute/genesis_node/contents/")
-    val GENESIS_RAW_NODE = URL("https://raw.githubusercontent.com/Pascal-Institute/genesis_node/main/")
     val FUEL_NODE = URL("https://kokonut-fuelnode.onrender.com")
-
-    var SERVICE_ADDRESS = ""
 
     var fullNode = FullNode("", "")
 
@@ -54,13 +39,10 @@ object BlockChain {
 
         for (it in fullNodes) {
             fullNode = fullNodes[0]
-
-            if(SERVICE_ADDRESS != it.address){
-                fullNodeChainSize = URL(it.address).getChain().size
-                if (fullNodeChainSize > maxSize) {
-                    fullNode = it
-                    maxSize = fullNodeChainSize
-                }
+            fullNodeChainSize = URL(it.address).getChain().size
+            if (fullNodeChainSize > maxSize) {
+                fullNode = it
+                maxSize = fullNodeChainSize
             }
         }
     }
@@ -168,7 +150,7 @@ object BlockChain {
             throw IllegalStateException("Chain is Invalid. Stop Mining...")
         }
 
-        val policy = POLICY_NODE.getPolicy()
+        val policy = FUEL_NODE.getPolicy()
 
         val lastBlock = getLastBlock()
 

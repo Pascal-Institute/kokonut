@@ -8,11 +8,13 @@ import io.ktor.server.plugins.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kokonut.Policy
 import kokonut.core.Block
 import kokonut.core.BlockChain
-import kokonut.core.BlockChain.POLICY_NODE
+import kokonut.core.BlockChain.FUEL_NODE
 import kokonut.core.BlockChain.fullNode
 import kokonut.core.BlockChain.loadFullNodes
+import kokonut.core.Version
 import kokonut.core.Version.genesisBlockID
 import kokonut.core.Version.libraryVersion
 import kokonut.core.Version.protocolVersion
@@ -240,6 +242,13 @@ class Router {
             }
         }
 
+        fun Route.getPolicy() {
+            get("/getPolicy") {
+                //5 is magic number it needs to upgrade someday
+                call.respond(Policy(Version.protocolVersion, 5))
+            }
+        }
+
         fun Route.startMining() {
             post("/startMining") {
                 val keyPath = "/app/key"
@@ -361,7 +370,7 @@ class Router {
                 val keyPath = "/app/key"
                 Utility.createDirectory(keyPath)
 
-                val policy = POLICY_NODE.getPolicy()
+                val policy = FUEL_NODE.getPolicy()
 
                 if (!BlockChain.isValid()) {
                     call.respond(HttpStatusCode.Created, "Block Add Failed : Server block chain is invalid")
