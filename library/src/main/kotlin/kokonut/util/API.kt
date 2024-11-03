@@ -11,10 +11,7 @@ import io.ktor.serialization.kotlinx.json.*
 import kokonut.Policy
 import kokonut.core.Block
 import kokonut.core.BlockChain
-import kokonut.core.BlockChain.fullNode
-import kokonut.core.Version
-import kokonut.util.API.Companion.getFullNodes
-import kokonut.util.API.Companion.getReward
+import kokonut.core.BlockChain.Companion.fullNode
 import kokonut.util.Utility.Companion.writeFilePart
 import kokonut.util.Utility.Companion.writePart
 import kotlinx.coroutines.runBlocking

@@ -1,7 +1,7 @@
 import kokonut.util.API.Companion.isHealthy
 import kokonut.core.*
-import kokonut.core.BlockChain.TICKER
-import kokonut.core.BlockChain.fullNode
+import kokonut.core.BlockChain.Companion.TICKER
+import kokonut.core.BlockChain.Companion.fullNode
 import kokonut.state.MiningState
 import kokonut.util.API.Companion.addBlock
 import kokonut.util.API.Companion.startMining
@@ -19,8 +19,6 @@ fun main(): Unit = runBlocking{
         File("C:\\Users\\public\\private_key.pem"),
         File("C:\\Users\\public\\public_key.pem")
     )
-
-    println(fullNode)
 
     if(wallet.isValid() && URL(fullNode.address).isHealthy()){
 
