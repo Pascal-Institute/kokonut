@@ -8,6 +8,7 @@ import kokonut.util.FullNode
 import kokonut.util.NodeType
 import kokonut.util.Router.Companion.getFullNodes
 import kokonut.util.Router.Companion.getGenesisBlock
+import kokonut.util.Router.Companion.getPolicy
 import kokonut.util.Router.Companion.root
 import kokonut.util.Router.Companion.submit
 
@@ -24,6 +25,7 @@ fun main() {
             fullNodes = submit(fullNodes)
             getGenesisBlock()
             getFullNodes(fullNodes)
+            getPolicy()
         }
     }.start(true)
 }
