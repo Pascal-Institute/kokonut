@@ -1,12 +1,4 @@
 package kokonut.core
-
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.request.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.statement.*
-import io.ktor.serialization.kotlinx.json.*
 import kokonut.state.MiningState
 import kokonut.util.*
 import kokonut.util.API.Companion.getChain
@@ -18,13 +10,11 @@ import kokonut.util.API.Companion.startMining
 import kokonut.util.Utility.Companion.truncate
 import kokonut.util.FullNode
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.json.Json
 import java.net.URL
 
 object BlockChain {
 
     const val TICKER = "KNT"
-    val POLICY_NODE = URL("https://pascal-institute.github.io/kokonut-oil-station")
     val database = SQLite()
     val FUEL_NODE = URL("https://kokonut-fuelnode.onrender.com")
 
@@ -160,7 +150,7 @@ object BlockChain {
             throw IllegalStateException("Chain is Invalid. Stop Mining...")
         }
 
-        val policy = POLICY_NODE.getPolicy()
+        val policy = FUEL_NODE.getPolicy()
 
         val lastBlock = getLastBlock()
 

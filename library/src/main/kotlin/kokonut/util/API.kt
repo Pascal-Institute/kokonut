@@ -12,7 +12,9 @@ import kokonut.Policy
 import kokonut.core.Block
 import kokonut.core.BlockChain
 import kokonut.core.BlockChain.fullNode
+import kokonut.core.Version
 import kokonut.util.API.Companion.getFullNodes
+import kokonut.util.API.Companion.getReward
 import kokonut.util.Utility.Companion.writeFilePart
 import kokonut.util.Utility.Companion.writePart
 import kotlinx.coroutines.runBlocking
@@ -154,41 +156,31 @@ class API {
         }
 
         fun URL.getPolicy(): Policy {
-            val conn = this.openConnection() as HttpURLConnection
+            val url = URL("${this}/getChain")
+            val conn = url.openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
 
-            val responseCode = conn.responseCode
-            if (responseCode == 200) {
-                val `in` = BufferedReader(InputStreamReader(conn.inputStream))
-                val response = StringBuffer()
+            return try {
+                val responseCode = conn.responseCode
 
-                var inputLine: String?
-                while (`in`.readLine().also { inputLine = it } != null) {
-                    response.append(inputLine)
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    val inputStream = conn.inputStream
+                    val reader = BufferedReader(InputStreamReader(inputStream))
+                    val response = reader.use { it.readText() }
+
+                    Json.decodeFromString(response)
+
+                } else {
+                    throw RuntimeException("GET request failed with response code $responseCode")
                 }
-                `in`.close()
-
-                val html = response.toString()
-
-                // Extract values using regular expressions
-                val versionRegex = Regex("version : (\\d+)")
-                val difficultyRegex = Regex("difficulty : (\\d+)")
-
-                val versionMatch = versionRegex.find(html)
-                val difficultyMatch = difficultyRegex.find(html)
-
-                // Check if matches are found and extract values
-                val version = versionMatch?.groups?.get(1)?.value?.toIntOrNull()
-                    ?: throw IOException("Failed to parse the protocol version")
-                val difficulty = difficultyMatch?.groups?.get(1)?.value?.toIntOrNull()
-                    ?: throw IOException("Failed to parse the mining difficulty")
-
-                // Create Policy data class instance
-                return Policy(version, difficulty)
-            } else {
-                throw IOException("GET request failed with response code: $responseCode")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                throw e
+            } finally {
+                conn.disconnect()
             }
         }
+
 
         fun URL.getCertified(byteArray: ByteArray, publicKeyFile: File) {
             val boundary = "Boundary-${System.currentTimeMillis()}"
