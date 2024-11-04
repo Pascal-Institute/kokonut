@@ -19,13 +19,12 @@ import kokonut.core.Version.genesisBlockID
 import kokonut.core.Version.libraryVersion
 import kokonut.core.Version.protocolVersion
 import kokonut.state.MiningState
-import kokonut.util.API.Companion.getGenesisBlock
+import kokonut.util.API.Companion.getFullNodes
 import kokonut.util.API.Companion.getPolicy
 import kokonut.util.API.Companion.propagate
 import kotlinx.html.*
 import kotlinx.serialization.json.Json
 import java.io.File
-import java.net.InetAddress
 import java.net.URL
 import java.nio.file.Paths
 import java.security.PublicKey
@@ -296,14 +295,22 @@ class Router {
 
                 val data = "verify fullnode".toByteArray()
                 val signatureBytes = Wallet.signData(data, wallet!!.privateKey)
-                val isValid = Wallet.verifySignature(data, signatureBytes, wallet!!.publicKey)
+                var isValid = Wallet.verifySignature(data, signatureBytes, wallet!!.publicKey)
+                val id = Utility.calculateHash(wallet!!.publicKey)
+
+                FUEL_NODE.getFullNodes().forEach {
+                   if(it.id != id){
+                       isValid = false
+                       return@forEach
+                   }
+                }
 
                 if (!isValid) {
                     call.respondText("Registration failed: ${HttpStatusCode.BadRequest}")
                     return@post
                 } else {
                     call.respondText("Registration succeed.: ${HttpStatusCode.OK}")
-                    fullNodes.add(FullNode(id = Utility.calculateHash(wallet!!.publicKey), address = address))
+                    fullNodes.add(FullNode(id = id, address = address))
                 }
             }
             return fullNodes
