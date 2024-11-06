@@ -45,7 +45,6 @@ class Router {
                         body {
                             h1 { +"Full Node Registration : ${BlockChain.isRegistered()}" }
                             h1 { +"Kokonut Protocol Version : $protocolVersion" }
-                            h1 { +"Kokonut Library Version : $libraryVersion" }
                             h1 { +"Timestamp : ${System.currentTimeMillis()}" }
                             h1 { +"Get Chain : /getChain" }
                             h1 { +"Get Miners : /getMiners" }
@@ -65,7 +64,6 @@ class Router {
                         }
                         body {
                             h1 { +"Kokonut protocol version : $protocolVersion" }
-                            h1 { +"Kokonut library version : $libraryVersion" }
                             h1 { +"Timestamp : ${System.currentTimeMillis()}" }
                             h1 { +"Get policy : /getPolicy" }
                             h1 { +"Get genesis block : /getGenesisBlock" }
