@@ -12,6 +12,7 @@ import kokonut.util.Router.Companion.getGenesisBlock
 import kokonut.util.Router.Companion.getPolicy
 import kokonut.util.Router.Companion.root
 import kokonut.util.Router.Companion.submit
+import kokonut.util.Utility.Companion.checkHealth
 
 fun main() {
 
@@ -28,5 +29,7 @@ fun main() {
             getFullNodes(fullNodes)
             getPolicy()
         }
+
+        checkHealth(fullNodes)
     }.start(true)
 }
