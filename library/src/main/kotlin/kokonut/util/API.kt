@@ -26,23 +26,19 @@ import java.net.URL
 
 class API {
     companion object {
-        suspend fun URL.isHealthy(): Boolean {
-            val client = HttpClient(CIO) {
-                install(HttpTimeout) {
-                    requestTimeoutMillis = 1500
-                }
-                expectSuccess = false
-            }
-
+        fun URL.isHealthy(): Boolean {
             return try {
-                val response: HttpResponse = client.get(this)
-                println("Node is healthy : ${response.status}")
-                response.status.isSuccess()
+                val connection = this.openConnection() as HttpURLConnection
+                connection.connectTimeout = 1500
+                connection.requestMethod = "GET"
+                connection.connect()
+
+                val responseCode = connection.responseCode
+                println("Node is healthy : $responseCode")
+                responseCode in 200..299
             } catch (e: Exception) {
                 println(e.message)
                 false
-            } finally {
-                client.close()
             }
         }
 
@@ -177,7 +173,6 @@ class API {
                 conn.disconnect()
             }
         }
-
 
         fun URL.getCertified(byteArray: ByteArray, publicKeyFile: File) {
             val boundary = "Boundary-${System.currentTimeMillis()}"
