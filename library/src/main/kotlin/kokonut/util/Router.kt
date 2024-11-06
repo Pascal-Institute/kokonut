@@ -14,14 +14,13 @@ import kokonut.core.BlockChain
 import kokonut.core.BlockChain.Companion.FUEL_NODE
 import kokonut.core.BlockChain.Companion.fullNode
 import kokonut.core.BlockChain.Companion.loadFullNodes
-import kokonut.core.Version
-import kokonut.core.Version.genesisBlockID
-import kokonut.core.Version.libraryVersion
-import kokonut.core.Version.protocolVersion
 import kokonut.state.MiningState
 import kokonut.util.API.Companion.getFullNodes
 import kokonut.util.API.Companion.getPolicy
 import kokonut.util.API.Companion.propagate
+import kokonut.util.Utility.Companion.genesisBlockID
+import kokonut.util.Utility.Companion.libraryVersion
+import kokonut.util.Utility.Companion.protocolVersion
 import kotlinx.html.*
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -46,7 +45,6 @@ class Router {
                         body {
                             h1 { +"Full Node Registration : ${BlockChain.isRegistered()}" }
                             h1 { +"Kokonut Protocol Version : $protocolVersion" }
-                            h1 { +"Kokonut Library Version : $libraryVersion" }
                             h1 { +"Timestamp : ${System.currentTimeMillis()}" }
                             h1 { +"Get Chain : /getChain" }
                             h1 { +"Get Miners : /getMiners" }
@@ -66,7 +64,6 @@ class Router {
                         }
                         body {
                             h1 { +"Kokonut protocol version : $protocolVersion" }
-                            h1 { +"Kokonut library version : $libraryVersion" }
                             h1 { +"Timestamp : ${System.currentTimeMillis()}" }
                             h1 { +"Get policy : /getPolicy" }
                             h1 { +"Get genesis block : /getGenesisBlock" }
@@ -229,7 +226,7 @@ class Router {
         fun Route.getPolicy() {
             get("/getPolicy") {
                 //5 is magic number it needs to upgrade someday
-                call.respond(Policy(Version.protocolVersion, 5))
+                call.respond(Policy(protocolVersion, 5))
             }
         }
 

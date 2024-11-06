@@ -1,11 +1,10 @@
-import kokonut.core.Block
 import kokonut.util.Wallet
 import kokonut.core.BlockChain
 import kokonut.core.BlockChain.Companion.getLastBlock
 import kokonut.core.BlockChain.Companion.getTotalCurrencyVolume
-import kokonut.core.Version.genesisBlockID
-import kokonut.core.Version.libraryVersion
-import kokonut.core.Version.protocolVersion
+import kokonut.util.Utility.Companion.genesisBlockID
+import kokonut.util.Utility.Companion.libraryVersion
+import kokonut.util.Utility.Companion.protocolVersion
 import java.io.File
 
 fun main() {
