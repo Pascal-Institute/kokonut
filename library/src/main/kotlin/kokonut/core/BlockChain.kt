@@ -9,6 +9,7 @@ import kokonut.util.API.Companion.getReward
 import kokonut.util.API.Companion.startMining
 import kokonut.util.Utility.Companion.truncate
 import kokonut.util.FullNode
+import kokonut.util.Utility.Companion.protocolVersion
 import kotlinx.coroutines.runBlocking
 import java.net.URL
 
@@ -154,7 +155,7 @@ class BlockChain {
 
             val lastBlock = getLastBlock()
 
-            val version = Version.protocolVersion
+            val version = protocolVersion
             val index = lastBlock.index + 1
             val previousHash = lastBlock.hash
             var timestamp = System.currentTimeMillis()

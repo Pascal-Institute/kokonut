@@ -1,10 +1,6 @@
 package kokonut.util
 
-import kokonut.core.Block
 import kokonut.util.API.Companion.isHealthy
-import kotlinx.coroutines.*
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import java.io.*
 import java.net.URI
 import java.net.URL
@@ -16,6 +12,22 @@ import kotlin.math.*
 
 class Utility {
     companion object {
+
+        const val majorIndex = 0
+
+        private val properties: Properties = Properties().apply {
+            Utility::class.java.classLoader.getResourceAsStream("kokonut.properties")?.use { load(it) }
+        }
+
+        val libraryVersion : String
+            get() = properties.getProperty("kokonut_version", "0.0.0")
+
+        val protocolVersion: Int
+            get() = libraryVersion.split(".")[majorIndex].toInt()
+
+        val genesisBlockID : String
+            get() = properties.getProperty("kokonut_genesis_block")
+
         fun checkHealth(fullNodes: MutableList<FullNode>) {
             val timer = Timer()
             timer.scheduleAtFixedRate(object : TimerTask() {
