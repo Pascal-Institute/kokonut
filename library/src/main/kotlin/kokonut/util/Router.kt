@@ -257,60 +257,69 @@ class Router {
             }
         }
 
-        fun Route.submit(fullNodes: MutableList<FullNode>) : MutableList<FullNode> {
-            var wallet : Wallet? = null
+        fun Route.submit(fullNodes: MutableList<FullNode>): MutableList<FullNode> {
+            var wallet: Wallet? = null
+
             post("/submit") {
                 val keyPath = "/app/key"
                 Utility.createDirectory(keyPath)
+
                 var publicKey: File? = null
                 var privateKey: File? = null
                 val multipartData = call.receiveMultipart()
-                val address : String = call.request.headers["Origin"]!!
+                val address: String = call.request.headers["Origin"] ?: run {
+                    call.respondText("Missing 'Origin' header", status = HttpStatusCode.BadRequest)
+                    return@post
+                }
+
                 multipartData.forEachPart { part ->
                     when (part) {
                         is PartData.FileItem -> {
-
-                            if (part.name == "publicKey") {
-                                val fileBytes = part.streamProvider().use { it.readBytes() }
-                                publicKey = part.originalFileName?.let { it1 -> File(keyPath, it1) }
-                                publicKey!!.writeBytes(fileBytes)
-                                println("validation...: ${part.originalFileName}")
+                            val fileBytes = part.streamProvider().use { it.readBytes() }
+                            when (part.name) {
+                                "publicKey" -> {
+                                    publicKey = File(keyPath, part.originalFileName ?: "publicKey.pem").apply {
+                                        writeBytes(fileBytes)
+                                    }
+                                    println("Uploaded public key: ${part.originalFileName}")
+                                }
+                                "privateKey" -> {
+                                    privateKey = File(keyPath, part.originalFileName ?: "privateKey.pem").apply {
+                                        writeBytes(fileBytes)
+                                    }
+                                    println("Uploaded private key: ${part.originalFileName}")
+                                }
                             }
-
-                            if (part.name == "privateKey") {
-                                val fileBytes = part.streamProvider().use { it.readBytes() }
-                                privateKey = part.originalFileName?.let { it1 -> File(keyPath, it1) }
-                                privateKey!!.writeBytes(fileBytes)
-                                println("validation...: ${part.originalFileName}")
-                            }
-
                         }
-
                         else -> Unit
                     }
                     part.dispose()
                 }
 
-                wallet = Wallet(privateKey!!, publicKey!!)
-
-                val data = "verify fullnode".toByteArray()
-                val signatureBytes = Wallet.signData(data, wallet!!.privateKey)
-                var isValid = Wallet.verifySignature(data, signatureBytes, wallet!!.publicKey)
-                val id = Utility.calculateHash(wallet!!.publicKey)
-
-                FUEL_NODE.getFullNodes().forEach {
-                   if(it.id != id){
-                       isValid = false
-                       return@forEach
-                   }
+                if (publicKey == null || privateKey == null) {
+                    call.respondText("Missing keys in the request", status = HttpStatusCode.BadRequest)
+                    return@post
                 }
 
-                if (!isValid) {
-                    call.respondText("Registration failed: ${HttpStatusCode.BadRequest}")
-                    return@post
-                } else {
-                    call.respondText("Registration succeed.: ${HttpStatusCode.OK}")
+                try {
+                    wallet = Wallet(privateKey!!, publicKey!!)
+
+                    val data = "verify fullnode".toByteArray()
+                    val signatureBytes = Wallet.signData(data, wallet!!.privateKey)
+                    val isValid = Wallet.verifySignature(data, signatureBytes, wallet!!.publicKey)
+                    val id = Utility.calculateHash(wallet!!.publicKey)
+
+                    // Check if the node ID is already present
+                    val nodeExists = FUEL_NODE.getFullNodes().any { it.id == id }
+                    if (!isValid || nodeExists) {
+                        call.respondText("Registration failed: ${HttpStatusCode.BadRequest}")
+                        return@post
+                    }
+
+                    call.respondText("Registration succeeded: ${HttpStatusCode.OK}")
                     fullNodes.add(FullNode(id = id, address = address))
+                } catch (e: Exception) {
+                    call.respondText("An error occurred: ${e.message}", status = HttpStatusCode.InternalServerError)
                 }
             }
             return fullNodes
