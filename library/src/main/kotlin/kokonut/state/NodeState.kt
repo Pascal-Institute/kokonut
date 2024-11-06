@@ -1,5 +1,5 @@
 package kokonut.state
 
 enum class NodeState {
-    VALID, INVALID, FAILED
+    VALID, INVALID, DISCONNECTED
 }

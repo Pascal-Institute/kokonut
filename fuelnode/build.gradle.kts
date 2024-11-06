@@ -27,6 +27,7 @@ dependencies {
     //develop
     //implementation(project(":library"))
     //production
+
     implementation("com.github.Pascal-Institute:kokonut:4.1.3")
 
     implementation("io.ktor:ktor-server-html-builder:2.3.4")
@@ -44,7 +45,7 @@ tasks.named("build") {
 tasks.jar {
     manifest {
         attributes(
-            "Main-Class" to "server.ApplicationKt"
+            "Main-Class" to "ApplicationKt"
         )
     }
 }

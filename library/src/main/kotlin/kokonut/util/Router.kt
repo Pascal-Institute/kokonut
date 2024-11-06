@@ -8,21 +8,22 @@ import io.ktor.server.plugins.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kokonut.Policy
 import kokonut.core.Block
 import kokonut.core.BlockChain
-import kokonut.core.BlockChain.POLICY_NODE
-import kokonut.core.BlockChain.fullNode
-import kokonut.core.BlockChain.loadFullNodes
-import kokonut.core.Version.genesisBlockID
-import kokonut.core.Version.libraryVersion
-import kokonut.core.Version.protocolVersion
+import kokonut.core.BlockChain.Companion.FUEL_NODE
+import kokonut.core.BlockChain.Companion.fullNode
+import kokonut.core.BlockChain.Companion.loadFullNodes
 import kokonut.state.MiningState
+import kokonut.util.API.Companion.getFullNodes
 import kokonut.util.API.Companion.getPolicy
 import kokonut.util.API.Companion.propagate
+import kokonut.util.Utility.Companion.genesisBlockID
+import kokonut.util.Utility.Companion.libraryVersion
+import kokonut.util.Utility.Companion.protocolVersion
 import kotlinx.html.*
 import kotlinx.serialization.json.Json
 import java.io.File
-import java.net.InetAddress
 import java.net.URL
 import java.nio.file.Paths
 import java.security.PublicKey
@@ -44,7 +45,6 @@ class Router {
                         body {
                             h1 { +"Full Node Registration : ${BlockChain.isRegistered()}" }
                             h1 { +"Kokonut Protocol Version : $protocolVersion" }
-                            h1 { +"Kokonut Library Version : $libraryVersion" }
                             h1 { +"Timestamp : ${System.currentTimeMillis()}" }
                             h1 { +"Get Chain : /getChain" }
                             h1 { +"Get Miners : /getMiners" }
@@ -64,8 +64,8 @@ class Router {
                         }
                         body {
                             h1 { +"Kokonut protocol version : $protocolVersion" }
-                            h1 { +"Kokonut library version : $libraryVersion" }
                             h1 { +"Timestamp : ${System.currentTimeMillis()}" }
+                            h1 { +"Get policy : /getPolicy" }
                             h1 { +"Get genesis block : /getGenesisBlock" }
                             h1 { +"Get full nodes : /getFullNodes" }
                         }
@@ -77,15 +77,6 @@ class Router {
 
         fun Route.register() {
             get("/register") {
-
-                val fullnodeIp = call.request.origin.remoteHost // 클라이언트 IP 가져오기
-
-                val fullnodeDomain : String = try {
-                    InetAddress.getByName(fullnodeIp).canonicalHostName
-                } catch (e: Exception) {
-                    fullnodeIp
-                }
-
                 call.respondHtml(HttpStatusCode.OK) {
                     head {
                         title { +"Service Configuration" }
@@ -93,18 +84,10 @@ class Router {
                     body {
                         h1 { +"Configure Your Service" }
                         form(
-                            action = "https://kokonut-fullnode.onrender.com/submit",
+                            action = "${FUEL_NODE}/submit",
                             method = FormMethod.post,
                             encType = FormEncType.multipartFormData
                         ) {
-                            p {
-                                label { +"Address: " }
-                                textInput(name = "address") {
-                                    placeholder = "Enter Service Domain or IP Address"
-                                    value = fullnodeDomain
-                                    readonly = true
-                                }
-                            }
 
                             p {
                                 label { +"Service ID: " }
@@ -240,6 +223,13 @@ class Router {
             }
         }
 
+        fun Route.getPolicy() {
+            get("/getPolicy") {
+                //5 is magic number it needs to upgrade someday
+                call.respond(Policy(protocolVersion, 5))
+            }
+        }
+
         fun Route.startMining() {
             post("/startMining") {
                 val keyPath = "/app/key"
@@ -264,59 +254,69 @@ class Router {
             }
         }
 
-        fun Route.submit(fullNodes: MutableList<FullNode>) : MutableList<FullNode> {
-            var address = ""
-            var wallet : Wallet? = null
+        fun Route.submit(fullNodes: MutableList<FullNode>): MutableList<FullNode> {
+            var wallet: Wallet? = null
+
             post("/submit") {
                 val keyPath = "/app/key"
                 Utility.createDirectory(keyPath)
+
                 var publicKey: File? = null
                 var privateKey: File? = null
                 val multipartData = call.receiveMultipart()
+                val address: String = call.request.headers["Origin"] ?: run {
+                    call.respondText("Missing 'Origin' header", status = HttpStatusCode.BadRequest)
+                    return@post
+                }
 
                 multipartData.forEachPart { part ->
                     when (part) {
-                        is PartData.FormItem -> {
-                            if (part.name == "address") {
-                                address = part.value
-                            }
-                        }
-
                         is PartData.FileItem -> {
-
-                            if (part.name == "publicKey") {
-                                val fileBytes = part.streamProvider().use { it.readBytes() }
-                                publicKey = part.originalFileName?.let { it1 -> File(keyPath, it1) }
-                                publicKey!!.writeBytes(fileBytes)
-                                println("validation...: ${part.originalFileName}")
+                            val fileBytes = part.streamProvider().use { it.readBytes() }
+                            when (part.name) {
+                                "publicKey" -> {
+                                    publicKey = File(keyPath, part.originalFileName ?: "publicKey.pem").apply {
+                                        writeBytes(fileBytes)
+                                    }
+                                    println("Uploaded public key: ${part.originalFileName}")
+                                }
+                                "privateKey" -> {
+                                    privateKey = File(keyPath, part.originalFileName ?: "privateKey.pem").apply {
+                                        writeBytes(fileBytes)
+                                    }
+                                    println("Uploaded private key: ${part.originalFileName}")
+                                }
                             }
-
-                            if (part.name == "privateKey") {
-                                val fileBytes = part.streamProvider().use { it.readBytes() }
-                                privateKey = part.originalFileName?.let { it1 -> File(keyPath, it1) }
-                                privateKey!!.writeBytes(fileBytes)
-                                println("validation...: ${part.originalFileName}")
-                            }
-
                         }
-
                         else -> Unit
                     }
                     part.dispose()
                 }
 
-                wallet = Wallet(privateKey!!, publicKey!!)
-
-                val data = "verify fullnode".toByteArray()
-                val signatureBytes = Wallet.signData(data, wallet!!.privateKey)
-                val isValid = Wallet.verifySignature(data, signatureBytes, wallet!!.publicKey)
-
-                if (!isValid) {
-                    call.respondText("Registration failed: ${HttpStatusCode.BadRequest}")
+                if (publicKey == null || privateKey == null) {
+                    call.respondText("Missing keys in the request", status = HttpStatusCode.BadRequest)
                     return@post
-                } else {
-                    call.respondText("Registration succeed.: ${HttpStatusCode.OK}")
-                    fullNodes.add(FullNode(id = Utility.calculateHash(wallet!!.publicKey), address = address))
+                }
+
+                try {
+                    wallet = Wallet(privateKey!!, publicKey!!)
+
+                    val data = "verify fullnode".toByteArray()
+                    val signatureBytes = Wallet.signData(data, wallet!!.privateKey)
+                    val isValid = Wallet.verifySignature(data, signatureBytes, wallet!!.publicKey)
+                    val id = Utility.calculateHash(wallet!!.publicKey)
+
+                    // Check if the node ID is already present
+                    val nodeExists = FUEL_NODE.getFullNodes().any { it.id == id }
+                    if (!isValid || nodeExists) {
+                        call.respondText("Registration failed: ${HttpStatusCode.BadRequest}")
+                        return@post
+                    }
+
+                    call.respondText("Registration succeeded: ${HttpStatusCode.OK}")
+                    fullNodes.add(FullNode(id = id, address = address))
+                } catch (e: Exception) {
+                    call.respondText("An error occurred: ${e.message}", status = HttpStatusCode.InternalServerError)
                 }
             }
             return fullNodes
@@ -361,7 +361,7 @@ class Router {
                 val keyPath = "/app/key"
                 Utility.createDirectory(keyPath)
 
-                val policy = POLICY_NODE.getPolicy()
+                val policy = FUEL_NODE.getPolicy()
 
                 if (!BlockChain.isValid()) {
                     call.respond(HttpStatusCode.Created, "Block Add Failed : Server block chain is invalid")
