@@ -1,18 +1,34 @@
 package kokonut.util
 
 import kokonut.core.Block
+import kokonut.util.API.Companion.isHealthy
 import kotlinx.coroutines.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.*
 import java.net.URI
+import java.net.URL
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.security.*
+import java.util.*
 import kotlin.math.*
 
 class Utility {
     companion object {
+        fun checkHealth(fullNodes: MutableList<FullNode>) {
+            val timer = Timer()
+            timer.scheduleAtFixedRate(object : TimerTask() {
+                override fun run() {
+                    fullNodes.forEach { node ->
+                        println("Checking health of node: ${node.address}")
+                        if(!URL(node.address).isHealthy()){
+                            fullNodes.remove(node)
+                        }
+                    }
+                }
+            }, 0, 300_000)
+        }
 
         fun getJarDirectory(): File {
             val uri: URI = Utility::class.java.protectionDomain.codeSource.location.toURI()
