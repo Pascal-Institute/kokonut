@@ -1,11 +1,20 @@
+import java.util.Properties
+
+val propertiesFile = file("src/main/resources/kokonut.properties")
+
+if (propertiesFile.exists()) {
+    val properties = Properties()
+    properties.load(propertiesFile.inputStream())
+    val kokonutVersion = properties["kokonut_version"] as String?
+    version = kokonutVersion ?: "0.0.0" // 기본값을 설정할 수 있음
+}
+
 plugins {
     java
     kotlin("jvm")
     kotlin("plugin.serialization") version "1.9.22"
     `maven-publish`
 }
-
-version = "4.1.1"
 
 repositories {
     mavenCentral()
