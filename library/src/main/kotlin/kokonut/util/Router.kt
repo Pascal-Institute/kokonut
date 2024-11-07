@@ -102,7 +102,7 @@ class Router {
                             }
 
                             p {
-                                submitInput { value = "Submit" }
+                                submitInput { value = "Register" }
                             }
                         }
                     }
