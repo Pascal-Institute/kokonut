@@ -84,7 +84,7 @@ class Router {
                     body {
                         h1 { +"Configure Your Service" }
                         form(
-                            action = "${FUEL_NODE}/submit",
+                            action = "${FUEL_NODE}/register",
                             method = FormMethod.post,
                             encType = FormEncType.multipartFormData
                         ) {
@@ -106,6 +106,39 @@ class Router {
                             }
                         }
                     }
+                }
+            }
+
+            post("/register") {
+                val multipart = call.receiveMultipart()
+                var publicKeyFile: File? = null
+                var privateKeyFile: File? = null
+
+                multipart.forEachPart { part ->
+                    when (part) {
+                        is PartData.FileItem -> {
+                            val fileName = part.originalFileName ?: "unknown.pem"
+                            val fileBytes = part.streamProvider().readBytes()
+
+                            // 파일을 특정 경로에 저장
+                            val file = File("app/key/$fileName").apply {
+                                writeBytes(fileBytes)
+                            }
+                            if (part.name == "publicKey") {
+                                publicKeyFile = file
+                            } else if (part.name == "privateKey") {
+                                privateKeyFile = file
+                            }
+                        }
+                        else -> Unit
+                    }
+                    part.dispose()
+                }
+
+                if (publicKeyFile != null && privateKeyFile != null) {
+                    call.respondText("Files uploaded and saved successfully!", status = HttpStatusCode.OK)
+                } else {
+                    call.respondText("Failed to upload files. Please try again.", status = HttpStatusCode.BadRequest)
                 }
             }
         }
