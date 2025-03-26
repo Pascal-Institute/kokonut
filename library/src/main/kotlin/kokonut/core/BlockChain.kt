@@ -17,7 +17,7 @@ class BlockChain {
     companion object {
         const val TICKER = "KNT"
         val database = SQLite()
-        val FUEL_NODE = URL("https://kokonut-fuelnode.onrender.com")
+        val FUEL_NODE = URL("http://kokonut-fuel.duckdns.org")
 
         var fullNode = FullNode("", "")
 
