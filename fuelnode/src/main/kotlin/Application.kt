@@ -18,7 +18,7 @@ fun main() {
 
     var fullNodes = mutableListOf<FullNode>()
 
-    embeddedServer(Netty, host = "0.0.0.0", port = 8080) {
+    embeddedServer(Netty, host = "0.0.0.0", port = 9999) {
         install(ContentNegotiation) {
             json()
         }
