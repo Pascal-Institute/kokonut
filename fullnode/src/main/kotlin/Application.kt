@@ -23,7 +23,7 @@ fun main() {
     val blockchain = BlockChain()
     isValid()
 
-    embeddedServer(Netty, host = "0.0.0.0", port = 8080) {
+    embeddedServer(Netty, host = "0.0.0.0", port = 80) {
         install(ContentNegotiation) {
             json()
         }
