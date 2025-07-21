@@ -30,6 +30,7 @@ This protocol describes block chain systems & rules of kokonut.
 - index : The numbering of block which previous block index < next block index.
 - previousHash : The hash of previous block.
 - timestamp : Time relative to UTC. Indicates the time the block difficulty was solved.
+- reward : float number, up to have 6 decimal point
 - data :
 - difficulty : The numbers of leading 0 of hash. All block hash must follow difficulty.
 - nonce : The total times of trying hash function for satisfying difficulty.
@@ -134,7 +135,8 @@ It is called genesis block which follows below :
 ### Reward
 
 #### Reduction Time
-![image](https://github.com/user-attachments/assets/631d3d02-c8c6-491f-8ed0-073b11eb8fd5)
+
+To Do
 
 ## Node
 - Configuration is 3 parts. Fuel, Full and Light Nodes
