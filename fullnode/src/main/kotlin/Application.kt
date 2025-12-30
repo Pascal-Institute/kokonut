@@ -23,7 +23,8 @@ fun main() {
     // BlockChain.initialize() // Initialize manually when network is available
     isValid()
 
-    embeddedServer(Netty, host = "::", port = 80) {
+    val host = System.getenv("SERVER_HOST") ?: "0.0.0.0"
+    embeddedServer(Netty, host = host, port = 80) {
                 install(ContentNegotiation) { json() }
 
                 routing {

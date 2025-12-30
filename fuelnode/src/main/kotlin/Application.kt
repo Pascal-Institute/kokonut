@@ -17,7 +17,8 @@ fun main() {
     // BlockChain.initialize() // Not needed for FuelNode - it serves genesis block from resources
     var fullNodes = mutableListOf<FullNode>()
 
-    embeddedServer(Netty, host = "::", port = 80) {
+    val host = System.getenv("SERVER_HOST") ?: "0.0.0.0"
+    embeddedServer(Netty, host = host, port = 80) {
                 install(ContentNegotiation) { json() }
                 routing {
                     root(NodeType.FUEL)
