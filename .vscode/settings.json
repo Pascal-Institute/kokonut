@@ -1,0 +1,10 @@
+{
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "java.import.gradle.wrapper.enabled": true,
+  "gradle.autoDetect": "on",
+  "gradle.nestedProjects": true,
+  "files.watcherExclude": {
+    "**/.gradle/**": true,
+    "**/build/**": true
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Debug fullnode (ApplicationKt)",
+      "request": "launch",
+      "mainClass": "ApplicationKt",
+      "projectName": "fullnode",
+      "preLaunchTask": "Gradle: :fullnode:classes"
+    },
+    {
+      "type": "java",
+      "name": "Debug fuelnode (ApplicationKt)",
+      "request": "launch",
+      "mainClass": "ApplicationKt",
+      "projectName": "fuelnode",
+      "preLaunchTask": "Gradle: :fuelnode:classes"
+    },
+    {
+      "type": "java",
+      "name": "Debug lightnode (ApplicationKt)",
+      "request": "launch",
+      "mainClass": "ApplicationKt",
+      "projectName": "lightnode",
+      "preLaunchTask": "Gradle: :lightnode:classes"
+    }
+  ]
+}

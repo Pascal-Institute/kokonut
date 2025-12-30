@@ -5,7 +5,6 @@
 ![Docker Pulls](https://img.shields.io/docker/v/volta2030/knt_fuelnode?label=knt_fuelnode&sort=semver)
 ![Docker Pulls](https://img.shields.io/docker/pulls/volta2030/knt_fuelnode.svg)
 
-
 # What is Kokonut...?
 
 ## BlockChain Framework powered by Kotlin
@@ -38,19 +37,20 @@ This protocol describes block chain systems & rules of kokonut.
 
 ```json
 {
-  "version":4,
-  "index":1,
-  "previousHash":"00000000000000000000000000000000000000000000000061bdff5e59b8ff4c",
-  "timestamp":1724547179867,
+  "version": 4,
+  "index": 1,
+  "previousHash": "00000000000000000000000000000000000000000000000061bdff5e59b8ff4c",
+  "timestamp": 1724547179867,
   "data": {
-    "reward":16.230218,
-    "miner":"6c60b7550766d5ae24ccc3327f0e47fbaa51e599172795bb9ad06ac82784a92d",
-    "transactions":[],
-    "comment":"kokonut version 4"
-    },
-  "difficulty":6,
-  "nonce":1502929,
-  "hash":"000000f31571551dacab93769546843d2ef483fd0d26181fe8950de617b919ec"}
+    "reward": 16.230218,
+    "miner": "6c60b7550766d5ae24ccc3327f0e47fbaa51e599172795bb9ad06ac82784a92d",
+    "transactions": [],
+    "comment": "kokonut version 4"
+  },
+  "difficulty": 6,
+  "nonce": 1502929,
+  "hash": "000000f31571551dacab93769546843d2ef483fd0d26181fe8950de617b919ec"
+}
 ```
 
 ### Genesis Block
@@ -69,7 +69,7 @@ It is called genesis block which follows below :
 #### Structure
 
 ```
-{ 
+{
   "version":4,
   "index":0,
   "previousHash":"0",
@@ -98,6 +98,7 @@ It is called genesis block which follows below :
 ## Proven Of Work
 
 ### Validation Process
+
 1. Check Miner
 2. Check Index
 3. Check Version
@@ -105,6 +106,7 @@ It is called genesis block which follows below :
 5. Check Hash
 
 ### Calculate Hash
+
 ```kotlin
     fun calculateHash(): String {
         val input = "$version$index$previousHash$timestamp$data$difficulty$nonce"
@@ -120,15 +122,14 @@ It is called genesis block which follows below :
 
 ### Status
 
-* READY
-* MINING
-* FAILED
-* MINED
+- READY
+- MINING
+- FAILED
+- MINED
 
 ### State Machine Diagram
 
 ![image](https://github.com/user-attachments/assets/d53c3d55-3678-4489-a250-5a7bea3d92ee)
-
 
 ### Difficulty
 
@@ -139,17 +140,18 @@ It is called genesis block which follows below :
 To Do
 
 ## Node
+
 - Configuration is 3 parts. Fuel, Full and Light Nodes
 
 ### Status
 
-* VALID : Able to internet connect & verified by wallet is valid
-* INVALID : Able to internet connect but, non-verified by wallet is invalid
-* DISCONNECTED : Status of not being able to internet connect to node
+- VALID : Able to internet connect & verified by wallet is valid
+- INVALID : Able to internet connect but, non-verified by wallet is invalid
+- DISCONNECTED : Status of not being able to internet connect to node
 
 ### State Machine Diagram
-![image](https://github.com/user-attachments/assets/ef25bf2d-73bc-4501-8915-a7551439d591)
 
+![image](https://github.com/user-attachments/assets/ef25bf2d-73bc-4501-8915-a7551439d591)
 
 ### Fuel Node
 
@@ -178,20 +180,42 @@ To Do
   infect longer blockchain.
 
 ### Diagram
+
 ![image](https://github.com/user-attachments/assets/e9fe5f3e-e0d6-4410-a43a-13ca6d792fb8)
 
 ## Transaction
 
 ### Status
 
-* INVALID
-* PENDING
-* READY
-* RESERVED
-* EXECUTED
+- INVALID
+- PENDING
+- READY
+- RESERVED
+- EXECUTED
 
 ### State Machine Diagram
 
 ![image](https://github.com/user-attachments/assets/2f09706d-d207-416b-bd93-6955b2ff7850)
 
 ## Wallet
+
+# VS Code & IntelliJ Setup (2025)
+
+## VS Code 사용법 (Windows 기준)
+
+- **멀티모듈 자동 인식**: `settings.gradle.kts`에서 모든 모듈(`:library`, `:fuelnode`, `:fullnode`, `:lightnode`)이 기본 포함됨
+- **필수 확장**: VS Code에서 아래 확장 설치 추천
+  - Kotlin (fwcd.kotlin)
+  - Gradle for Java (vscjava.vscode-gradle)
+  - Java Extension Pack (vscjava.vscode-java-pack)
+- **빌드/실행/디버그**: `Terminal > Run Task...`에서 Gradle 태스크 실행, Run and Debug 탭에서 각 노드 디버깅 가능
+- **.vscode 폴더**: 확장/설정/태스크/런치 자동화 파일 포함
+
+```sh
+# 예시: 전체 빌드
+./gradlew.bat build
+# 예시: fullnode 실행
+./gradlew.bat :fullnode:run
+```
+
+> **참고**: 기존 IntelliJ IDEA 환경과 100% 호환. (IntelliJ는 멀티모듈 import, 빌드, 실행, 디버그 모두 문제 없음)

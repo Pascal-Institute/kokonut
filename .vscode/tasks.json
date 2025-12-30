@@ -1,0 +1,73 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Gradle: clean",
+      "type": "shell",
+      "command": "${workspaceFolder}\\gradlew.bat",
+      "args": ["clean"],
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Gradle: :library:build",
+      "type": "shell",
+      "command": "${workspaceFolder}\\gradlew.bat",
+      "args": [":library:build"],
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Gradle: :library:test",
+      "type": "shell",
+      "command": "${workspaceFolder}\\gradlew.bat",
+      "args": [":library:test"],
+      "group": "test",
+      "problemMatcher": []
+    },
+
+    {
+      "label": "Gradle: :fullnode:classes",
+      "type": "shell",
+      "command": "${workspaceFolder}\\gradlew.bat",
+      "args": [":fullnode:classes"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Gradle: :fuelnode:classes",
+      "type": "shell",
+      "command": "${workspaceFolder}\\gradlew.bat",
+      "args": [":fuelnode:classes"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Gradle: :lightnode:classes",
+      "type": "shell",
+      "command": "${workspaceFolder}\\gradlew.bat",
+      "args": [":lightnode:classes"],
+      "problemMatcher": []
+    },
+
+    {
+      "label": "Gradle: :fullnode:run",
+      "type": "shell",
+      "command": "${workspaceFolder}\\gradlew.bat",
+      "args": [":fullnode:run"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Gradle: :fuelnode:run",
+      "type": "shell",
+      "command": "${workspaceFolder}\\gradlew.bat",
+      "args": [":fuelnode:run"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Gradle: :lightnode:run",
+      "type": "shell",
+      "command": "${workspaceFolder}\\gradlew.bat",
+      "args": [":lightnode:run"],
+      "problemMatcher": []
+    }
+  ]
+}

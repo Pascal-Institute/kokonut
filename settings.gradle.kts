@@ -5,8 +5,6 @@ plugins {
 
 rootProject.name = "kokonut"
 
-//production
-include(":library")
-
-//develop
-//include(":fuelnode", ":fullnode", ":lightnode", ":library")
+// VS Code/Gradle import works best when all modules are included.
+// If you want a minimal build, you can comment out the node modules.
+include(":library", ":fuelnode", ":fullnode", ":lightnode")

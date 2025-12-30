@@ -43,7 +43,7 @@ bin/
 /.nb-gradle/
 
 ### VS Code ###
-.vscode/
+# .vscode/ (allow project VS Code settings to be committed)
 
 ### Mac OS ###
 .DS_Store
