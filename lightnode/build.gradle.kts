@@ -29,6 +29,7 @@ dependencies {
     // With compose.desktop.common you will also lose @Preview functionality
     implementation(project(":library"))
     implementation(compose.desktop.currentOs)
+    testImplementation(kotlin("test"))
 }
 
 compose.desktop {

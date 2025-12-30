@@ -61,6 +61,7 @@ Each node can be run individually. The recommended order is **Fuel Node → Full
 ```
 - The server starts on `http://[::]:80` (Dual Stack IPv4/IPv6) by default.
 - **Note on IPv6**: When connecting via IPv6, enclose the address in brackets (e.g., `http://[2001:db8::1]:80`).
+- **IPv6 Priority**: This project prioritizes IPv6 for direct peer-to-peer connectivity without NAT. While the server binds to `::` (dual stack), IPv4-only clients may experience limitations in P2P scenarios.
 
 #### 2. Run Full Node
 ```sh

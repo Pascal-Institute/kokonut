@@ -1,4 +1,6 @@
 package kokonut.core
+
+import java.net.URL
 import kokonut.state.MiningState
 import kokonut.util.*
 import kokonut.util.API.Companion.getChain
@@ -7,16 +9,15 @@ import kokonut.util.API.Companion.getGenesisBlock
 import kokonut.util.API.Companion.getPolicy
 import kokonut.util.API.Companion.getReward
 import kokonut.util.API.Companion.startMining
-import kokonut.util.Utility.Companion.truncate
 import kokonut.util.FullNode
 import kokonut.util.Utility.Companion.protocolVersion
+import kokonut.util.Utility.Companion.truncate
 import kotlinx.coroutines.runBlocking
-import java.net.URL
 
 class BlockChain {
     companion object {
         const val TICKER = "KNT"
-        val database = SQLite()
+        val database by lazy { SQLite() }
         val FUEL_NODE = URL("http://kokonut-fuel.duckdns.org")
 
         var fullNode = FullNode("", "")
@@ -25,7 +26,7 @@ class BlockChain {
 
         private var cachedChain: List<Block>? = null
 
-        init {
+        fun initialize() {
             loadFullNodes()
             loadChain()
         }
@@ -34,9 +35,7 @@ class BlockChain {
             var maxSize = 0
             var fullNodeChainSize = 0
 
-            runBlocking {
-                fullNodes = FUEL_NODE.getFullNodes()
-            }
+            runBlocking { fullNodes = FUEL_NODE.getFullNodes() }
 
             for (it in fullNodes) {
                 fullNode = fullNodes[0]
@@ -130,9 +129,11 @@ class BlockChain {
             return false
         }
 
-        fun getGenesisBlock(): Block = cachedChain?.firstOrNull() ?: throw IllegalStateException("Chain is Empty")
+        fun getGenesisBlock(): Block =
+                cachedChain?.firstOrNull() ?: throw IllegalStateException("Chain is Empty")
 
-        fun getLastBlock(): Block = cachedChain?.lastOrNull() ?: throw IllegalStateException("Chain is Empty")
+        fun getLastBlock(): Block =
+                cachedChain?.lastOrNull() ?: throw IllegalStateException("Chain is Empty")
 
         fun getTotalCurrencyVolume(): Double {
             val totalCurrencyVolume = cachedChain?.sumOf { it.data.reward } ?: 0.0
@@ -162,16 +163,17 @@ class BlockChain {
             val difficulty = policy.difficulty
             var nonce: Long = 0
 
-            val miningBlock = Block(
-                version = version,
-                index = index,
-                previousHash = previousHash,
-                timestamp = timestamp,
-                data = data,
-                difficulty = difficulty,
-                nonce = nonce,
-                hash = ""
-            )
+            val miningBlock =
+                    Block(
+                            version = version,
+                            index = index,
+                            previousHash = previousHash,
+                            timestamp = timestamp,
+                            data = data,
+                            difficulty = difficulty,
+                            nonce = nonce,
+                            hash = ""
+                    )
 
             data.reward = Utility.setReward(miningBlock.index)
             val fullNodeReward = URL(fullNode.address).getReward(miningBlock.index)
