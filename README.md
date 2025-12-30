@@ -59,7 +59,8 @@ Each node can be run individually. The recommended order is **Fuel Node → Full
 ```sh
 ./gradlew.bat :fuelnode:run
 ```
-- The server starts on `http://0.0.0.0:80` (or the configured port) by default.
+- The server starts on `http://[::]:80` (Dual Stack IPv4/IPv6) by default.
+- **Note on IPv6**: When connecting via IPv6, enclose the address in brackets (e.g., `http://[2001:db8::1]:80`).
 
 #### 2. Run Full Node
 ```sh
