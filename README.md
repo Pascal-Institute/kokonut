@@ -1,7 +1,15 @@
 # Kokonut 🥥
-**High-Performance Modular Blockchain Framework Powered by Kotlin**
+**High-Performance Modular Blockchain Framework Powered by Kotlin with Proof of Stake**
 
-Kokonut is a lightweight and scalable blockchain framework written in Kotlin. Designed for educational and research purposes, it implements core blockchain principles (PoW, P2P Propagation, Wallets, Mining) with an intuitive multi-module architecture.
+Kokonut is a lightweight and scalable blockchain framework written in Kotlin. Designed for educational and research purposes, it implements **Proof of Stake (PoS)** consensus with core blockchain principles (Staking, Validation, Wallets) using an intuitive multi-module architecture.
+
+## 🌟 Key Features
+
+- **⚡ Proof of Stake (PoS)**: Energy-efficient consensus mechanism - no wasteful mining
+- **🔒 Validator Staking**: Stake KNT tokens to participate in block validation
+- **📊 Stake-Weighted Selection**: Validators selected probabilistically based on stake amount
+- **🌐 IPv6 P2P**: Direct peer-to-peer connectivity without NAT/port forwarding
+- **🎯 Minimal Rewards**: Transaction fee-based rewards (1% to validators)
 
 ## 📚 Project Structure
 
@@ -10,9 +18,10 @@ This project is organized as a Gradle multi-module project, where each module pl
 ### 1. `:library` (Core)
 Contains the core logic and data structures of the blockchain.
 - **Block & Blockchain**: Block creation, hash calculation (SHA-256), chain linking, and validation logic.
+- **Validator & ValidatorPool**: Proof of Stake validator management and stake-weighted selection.
 - **Wallet**: Public/Private key generation and verification (Digital Signatures).
 - **Router**: API definitions for node-to-node communication.
-- **PoW (Proof of Work)**: Difficulty-based consensus algorithm.
+- **PoS (Proof of Stake)**: Energy-efficient stake-based consensus algorithm.
 
 ### 2. `:fuelnode` (Bootstrap Node)
 Acts as the network entry point and provides Node Discovery services.
@@ -22,8 +31,9 @@ Acts as the network entry point and provides Node Discovery services.
 
 ### 3. `:fullnode` (Main Node)
 The core node that maintains and operates the actual blockchain network.
-- **Mining**: Collects transactions and creates new blocks (Mining).
-- **Validation**: Validates received blocks and chain integrity.
+- **Validation**: Validates and creates new blocks using Proof of Stake (no energy-intensive mining).
+- **Staking**: Nodes stake KNT to become validators.
+- **Block Production**: Selected validators create blocks based on stake weight.
 - **Propagation**: Propagates new blocks to other nodes.
 - **API Server**: Provides an HTTP API for external monitoring of chain status.
 

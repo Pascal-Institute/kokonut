@@ -6,9 +6,6 @@ import kokonut.util.*
 import kokonut.util.API.Companion.getChain
 import kokonut.util.API.Companion.getFullNodes
 import kokonut.util.API.Companion.getGenesisBlock
-import kokonut.util.API.Companion.getPolicy
-import kokonut.util.API.Companion.getReward
-import kokonut.util.API.Companion.startMining
 import kokonut.util.FullNode
 import kokonut.util.Utility.Companion.protocolVersion
 import kokonut.util.Utility.Companion.truncate
@@ -21,10 +18,11 @@ class BlockChain {
         val FUEL_NODE = URL("http://kokonut-fuel.duckdns.org")
 
         var fullNode = FullNode("", "")
-
         var fullNodes: List<FullNode> = emptyList()
-
         private var cachedChain: List<Block>? = null
+
+        // PoS Validator Pool
+        val validatorPool = ValidatorPool()
 
         fun initialize() {
             loadFullNodes()
@@ -140,65 +138,78 @@ class BlockChain {
             return truncate(totalCurrencyVolume)
         }
 
-        fun mine(wallet: Wallet, data: Data): Block {
-            wallet.miningState = MiningState.MINING
+        /**
+         * PoS Validation: Replaces the traditional PoW mining Validators are selected based on
+         * their stake, not computational power
+         */
+        fun validate(wallet: Wallet, data: Data): Block {
+            wallet.miningState = MiningState.MINING // TODO: Rename states to VALIDATING
 
             loadChainFromFullNode()
 
-            URL(fullNode.address).startMining(wallet.publicKeyFile)
-
             if (!isValid()) {
                 wallet.miningState = MiningState.FAILED
-                throw IllegalStateException("Chain is Invalid. Stop Mining...")
+                throw IllegalStateException("Chain is Invalid. Stop Validation...")
             }
 
-            val policy = FUEL_NODE.getPolicy()
+            // Check if wallet is registered as validator
+            val validatorAddress = Utility.calculateHash(wallet.publicKey)
+            val validator = validatorPool.getValidator(validatorAddress)
+
+            if (validator == null || !validator.isActive) {
+                wallet.miningState = MiningState.FAILED
+                throw IllegalStateException(
+                        "Wallet is not registered as active validator. Stake KNT to become a validator."
+                )
+            }
+
+            // Select validator for this block (probabilistic based on stake)
+            val selectedValidator = validatorPool.selectValidator()
+            if (selectedValidator == null || selectedValidator.address != validatorAddress) {
+                wallet.miningState = MiningState.FAILED
+                throw IllegalStateException(
+                        "Validator not selected for this block. Try again on next block."
+                )
+            }
 
             val lastBlock = getLastBlock()
 
             val version = protocolVersion
             val index = lastBlock.index + 1
             val previousHash = lastBlock.hash
-            var timestamp = System.currentTimeMillis()
-            val difficulty = policy.difficulty
-            var nonce: Long = 0
+            val timestamp = System.currentTimeMillis()
 
-            val miningBlock =
+            // Calculate reward (transaction fees in PoS, not block rewards)
+            data.reward = Utility.setReward(index) * ValidatorPool.VALIDATOR_REWARD_PERCENTAGE
+
+            // Create validator signature to prove block authenticity
+            val blockData = "$version$index$previousHash$timestamp$data"
+            val signature = Wallet.signData(blockData.toByteArray(), wallet.privateKey)
+            val validatorSignature = signature.fold("") { str, it -> str + "%02x".format(it) }
+
+            val validationBlock =
                     Block(
                             version = version,
                             index = index,
                             previousHash = previousHash,
                             timestamp = timestamp,
                             data = data,
-                            difficulty = difficulty,
-                            nonce = nonce,
+                            validatorSignature = validatorSignature,
                             hash = ""
                     )
 
-            data.reward = Utility.setReward(miningBlock.index)
-            val fullNodeReward = URL(fullNode.address).getReward(miningBlock.index)
+            validationBlock.hash = validationBlock.calculateHash()
 
-            if (data.reward != fullNodeReward) {
-                wallet.miningState = MiningState.FAILED
-                throw Exception("Reward Is Invalid...")
-            } else {
-                println("Reward Is Valid")
-            }
+            // Reward the validator
+            validatorPool.rewardValidator(validatorAddress, data.reward)
 
-            var miningHash = miningBlock.calculateHash()
+            println("✅ Block #$index validated by: $validatorAddress")
+            println("   Reward: ${data.reward} KNT")
+            println("   Total Validators: ${validatorPool.getActiveValidators().size}")
 
-            while (policy.difficulty > countLeadingZeros(miningHash)) {
-                timestamp = System.currentTimeMillis()
-                nonce++
+            wallet.miningState = MiningState.MINED // TODO: Rename to VALIDATED
 
-                miningBlock.timestamp = timestamp
-                miningBlock.nonce = nonce
-                miningHash = miningBlock.calculateHash()
-
-                println("Nonce : $nonce")
-            }
-
-            return miningBlock
+            return validationBlock
         }
 
         fun getChain(): MutableList<Block> {
@@ -225,10 +236,6 @@ class BlockChain {
                 }
             }
             return true
-        }
-
-        private fun countLeadingZeros(hash: String): Int {
-            return hash.takeWhile { it == '0' }.length
         }
 
         private fun syncChain() {

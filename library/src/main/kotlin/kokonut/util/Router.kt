@@ -8,6 +8,10 @@ import io.ktor.server.plugins.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import java.io.File
+import java.net.URL
+import java.nio.file.Paths
+import java.security.PublicKey
 import kokonut.Policy
 import kokonut.core.Block
 import kokonut.core.BlockChain
@@ -19,15 +23,9 @@ import kokonut.util.API.Companion.getFullNodes
 import kokonut.util.API.Companion.getPolicy
 import kokonut.util.API.Companion.propagate
 import kokonut.util.Utility.Companion.genesisBlockID
-import kokonut.util.Utility.Companion.libraryVersion
 import kokonut.util.Utility.Companion.protocolVersion
 import kotlinx.html.*
 import kotlinx.serialization.json.Json
-import java.io.File
-import java.net.URL
-import java.nio.file.Paths
-import java.security.PublicKey
-
 
 class Router {
 
@@ -36,12 +34,10 @@ class Router {
         var miners: MutableSet<Miner> = mutableSetOf()
 
         fun Route.root(node: NodeType) {
-            if(node == NodeType.FULL) {
+            if (node == NodeType.FULL) {
                 get("/") {
                     call.respondHtml(HttpStatusCode.OK) {
-                        head {
-                            title("Kokonut Full Node")
-                        }
+                        head { title("Kokonut Full Node") }
                         body {
                             h1 { +"Full Node Registration : ${BlockChain.isRegistered()}" }
                             h1 { +"Kokonut Protocol Version : $protocolVersion" }
@@ -53,15 +49,12 @@ class Router {
                             h1 { +"Get Total Currency Volume : /getTotalCurrencyVolume" }
                             h1 { +"Get Reward : /getReward?index=index" }
                         }
-
                     }
                 }
             } else {
                 get("/") {
                     call.respondHtml(HttpStatusCode.OK) {
-                        head {
-                            title("Kokonut Full Node")
-                        }
+                        head { title("Kokonut Full Node") }
                         body {
                             h1 { +"Kokonut protocol version : $protocolVersion" }
                             h1 { +"Timestamp : ${System.currentTimeMillis()}" }
@@ -69,7 +62,6 @@ class Router {
                             h1 { +"Get genesis block : /getGenesisBlock" }
                             h1 { +"Get full nodes : /getFullNodes" }
                         }
-
                     }
                 }
             }
@@ -78,17 +70,14 @@ class Router {
         fun Route.register() {
             get("/register") {
                 call.respondHtml(HttpStatusCode.OK) {
-                    head {
-                        title { +"Service Configuration" }
-                    }
+                    head { title { +"Service Configuration" } }
                     body {
                         h1 { +"Configure Your Service" }
                         form(
-                            action = "${FUEL_NODE}/submit",
-                            method = FormMethod.post,
-                            encType = FormEncType.multipartFormData
+                                action = "${FUEL_NODE}/submit",
+                                method = FormMethod.post,
+                                encType = FormEncType.multipartFormData
                         ) {
-
                             p {
                                 label { +"Service ID: " }
                                 label { +"Public Key (.pem) : " }
@@ -101,9 +90,7 @@ class Router {
                                 }
                             }
 
-                            p {
-                                submitInput { value = "Submit" }
-                            }
+                            p { submitInput { value = "Submit" } }
                         }
                     }
                 }
@@ -113,9 +100,7 @@ class Router {
         fun Route.isValid() {
             get("/isValid") {
                 call.respondHtml(HttpStatusCode.OK) {
-                    head {
-                        title("Check Chain is Valid")
-                    }
+                    head { title("Check Chain is Valid") }
 
                     body {
                         if (BlockChain.isValid()) {
@@ -129,9 +114,7 @@ class Router {
         }
 
         fun Route.getFullNodes(fullNodes: List<FullNode>) {
-            get("/getFullNodes") {
-                call.respond(fullNodes)
-            }
+            get("/getFullNodes") { call.respond(fullNodes) }
         }
 
         fun Route.getGenesisBlock() {
@@ -141,24 +124,19 @@ class Router {
 
                 inputStream?.use { stream ->
                     val jsonString = stream.bufferedReader().use { it.readText() }
-                    val genesisBlock : Block = Json.decodeFromString<Block>(jsonString)
+                    val genesisBlock: Block = Json.decodeFromString<Block>(jsonString)
                     call.respond(genesisBlock)
-                } ?: run {
-                    println("Resource not found: ${genesisBlockID}.json")
                 }
+                        ?: run { println("Resource not found: ${genesisBlockID}.json") }
             }
         }
 
         fun Route.getLastBlock() {
             get("/getLastBlock") {
-
                 val lastBlock = BlockChain.getLastBlock()
 
                 call.respondHtml(HttpStatusCode.OK) {
-
-                    head {
-                        title("Get Last Block")
-                    }
+                    head { title("Get Last Block") }
                     body {
                         h1 { +"version : ${lastBlock.version}" }
                         h1 { +"index : ${lastBlock.index}" }
@@ -166,8 +144,7 @@ class Router {
                         h1 { +"timestamp : ${lastBlock.timestamp}" }
                         h1 { +"ticker : ${lastBlock.data.ticker}" }
                         h1 { +"data : ${lastBlock.data}" }
-                        h1 { +"difficulty : ${lastBlock.difficulty}" }
-                        h1 { +"nonce : ${lastBlock.nonce}" }
+                        h1 { +"validatorSignature : ${lastBlock.validatorSignature}" }
                         h1 { +"hash : ${lastBlock.hash}" }
                     }
                 }
@@ -177,9 +154,7 @@ class Router {
         fun Route.getTotalCurrencyVolume() {
             get("/getTotalCurrencyVolume") {
                 call.respondHtml(HttpStatusCode.OK) {
-                    head {
-                        title("Get Last Block")
-                    }
+                    head { title("Get Last Block") }
                     body {
                         h1 { +"Total Currency Volume : ${BlockChain.getTotalCurrencyVolume()} KNT" }
                     }
@@ -189,15 +164,9 @@ class Router {
 
         fun Route.getMiners() {
             get("/getMiners") {
-
                 call.respondHtml(HttpStatusCode.OK) {
-                    head {
-                        title("Kokonut Full Node")
-                    }
-                    body {
-                        h1 { +miners.toString() }
-                    }
-
+                    head { title("Kokonut Full Node") }
+                    body { h1 { +miners.toString() } }
                 }
             }
         }
@@ -215,9 +184,12 @@ class Router {
 
         fun Route.getChain() {
             get("/getChain") {
-                //Check chain
+                // Check chain
                 if (!BlockChain.isValid()) {
-                    call.respond(HttpStatusCode.Created, "Get Chain Failed : Server block chain is invalid")
+                    call.respond(
+                            HttpStatusCode.Created,
+                            "Get Chain Failed : Server block chain is invalid"
+                    )
                 }
                 call.respond(BlockChain.getChain())
             }
@@ -225,8 +197,8 @@ class Router {
 
         fun Route.getPolicy() {
             get("/getPolicy") {
-                //5 is magic number it needs to upgrade someday
-                call.respond(Policy(protocolVersion, 5))
+                // Default minimum stake is 100.0 KNT
+                call.respond(Policy(protocolVersion, 100.0))
             }
         }
 
@@ -248,9 +220,7 @@ class Router {
                 println("Miner : $miner start mining...")
                 call.respond("Mining Approved...")
 
-                miners.find {
-                    it.miner == miner
-                }!!.miningState = MiningState.MINING
+                miners.find { it.miner == miner }!!.miningState = MiningState.MINING
             }
         }
 
@@ -264,10 +234,15 @@ class Router {
                 var publicKey: File? = null
                 var privateKey: File? = null
                 val multipartData = call.receiveMultipart()
-                val address: String = call.request.headers["Origin"] ?: run {
-                    call.respondText("Missing 'Origin' header", status = HttpStatusCode.BadRequest)
-                    return@post
-                }
+                val address: String =
+                        call.request.headers["Origin"]
+                                ?: run {
+                                    call.respondText(
+                                            "Missing 'Origin' header",
+                                            status = HttpStatusCode.BadRequest
+                                    )
+                                    return@post
+                                }
 
                 multipartData.forEachPart { part ->
                     when (part) {
@@ -275,15 +250,15 @@ class Router {
                             val fileBytes = part.streamProvider().use { it.readBytes() }
                             when (part.name) {
                                 "publicKey" -> {
-                                    publicKey = File(keyPath, part.originalFileName ?: "publicKey.pem").apply {
-                                        writeBytes(fileBytes)
-                                    }
+                                    publicKey =
+                                            File(keyPath, part.originalFileName ?: "publicKey.pem")
+                                                    .apply { writeBytes(fileBytes) }
                                     println("Uploaded public key: ${part.originalFileName}")
                                 }
                                 "privateKey" -> {
-                                    privateKey = File(keyPath, part.originalFileName ?: "privateKey.pem").apply {
-                                        writeBytes(fileBytes)
-                                    }
+                                    privateKey =
+                                            File(keyPath, part.originalFileName ?: "privateKey.pem")
+                                                    .apply { writeBytes(fileBytes) }
                                     println("Uploaded private key: ${part.originalFileName}")
                                 }
                             }
@@ -294,7 +269,10 @@ class Router {
                 }
 
                 if (publicKey == null || privateKey == null) {
-                    call.respondText("Missing keys in the request", status = HttpStatusCode.BadRequest)
+                    call.respondText(
+                            "Missing keys in the request",
+                            status = HttpStatusCode.BadRequest
+                    )
                     return@post
                 }
 
@@ -316,7 +294,10 @@ class Router {
                     call.respondText("Registration succeeded: ${HttpStatusCode.OK}")
                     fullNodes.add(FullNode(id = id, address = address))
                 } catch (e: Exception) {
-                    call.respondText("An error occurred: ${e.message}", status = HttpStatusCode.InternalServerError)
+                    call.respondText(
+                            "An error occurred: ${e.message}",
+                            status = HttpStatusCode.InternalServerError
+                    )
                 }
             }
             return fullNodes
@@ -329,7 +310,10 @@ class Router {
                 val address = call.request.queryParameters["address"]
 
                 if (size == null || id == null || address == null) {
-                    call.respond(HttpStatusCode.Created, "Propagate Failed : Missing or Invalid request parameters")
+                    call.respond(
+                            HttpStatusCode.Created,
+                            "Propagate Failed : Missing or Invalid request parameters"
+                    )
                     return@post
                 }
 
@@ -344,10 +328,8 @@ class Router {
                             }
                         }
                     }
+                } else if (BlockChain.getChainSize() == size) {} else {
 
-                } else if (BlockChain.getChainSize() == size) {
-
-                } else {
                     call.respond(HttpStatusCode.Created, "Propagate Failed")
                 }
             }
@@ -355,7 +337,6 @@ class Router {
 
         fun Route.addBlock() {
             post("/addBlock") {
-
                 loadFullNodes()
 
                 val keyPath = "/app/key"
@@ -364,7 +345,10 @@ class Router {
                 val policy = FUEL_NODE.getPolicy()
 
                 if (!BlockChain.isValid()) {
-                    call.respond(HttpStatusCode.Created, "Block Add Failed : Server block chain is invalid")
+                    call.respond(
+                            HttpStatusCode.Created,
+                            "Block Add Failed : Server block chain is invalid"
+                    )
                 }
 
                 val multipart = call.receiveMultipart()
@@ -379,16 +363,15 @@ class Router {
                                 println("Received JSON: $block")
                             }
                         }
-
                         is PartData.FileItem -> {
                             if (part.name == "public_key") {
                                 val fileBytes = part.streamProvider().use { it.readBytes() }
-                                publicKeyFile = part.originalFileName?.let { it1 -> File(keyPath, it1) }
+                                publicKeyFile =
+                                        part.originalFileName?.let { it1 -> File(keyPath, it1) }
                                 publicKeyFile!!.writeBytes(fileBytes)
                                 println("Received file: ${part.originalFileName}")
                             }
                         }
-
                         else -> {}
                     }
                     part.dispose()
@@ -399,61 +382,54 @@ class Router {
                     println(block)
 
                     val publicKey: PublicKey = Wallet.loadPublicKey(publicKeyFile!!.path)
-                    val miner: String = Utility.calculateHash(publicKey)
+                    val validator: String = Utility.calculateHash(publicKey)
 
                     if (block!!.index == BlockChain.getLastBlock().index) {
                         call.respond(HttpStatusCode.Created, "Block Already Propagated")
                     }
 
-                    //Check Miner
-                    if (block!!.data.miner != miner) {
-                        call.respond(HttpStatusCode.Created, "Block Add Failed : Invalid miner")
+                    // Check Validator
+                    if (block!!.data.validator != validator) {
+                        call.respond(HttpStatusCode.Created, "Block Add Failed : Invalid validator")
                     }
 
-                    //Check Index
+                    // Check Index
                     if (block!!.index != BlockChain.getLastBlock().index + 1) {
                         call.respond(
-                            HttpStatusCode.Created,
-                            "Block Add Failed : Invalid index, New Block index : ${block!!.index} / Last Block index ${BlockChain.getLastBlock().index}"
+                                HttpStatusCode.Created,
+                                "Block Add Failed : Invalid index, New Block index : ${block!!.index} / Last Block index ${BlockChain.getLastBlock().index}"
                         )
                     }
 
-
-                    //Check Version
+                    // Check Version
                     if (policy.version != block!!.version) {
                         call.respond(
-                            HttpStatusCode.Created,
-                            "Block Add Failed : Fuel Node version ${policy.version} and Client version ${block!!.version} is different"
+                                HttpStatusCode.Created,
+                                "Block Add Failed : Fuel Node version ${policy.version} and Client version ${block!!.version} is different"
                         )
                     }
 
-                    //Check Difficulty
-                    if (policy.difficulty != block!!.difficulty) {
-                        call.respond(
-                            HttpStatusCode.Created,
-                            "Block Add Failed : Fuel Node difficulty ${policy.difficulty} and Client difficulty ${block!!.difficulty} is different"
-                        )
-                    }
-
-                    //Check Hash
+                    // Check Hash
                     val calculatedHash = block!!.calculateHash()
                     if (block!!.hash == calculatedHash) {
 
                         BlockChain.database.insert(block!!)
 
                         call.respond(
-                            HttpStatusCode.Created,
-                            "Block Add Succeed and Reward ${block!!.data.reward} KNT is Recorded..."
+                                HttpStatusCode.Created,
+                                "Block Add Succeed and Reward ${block!!.data.reward} KNT is Recorded..."
                         )
-
                     } else {
                         call.respond(
-                            HttpStatusCode.Created,
-                            "Block Add Failed : Invalid Block, calculatedHash : ${calculatedHash} blockHash : ${block!!.hash}"
+                                HttpStatusCode.Created,
+                                "Block Add Failed : Invalid Block, calculatedHash : ${calculatedHash} blockHash : ${block!!.hash}"
                         )
                     }
                 } else {
-                    call.respondText("Missing block or miner public key", status = HttpStatusCode.BadRequest)
+                    call.respondText(
+                            "Missing block or miner public key",
+                            status = HttpStatusCode.BadRequest
+                    )
                 }
                 Paths.get(keyPath).toFile().deleteRecursively()
             }

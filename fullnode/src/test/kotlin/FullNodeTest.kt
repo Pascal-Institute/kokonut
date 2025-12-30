@@ -12,7 +12,7 @@ class FullNodeTest {
                         Data(
                                 reward = 10.0,
                                 ticker = "KNT",
-                                miner = "test_miner",
+                                validator = "test_validator",
                                 transactions = emptyList(),
                                 comment = "Test Block"
                         )
@@ -24,8 +24,7 @@ class FullNodeTest {
                                 previousHash = "0000000000000000",
                                 timestamp = System.currentTimeMillis(),
                                 data = data,
-                                difficulty = 1,
-                                nonce = 100,
+                                validatorSignature = "",
                                 hash = ""
                         )
 

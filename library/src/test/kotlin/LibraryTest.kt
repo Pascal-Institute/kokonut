@@ -21,7 +21,7 @@ class LibraryTest {
                         Data(
                                 reward = 50.0,
                                 ticker = "KNT",
-                                miner = "miner_hash",
+                                validator = "validator_hash",
                                 transactions = emptyList(),
                                 comment = "Library Test"
                         )
@@ -32,8 +32,7 @@ class LibraryTest {
                                 previousHash = "0",
                                 timestamp = 123456789L,
                                 data = data,
-                                difficulty = 0,
-                                nonce = 0,
+                                validatorSignature = "",
                                 hash = ""
                         )
 
