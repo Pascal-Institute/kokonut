@@ -71,7 +71,7 @@ class SQLite {
                         }
                     }
                 } else {
-                    File(getJarDirectory())
+                    getJarDirectory()
                 }
 
         val dbFile = File(dbDir, "kovault.db")

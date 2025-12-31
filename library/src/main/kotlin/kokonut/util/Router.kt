@@ -448,7 +448,7 @@ class Router {
                     when (part) {
                         is PartData.FormItem -> {
                             if (part.name == "json") {
-                                block = Json.decodeFromString(Block.serializer(), part.value)
+                                block = Json.decodeFromString<Block>(part.value)
                                 println("Received JSON: $block")
                             }
                         }
