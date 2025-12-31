@@ -37,9 +37,78 @@ class Router {
             if (node == NodeType.FULL) {
                 get("/") {
                     call.respondHtml(HttpStatusCode.OK) {
-                        head { title("Kokonut Full Node") }
+                        head {
+                            title("Kokonut Full Node")
+                            style {
+                                unsafe {
+                                    raw(
+                                            """
+                                        body {
+                                            font-family: Arial, sans-serif;
+                                            max-width: 800px;
+                                            margin: 50px auto;
+                                            padding: 20px;
+                                            background-color: #f5f5f5;
+                                        }
+                                        h1 {
+                                            color: #333;
+                                            font-size: 18px;
+                                            margin: 10px 0;
+                                        }
+                                        .status {
+                                            font-weight: bold;
+                                            color: ${if (BlockChain.isRegistered()) "#28a745" else "#dc3545"};
+                                        }
+                                        .register-btn {
+                                            background-color: #007bff;
+                                            color: white;
+                                            padding: 15px 30px;
+                                            border: none;
+                                            border-radius: 5px;
+                                            font-size: 16px;
+                                            cursor: pointer;
+                                            margin: 20px 0;
+                                            display: ${if (BlockChain.isRegistered()) "none" else "inline-block"};
+                                        }
+                                        .register-btn:hover {
+                                            background-color: #0056b3;
+                                        }
+                                        .register-btn:disabled {
+                                            background-color: #6c757d;
+                                            cursor: not-allowed;
+                                        }
+                                        #message {
+                                            padding: 10px;
+                                            margin: 10px 0;
+                                            border-radius: 5px;
+                                            display: none;
+                                        }
+                                        .success {
+                                            background-color: #d4edda;
+                                            color: #155724;
+                                            border: 1px solid #c3e6cb;
+                                        }
+                                        .error {
+                                            background-color: #f8d7da;
+                                            color: #721c24;
+                                            border: 1px solid #f5c6cb;
+                                        }
+                                    """
+                                    )
+                                }
+                            }
+                        }
                         body {
-                            h1 { +"Full Node Registration : ${BlockChain.isRegistered()}" }
+                            h1 {
+                                +"Full Node Registration : "
+                                span("status") { +BlockChain.isRegistered().toString() }
+                            }
+                            button(classes = "register-btn") {
+                                id = "registerBtn"
+                                onClick = "registerNode()"
+                                +"Register to Fuel Node"
+                            }
+                            div { id = "message" }
                             h1 { +"Kokonut Protocol Version : $protocolVersion" }
                             h1 { +"Timestamp : ${System.currentTimeMillis()}" }
                             h1 { +"Get Chain : /getChain" }
@@ -48,6 +117,24 @@ class Router {
                             h1 { +"Chain Validation : /isValid" }
                             h1 { +"Get Total Currency Volume : /getTotalCurrencyVolume" }
                             h1 { +"Get Reward : /getReward?index=index" }
+
+                            script {
+                                unsafe {
+                                    raw(
+                                            """
+                                        function registerNode() {
+                                            const btn = document.getElementById('registerBtn');
+                                            const msg = document.getElementById('message');
+                                            
+                                            btn.disabled = true;
+                                            btn.textContent = 'Registering...';
+                                            
+                                            window.location.href = '/register';
+                                        }
+                                    """
+                                    )
+                                }
+                            }
                         }
                     }
                 }

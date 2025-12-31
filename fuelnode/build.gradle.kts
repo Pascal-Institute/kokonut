@@ -26,9 +26,9 @@ repositories {
 
 dependencies {
     //develop
-    //implementation(project(":library"))
+    implementation(project(":library"))
     //production
-    implementation("com.github.Pascal-Institute:kokonut:4.1.7")
+    //implementation("com.github.Pascal-Institute:kokonut:4.1.7")
 
     implementation("io.ktor:ktor-server-html-builder:2.3.4")
     implementation("io.ktor:ktor-server-core-jvm:2.3.4")
