@@ -14,7 +14,7 @@ kotlin {
 
 application {
     mainClass.set("ApplicationKt")
-    applicationName = "app"
+    applicationName = "knt_fuelnode"
 }
 
 repositories {

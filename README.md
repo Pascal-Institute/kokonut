@@ -134,3 +134,4 @@ This project is licensed under the MIT License. See the `LICENSE` file for detai
 
 ## 🐳 Docker Hub
 - Fuel Node: [volta2030/knt_fuelnode](https://hub.docker.com/r/volta2030/knt_fuelnode)
+- Full Node: [volta2030/knt_fullnode](https://hub.docker.com/r/volta2030/knt_fullnode)
