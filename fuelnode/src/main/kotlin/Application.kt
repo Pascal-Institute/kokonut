@@ -15,7 +15,7 @@ import kokonut.util.Router.Companion.submit
 import kokonut.util.Utility.Companion.checkHealth
 
 fun main() {
-    BlockChain.initialize()
+    BlockChain.initialize(NodeType.FUEL)
     var fullNodes = mutableListOf<FullNode>()
 
     val host = System.getenv("SERVER_HOST") ?: "0.0.0.0"

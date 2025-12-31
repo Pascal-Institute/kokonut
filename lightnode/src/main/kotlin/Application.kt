@@ -87,7 +87,7 @@ fun App() {
 
             Button(
                     onClick = {
-                        // BlockChain.initialize() // Uncomment if needed
+                        // BlockChain.initialize(NodeType.LIGHT)
                         val wallet =
                                 Wallet(
                                         privateKeyFile = File(selectedPrivateKeyFilePath),

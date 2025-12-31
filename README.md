@@ -170,4 +170,8 @@ docker run -d \
   volta2030/knt_fullnode
 ```
 
+> **Critical Note**: Full Nodes **MUST** configure `KOKONUT_PEER` to join an existing network.
+> If `KOKONUT_PEER` is omitted or the target peer is unreachable, the Full Node will **fail to start** (throw an exception).
+> This mechanism prevents accidental network splitting (Split Brain). Only the Fuel Node is allowed to start without a peer to generate the Genesis Block.
+> 
 > **Note**: Replace `<FUEL_NODE_IP>` with the actual IP address or domain of your Fuel Node. If running on the same machine, use the host's local network IP.

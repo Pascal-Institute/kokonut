@@ -32,11 +32,19 @@ class BlockChain {
 
         /**
          * Initialize blockchain
-         * 1. Try to load from local DB (Persistence)
-         * 2. If empty, try to bootstrap from peer
-         * 3. If no peer, check if we should create Genesis (Bootstrap Node)
+         * @param nodeType The type of the running node (FUEL, FULL, LIGHT)
+         * @param peerAddress Optional specific peer address to bootstrap from
+         *
+         * Rules:
+         * 1. Try to load from local DB (Persistence).
+         * 2. If empty, try to bootstrap from peer.
+         * 3. If no peer/bootstrap fails:
+         * ```
+         *    - FUEL Node: Creates new Genesis Block (starts network).
+         *    - FULL/LIGHT Node: THROWS EXCEPTION (must connect to existing network).
+         * ```
          */
-        fun initialize(peerAddress: String? = null) {
+        fun initialize(nodeType: NodeType, peerAddress: String? = null) {
             // 1. Try Load from DB
             loadChain()
 
@@ -54,23 +62,36 @@ class BlockChain {
                     bootstrapFromPeer(peer)
                     return
                 } catch (e: Exception) {
-                    println("⚠️ Bootstrap failed: ${e.message}")
+                    println("❌ Bootstrap failed from peer: $peer")
+                    println("Error: ${e.message}")
+
+                    if (nodeType != NodeType.FUEL) {
+                        throw IllegalStateException(
+                                "Failed to bootstrap from configured peer. Check network connection or peer address."
+                        )
+                    }
+                    // For Fuel Node, we might fall back to Genesis creation if peer fails (e.g.
+                    // self-referencing)
                 }
             }
 
-            // 3. If no peer or bootstrap failed, are we the Genesis Node?
-            // For simplicity, if DB is empty and no peer, we assume this is a fresh network start
-            println("🌱 No existing chain and no peer found. Creating Genesis Block...")
-            val genesis = GenesisGenerator.createGenesisBlock()
-            database.insert(genesis)
+            // 3. Handle Fresh Start (No Chain, No Peer)
+            if (nodeType == NodeType.FUEL) {
+                println(
+                        "🌱 Fuel Node: No existing chain and no peer found. Creating Genesis Block..."
+                )
+                val genesis = GenesisGenerator.createGenesisBlock()
+                database.insert(genesis)
 
-            // Also create bootstrap fuel registration for self?
-            // This is tricky without knowing our own address.
-            // For now, we just create Genesis. Detailed Fuel registration usually happens via
-            // separate tool or setup.
-
-            syncChain()
-            scanFuelNodes()
+                syncChain()
+                scanFuelNodes()
+            } else {
+                throw IllegalStateException(
+                        "❌ ${nodeType} Node CANNOT create Genesis Block.\n" +
+                                "MUST be connected to a Fuel Node or Peer to join the network.\n" +
+                                "Please set KOKONUT_PEER environment variable."
+                )
+            }
         }
 
         /**
