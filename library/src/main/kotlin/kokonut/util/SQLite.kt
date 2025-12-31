@@ -1,11 +1,11 @@
 package kokonut.util
 
+import java.io.File
+import java.sql.*
 import kokonut.core.Block
 import kokonut.util.Utility.Companion.getJarDirectory
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import java.io.File
-import java.sql.*
 
 class SQLite {
 
@@ -16,7 +16,8 @@ class SQLite {
     init {
         try {
             if (!tableExists(tableName)) {
-                val createTableSQL = """
+                val createTableSQL =
+                        """
                 CREATE TABLE $tableName (
                     hash TEXT PRIMARY KEY,
                     block TEXT NOT NULL
@@ -56,10 +57,24 @@ class SQLite {
         }
     }
 
-    //SQLlite
+    // SQLlite
     fun getDatabasePath(): String {
-        val jarDir = getJarDirectory()
-        val dbFile = File(jarDir, "kovault.db")
+        // Use environment variable for data directory if set (Docker friendly)
+        val dataDirEnv = System.getenv("KOKONUT_DATA_DIR")
+
+        val dbDir =
+                if (!dataDirEnv.isNullOrBlank()) {
+                    File(dataDirEnv).also {
+                        if (!it.exists()) {
+                            it.mkdirs()
+                            println("Created data directory: ${it.absolutePath}")
+                        }
+                    }
+                } else {
+                    File(getJarDirectory())
+                }
+
+        val dbFile = File(dbDir, "kovault.db")
 
         if (!dbFile.exists()) {
             dbFile.createNewFile()
@@ -91,7 +106,9 @@ class SQLite {
             val columnType = resultSet.getString("type")
             val isNullable = resultSet.getString("notnull")
             val defaultValue = resultSet.getString("dflt_value")
-            println("Column: $columnName, Type: $columnType, Nullable: $isNullable, Default: $defaultValue")
+            println(
+                    "Column: $columnName, Type: $columnType, Nullable: $isNullable, Default: $defaultValue"
+            )
         }
 
         resultSet.close()

@@ -10,4 +10,8 @@ RUN chmod +x /app/bin/knt_fuelnode
 
 EXPOSE 80
 
+# Environment variables for data persistence
+ENV KOKONUT_DATA_DIR=/data
+VOLUME /data
+
 CMD ["/app/bin/knt_fuelnode"]
