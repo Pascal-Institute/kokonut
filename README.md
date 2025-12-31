@@ -1,6 +1,10 @@
 # Kokonut 🥥
 **High-Performance Modular Blockchain Framework Powered by Kotlin with Proof of Stake**
 
+[![](https://jitpack.io/v/Pascal-Institute/kokonut.svg)](https://jitpack.io/#Pascal-Institute/kokonut)
+[![Docker FullNode](https://img.shields.io/docker/v/volta2030/knt_fullnode?sort=semver&label=knt_fullnode&logo=docker)](https://hub.docker.com/r/volta2030/knt_fullnode/tags)
+[![Docker FuelNode](https://img.shields.io/docker/v/volta2030/knt_fuelnode?sort=semver&label=knt_fuelnode&logo=docker)](https://hub.docker.com/r/volta2030/knt_fuelnode/tags)
+
 Kokonut is a lightweight and scalable blockchain framework written in Kotlin. Designed for educational and research purposes, it implements **Proof of Stake (PoS)** consensus with core blockchain principles (Staking, Validation, Wallets) using an intuitive multi-module architecture.
 
 ## 🌟 Key Features
