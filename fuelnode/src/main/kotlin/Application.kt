@@ -7,6 +7,7 @@ import io.ktor.server.routing.*
 import kokonut.core.BlockChain
 import kokonut.util.FullNode
 import kokonut.util.NodeType
+import kokonut.util.Router.Companion.getChain
 import kokonut.util.Router.Companion.getFullNodes
 import kokonut.util.Router.Companion.getGenesisBlock
 import kokonut.util.Router.Companion.getPolicy
@@ -27,6 +28,7 @@ fun main() {
                     getGenesisBlock()
                     getFullNodes(fullNodes)
                     getPolicy()
+                    getChain()
                 }
 
                 checkHealth(fullNodes)
