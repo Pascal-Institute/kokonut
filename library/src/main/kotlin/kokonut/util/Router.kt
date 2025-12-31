@@ -15,9 +15,11 @@ import java.security.PublicKey
 import kokonut.Policy
 import kokonut.core.Block
 import kokonut.core.BlockChain
-import kokonut.core.BlockChain.Companion.FUEL_NODE
 import kokonut.core.BlockChain.Companion.fullNode
 import kokonut.core.BlockChain.Companion.loadFullNodes
+import kokonut.core.BlockDataType
+import kokonut.core.Data
+import kokonut.core.FuelNodeInfo
 import kokonut.state.MiningState
 import kokonut.util.API.Companion.getFullNodes
 import kokonut.util.API.Companion.getPolicy
@@ -161,7 +163,7 @@ class Router {
                     body {
                         h1 { +"Configure Your Service" }
                         form(
-                                action = "${FUEL_NODE}/submit",
+                                action = "${BlockChain.getPrimaryFuelNode()}/submit",
                                 method = FormMethod.post,
                                 encType = FormEncType.multipartFormData
                         ) {
@@ -372,7 +374,8 @@ class Router {
                     val id = Utility.calculateHash(wallet!!.publicKey)
 
                     // Check if the node ID is already present
-                    val nodeExists = FUEL_NODE.getFullNodes().any { it.id == id }
+                    val nodeExists =
+                            BlockChain.getRandomFuelNode().getFullNodes().any { it.id == id }
                     if (!isValid || nodeExists) {
                         call.respondText("Registration failed: ${HttpStatusCode.BadRequest}")
                         return@post
@@ -429,7 +432,7 @@ class Router {
                 val keyPath = "/app/key"
                 Utility.createDirectory(keyPath)
 
-                val policy = FUEL_NODE.getPolicy()
+                val policy = BlockChain.getPrimaryFuelNode().getPolicy()
 
                 if (!BlockChain.isValid()) {
                     call.respond(
@@ -536,6 +539,88 @@ class Router {
                 println("Miner : $miner stop mining...")
 
                 call.respond("Mining Cancelled...")
+            }
+        }
+
+        /** Get Fuel Nodes from blockchain scan */
+        fun Route.getFuelNodesRoute() {
+            get("/getFuelNodes") {
+                val fuelNodes = BlockChain.getFuelNodes()
+                call.respond(fuelNodes)
+            }
+        }
+
+        /** Get Network Rules from Genesis Block */
+        fun Route.getNetworkRules() {
+            get("/getNetworkRules") {
+                val rules = BlockChain.getNetworkRules()
+                call.respond(rules)
+            }
+        }
+
+        /** Register new Fuel Node (requires consensus from existing Fuel Nodes) */
+        fun Route.registerFuelNode() {
+            post("/registerFuelNode") {
+                val request = call.receive<FuelNodeInfo>()
+
+                // Verify stake requirement
+                val rules = BlockChain.getNetworkRules()
+                if (request.stake < rules.minFuelStake) {
+                    call.respond(
+                            HttpStatusCode.BadRequest,
+                            "Insufficient stake. Required: ${rules.minFuelStake} KNT"
+                    )
+                    return@post
+                }
+
+                // Check max Fuel Nodes limit
+                val currentFuels = BlockChain.getFuelNodes()
+                if (currentFuels.size >= rules.maxFuelNodes) {
+                    call.respond(
+                            HttpStatusCode.BadRequest,
+                            "Maximum Fuel Nodes limit reached: ${rules.maxFuelNodes}"
+                    )
+                    return@post
+                }
+
+                // Create registration block
+                val lastBlock = BlockChain.getLastBlock()
+                val registrationData =
+                        Data(
+                                reward = 0.0,
+                                ticker = "KNT",
+                                validator = "FUEL_REGISTRY",
+                                transactions = emptyList(),
+                                comment = "Fuel Node Registration: ${request.address}",
+                                type = BlockDataType.FUEL_REGISTRATION,
+                                fuelNodeInfo = request
+                        )
+
+                val registrationBlock =
+                        Block(
+                                version = protocolVersion,
+                                index = lastBlock.index + 1,
+                                previousHash = lastBlock.hash,
+                                timestamp = System.currentTimeMillis(),
+                                data = registrationData,
+                                validatorSignature = "",
+                                hash = ""
+                        )
+
+                registrationBlock.hash = registrationBlock.calculateHash()
+
+                // Add to blockchain
+                BlockChain.database.insert(registrationBlock)
+                BlockChain.scanFuelNodes() // Refresh cache
+
+                call.respond(
+                        HttpStatusCode.OK,
+                        mapOf(
+                                "status" to "success",
+                                "message" to "Fuel Node registered successfully",
+                                "blockIndex" to registrationBlock.index
+                        )
+                )
             }
         }
     }

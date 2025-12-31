@@ -15,8 +15,35 @@ class BlockChain {
     companion object {
         const val TICKER = "KNT"
         val database by lazy { SQLite() }
-        val FUEL_NODE = URL("http://kokonut-fuel.duckdns.org")
 
+        // Known peer for bootstrapping (MUST be set by user)
+        // Set via environment variable: KOKONUT_PEER=http://known-node-address
+        // This ensures true decentralization - no hardcoded addresses
+        var knownPeer: String =
+                System.getenv("KOKONUT_PEER")
+                        ?: throw IllegalStateException(
+                                """
+                ❌ KOKONUT_PEER environment variable is not set!
+                
+                To join the Kokonut network, you need to know at least one node address.
+                This can be:
+                  - A friend's node
+                  - A public node
+                  - Any Fuel or Full node in the network
+                
+                Set the environment variable:
+                  Windows PowerShell:  ${'$'}env:KOKONUT_PEER="http://node-address:80"
+                  Linux/Mac:           export KOKONUT_PEER=http://node-address:80
+                  
+                Or set it programmatically:
+                  BlockChain.initialize("http://node-address:80")
+                
+                Example addresses (if available):
+                  - http://kokonut-fuel.duckdns.org:80
+                  - http://your-friend-node.com:80
+                  - http://192.168.1.100:80
+                """.trimIndent()
+                        )
         var fullNode = FullNode("", "")
         var fullNodes: List<FullNode> = emptyList()
         private var cachedChain: List<Block>? = null
@@ -24,16 +51,134 @@ class BlockChain {
         // PoS Validator Pool
         val validatorPool = ValidatorPool()
 
-        fun initialize() {
+        // Cached Fuel Nodes (scanned from blockchain)
+        private var cachedFuelNodes: List<FuelNodeInfo> = emptyList()
+
+        /** Initialize blockchain from a known peer Uses Peer Discovery to find all Fuel Nodes */
+        fun initialize(peerAddress: String? = null) {
+            // If peerAddress provided, use it instead of environment variable
+            val peer = peerAddress ?: knownPeer
+
+            bootstrapFromPeer(peer)
             loadFullNodes()
             loadChain()
+            scanFuelNodes()
+        }
+
+        /**
+         * Bootstrap from a known peer (Peer Discovery) Downloads Genesis and blockchain, then scans
+         * for Fuel Nodes
+         */
+        fun bootstrapFromPeer(peerAddress: String) {
+            try {
+                println("🔍 Bootstrapping from peer: $peerAddress")
+
+                // 1. Download Genesis Block from known peer
+                val genesis = URL(peerAddress).getGenesisBlock()
+                println("✅ Genesis Block downloaded: ${genesis.hash}")
+
+                // 2. Download entire blockchain
+                val chain = URL(peerAddress).getChain()
+                println("✅ Blockchain downloaded: ${chain.size} blocks")
+
+                // 3. Save to database
+                chain.forEach { block ->
+                    if (block !in getChain()) {
+                        database.insert(block)
+                    }
+                }
+                syncChain()
+
+                // 4. Scan for Fuel Nodes
+                val fuels = scanFuelNodes()
+                println("✅ Found ${fuels.size} Fuel Nodes in blockchain")
+                fuels.forEach { fuel -> println("   - ${fuel.address} (stake: ${fuel.stake} KNT)") }
+
+                println("🎉 Bootstrap complete! Connected to Kokonut network.")
+            } catch (e: Exception) {
+                println("❌ Bootstrap failed: ${e.message}")
+                println("   Make sure the peer address is correct and accessible.")
+                throw e
+            }
+        }
+
+        /**
+         * Scan blockchain to find all registered Fuel Nodes This replaces hardcoded Fuel Node list
+         */
+        fun scanFuelNodes(): List<FuelNodeInfo> {
+            val fuelNodes = mutableListOf<FuelNodeInfo>()
+            val chain = cachedChain ?: emptyList()
+
+            chain.forEach { block ->
+                when (block.data.type) {
+                    BlockDataType.FUEL_REGISTRATION -> {
+                        block.data.fuelNodeInfo?.let { fuelNodes.add(it) }
+                    }
+                    BlockDataType.FUEL_REMOVAL -> {
+                        block.data.fuelNodeInfo?.let { removed ->
+                            fuelNodes.removeIf { it.address == removed.address }
+                        }
+                    }
+                    else -> {}
+                }
+            }
+
+            cachedFuelNodes = fuelNodes
+            return fuelNodes
+        }
+
+        /** Get current Fuel Nodes from blockchain */
+        fun getFuelNodes(): List<FuelNodeInfo> {
+            if (cachedFuelNodes.isEmpty()) {
+                scanFuelNodes()
+            }
+            return cachedFuelNodes
+        }
+
+        /** Get network rules from Genesis Block */
+        fun getNetworkRules(): NetworkRules {
+            val genesis = getGenesisBlock()
+            return genesis.data.networkRules ?: NetworkRules() // Default rules if not set
+        }
+
+        /** Check if an address is a registered Fuel Node */
+        fun isFuelNode(address: String): Boolean {
+            return getFuelNodes().any { it.address == address }
+        }
+
+        /**
+         * Get a random Fuel Node from blockchain Throws exception if no Fuel Nodes found (network
+         * not bootstrapped)
+         */
+        fun getRandomFuelNode(): URL {
+            val fuelNodes = getFuelNodes()
+            if (fuelNodes.isEmpty()) {
+                throw IllegalStateException(
+                        "No Fuel Nodes found. Please bootstrap from a known peer first.\n" +
+                                "Use: BlockChain.initialize(\"http://known-node-address\")\n" +
+                                "Or set environment variable: KOKONUT_PEER=http://known-node-address"
+                )
+            }
+            return URL(fuelNodes.random().address)
+        }
+
+        /** Get primary (bootstrap) Fuel Node Returns the first registered Fuel Node */
+        fun getPrimaryFuelNode(): URL {
+            val fuelNodes = getFuelNodes()
+            if (fuelNodes.isEmpty()) {
+                throw IllegalStateException(
+                        "No Fuel Nodes found. Please bootstrap from a known peer first."
+                )
+            }
+            val bootstrap = fuelNodes.find { it.isBootstrap }
+            return URL(bootstrap?.address ?: fuelNodes.first().address)
         }
 
         internal fun loadFullNodes() {
             var maxSize = 0
             var fullNodeChainSize = 0
 
-            runBlocking { fullNodes = FUEL_NODE.getFullNodes() }
+            runBlocking { fullNodes = getRandomFuelNode().getFullNodes() }
 
             for (it in fullNodes) {
                 fullNode = fullNodes[0]
@@ -55,7 +200,7 @@ class BlockChain {
 
         fun loadChainFromFuelNode() = runBlocking {
             try {
-                val genesisBlock = runBlocking { FUEL_NODE.getGenesisBlock() }
+                val genesisBlock = runBlocking { getPrimaryFuelNode().getGenesisBlock() }
                 val chain = getChain()
                 val blockChain = mutableListOf<Block>()
                 blockChain.add(genesisBlock)

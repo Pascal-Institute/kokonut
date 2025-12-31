@@ -1,8 +1,11 @@
-import kokonut.core.BlockChain.Companion.FUEL_NODE
+import kokonut.core.BlockChain
 import kokonut.util.API.Companion.getPolicy
 
 fun main() {
-    val policy = FUEL_NODE.getPolicy()
+    // Initialize with default peer for testing
+    BlockChain.initialize()
+
+    val policy = BlockChain.getPrimaryFuelNode().getPolicy()
     println("Policy Version: ${policy.version}")
     println("Minimum Stake: ${policy.minimumStake} KNT")
 }
