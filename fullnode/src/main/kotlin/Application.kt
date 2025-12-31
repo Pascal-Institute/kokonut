@@ -14,31 +14,31 @@ import kokonut.util.Router.Companion.getReward
 import kokonut.util.Router.Companion.getTotalCurrencyVolume
 import kokonut.util.Router.Companion.isValid
 import kokonut.util.Router.Companion.register
+import kokonut.util.Router.Companion.root
 import kokonut.util.Router.Companion.startMining
 import kokonut.util.Router.Companion.stopMining
-import kokonut.util.Router.Companion.submit
-import kokonut.util.Router.Companion.root
 
 fun main() {
     val blockchain = BlockChain()
+    BlockChain.initialize(NodeType.FULL)
     isValid()
 
-    embeddedServer(Netty, host = "0.0.0.0", port = 80) {
-        install(ContentNegotiation) {
-            json()
-        }
+    val host = System.getenv("SERVER_HOST") ?: "0.0.0.0"
+    embeddedServer(Netty, host = host, port = 80) {
+                install(ContentNegotiation) { json() }
 
-        routing {
-            root(NodeType.FULL)
-            register()
-            isValid()
-            getLastBlock()
-            getTotalCurrencyVolume()
-            getReward()
-            getChain()
-            startMining()
-            addBlock()
-            stopMining()
-        }
-    }.start(true)
+                routing {
+                    root(NodeType.FULL)
+                    register()
+                    isValid()
+                    getLastBlock()
+                    getTotalCurrencyVolume()
+                    getReward()
+                    getChain()
+                    startMining()
+                    addBlock()
+                    stopMining()
+                }
+            }
+            .start(true)
 }

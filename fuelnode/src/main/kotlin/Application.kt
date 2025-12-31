@@ -7,6 +7,7 @@ import io.ktor.server.routing.*
 import kokonut.core.BlockChain
 import kokonut.util.FullNode
 import kokonut.util.NodeType
+import kokonut.util.Router.Companion.getChain
 import kokonut.util.Router.Companion.getFullNodes
 import kokonut.util.Router.Companion.getGenesisBlock
 import kokonut.util.Router.Companion.getPolicy
@@ -15,21 +16,22 @@ import kokonut.util.Router.Companion.submit
 import kokonut.util.Utility.Companion.checkHealth
 
 fun main() {
-
+    BlockChain.initialize(NodeType.FUEL)
     var fullNodes = mutableListOf<FullNode>()
 
-    embeddedServer(Netty, host = "0.0.0.0", port = 80) {
-        install(ContentNegotiation) {
-            json()
-        }
-        routing {
-            root(NodeType.FUEL)
-            fullNodes = submit(fullNodes)
-            getGenesisBlock()
-            getFullNodes(fullNodes)
-            getPolicy()
-        }
+    val host = System.getenv("SERVER_HOST") ?: "0.0.0.0"
+    embeddedServer(Netty, host = host, port = 80) {
+                install(ContentNegotiation) { json() }
+                routing {
+                    root(NodeType.FUEL)
+                    fullNodes = submit(fullNodes)
+                    getGenesisBlock()
+                    getFullNodes(fullNodes)
+                    getPolicy()
+                    getChain()
+                }
 
-        checkHealth(fullNodes)
-    }.start(true)
+                checkHealth(fullNodes)
+            }
+            .start(true)
 }

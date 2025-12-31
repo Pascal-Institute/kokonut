@@ -1,6 +1,5 @@
 package kokonut.util
 
-import kokonut.util.API.Companion.isHealthy
 import java.io.*
 import java.net.URI
 import java.net.URL
@@ -8,6 +7,7 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.security.*
 import java.util.*
+import kokonut.util.API.Companion.isHealthy
 import kotlin.math.*
 
 class Utility {
@@ -15,31 +15,35 @@ class Utility {
 
         const val majorIndex = 0
 
-        private val properties: Properties = Properties().apply {
-            Utility::class.java.classLoader.getResourceAsStream("kokonut.properties")?.use { load(it) }
-        }
+        private val properties: Properties =
+                Properties().apply {
+                    Utility::class.java.classLoader.getResourceAsStream("kokonut.properties")?.use {
+                        load(it)
+                    }
+                }
 
-        val libraryVersion : String
+        val libraryVersion: String
             get() = properties.getProperty("kokonut_version", "0.0.0")
 
         val protocolVersion: Int
             get() = libraryVersion.split(".")[majorIndex].toInt()
 
-        val genesisBlockID : String
-            get() = properties.getProperty("kokonut_genesis_block")
-
         fun checkHealth(fullNodes: MutableList<FullNode>) {
             val timer = Timer()
-            timer.scheduleAtFixedRate(object : TimerTask() {
-                override fun run() {
-                    fullNodes.forEach { node ->
-                        println("Checking health of node: ${node.address}")
-                        if(!URL(node.address).isHealthy()){
-                            fullNodes.remove(node)
+            timer.scheduleAtFixedRate(
+                    object : TimerTask() {
+                        override fun run() {
+                            fullNodes.forEach { node ->
+                                println("Checking health of node: ${node.address}")
+                                if (!URL(node.address).isHealthy()) {
+                                    fullNodes.remove(node)
+                                }
+                            }
                         }
-                    }
-                }
-            }, 0, 300_000)
+                    },
+                    0,
+                    300_000
+            )
         }
 
         fun getJarDirectory(): File {
@@ -47,7 +51,7 @@ class Utility {
             return File(Paths.get(uri).parent.toString())
         }
 
-        fun setReward(index: Long) : Double {
+        fun setReward(index: Long): Double {
 
             val intendedTotalBlockOfYear = 365 * 144
 
@@ -58,7 +62,7 @@ class Utility {
 
             val expTerm = exp(exponent * x)
 
-            val logTerm =  log2(2.0 + x)
+            val logTerm = log2(2.0 + x)
 
             val value = truncate((expTerm / logTerm) * constant)
 
@@ -73,25 +77,32 @@ class Utility {
         fun findKokonutJar(): String {
             val buildDir = File("build/libs")
 
-            val kokonutJar = buildDir.listFiles { _, name ->
-                name.startsWith("kokonut-") && name.endsWith(".jar")
-            }?.firstOrNull()  // 첫 번째 파일을 선택
+            val kokonutJar =
+                    buildDir
+                            .listFiles { _, name ->
+                                name.startsWith("kokonut-") && name.endsWith(".jar")
+                            }
+                            ?.firstOrNull() // 첫 번째 파일을 선택
 
             return kokonutJar!!.absolutePath
         }
 
-        fun calculateHash(timestamp : Long): String {
+        fun calculateHash(timestamp: Long): String {
             val input = "$timestamp"
-            return MessageDigest.getInstance("SHA-256")
-                .digest(input.toByteArray())
-                .fold("") { str, it -> str + "%02x".format(it) }
+            return MessageDigest.getInstance("SHA-256").digest(input.toByteArray()).fold("") {
+                    str,
+                    it ->
+                str + "%02x".format(it)
+            }
         }
 
         fun calculateHash(publicKey: PublicKey): String {
             val input = "$publicKey"
-            return MessageDigest.getInstance("SHA-256")
-                .digest(input.toByteArray())
-                .fold("") { str, it -> str + "%02x".format(it) }
+            return MessageDigest.getInstance("SHA-256").digest(input.toByteArray()).fold("") {
+                    str,
+                    it ->
+                str + "%02x".format(it)
+            }
         }
 
         fun createFile(filePath: String, content: String) {
@@ -107,31 +118,33 @@ class Utility {
         }
 
         fun writePart(
-            outputStream: OutputStream,
-            boundary: String,
-            name: String,
-            contentType: String,
-            content: ByteArray
+                outputStream: OutputStream,
+                boundary: String,
+                name: String,
+                contentType: String,
+                content: ByteArray
         ) {
             outputStream.write("--$boundary\r\n".toByteArray(Charsets.UTF_8))
-            outputStream.write("Content-Disposition: form-data; name=\"$name\"\r\n".toByteArray(Charsets.UTF_8))
+            outputStream.write(
+                    "Content-Disposition: form-data; name=\"$name\"\r\n".toByteArray(Charsets.UTF_8)
+            )
             outputStream.write("Content-Type: $contentType\r\n\r\n".toByteArray(Charsets.UTF_8))
             outputStream.write(content)
             outputStream.write("\r\n".toByteArray(Charsets.UTF_8))
         }
 
         fun writeFilePart(
-            outputStream: OutputStream,
-            boundary: String,
-            name: String,
-            contentType: String,
-            file: File
+                outputStream: OutputStream,
+                boundary: String,
+                name: String,
+                contentType: String,
+                file: File
         ) {
             outputStream.write("--$boundary\r\n".toByteArray(Charsets.UTF_8))
             outputStream.write(
-                "Content-Disposition: form-data; name=\"$name\"; filename=\"${file.name}\"\r\n".toByteArray(
-                    Charsets.UTF_8
-                )
+                    "Content-Disposition: form-data; name=\"$name\"; filename=\"${file.name}\"\r\n".toByteArray(
+                            Charsets.UTF_8
+                    )
             )
             outputStream.write("Content-Type: $contentType\r\n\r\n".toByteArray(Charsets.UTF_8))
             Files.copy(file.toPath(), outputStream)

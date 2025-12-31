@@ -1,197 +1,177 @@
-[![](https://jitpack.io/v/Pascal-Institute/kokonut.svg)](https://jitpack.io/#Pascal-Institute/kokonut)
-[![](https://jitpack.io/v/Pascal-Institute/kokonut/month.svg)](https://jitpack.io/#Pascal-Institute/kokonut)
-![Docker Pulls](https://img.shields.io/docker/v/volta2030/knt_fullnode?label=knt_fullnode&sort=semver)
-![Docker Pulls](https://img.shields.io/docker/pulls/volta2030/knt_fullnode.svg)
-![Docker Pulls](https://img.shields.io/docker/v/volta2030/knt_fuelnode?label=knt_fuelnode&sort=semver)
-![Docker Pulls](https://img.shields.io/docker/pulls/volta2030/knt_fuelnode.svg)
+# Kokonut 🥥
+**High-Performance Modular Blockchain Framework Powered by Kotlin with Proof of Stake**
 
+Kokonut is a lightweight and scalable blockchain framework written in Kotlin. Designed for educational and research purposes, it implements **Proof of Stake (PoS)** consensus with core blockchain principles (Staking, Validation, Wallets) using an intuitive multi-module architecture.
 
-# What is Kokonut...?
+## 🌟 Key Features
 
-## BlockChain Framework powered by Kotlin
+- **⚡ Proof of Stake (PoS)**: Energy-efficient consensus mechanism - no wasteful mining
+- **🔒 Validator Staking**: Stake KNT tokens to participate in block validation
+- **📊 Stake-Weighted Selection**: Validators selected probabilistically based on stake amount
+- **🌐 IPv6 P2P**: Direct peer-to-peer connectivity without NAT/port forwarding
+- **🎯 Minimal Rewards**: Transaction fee-based rewards (1% to validators)
 
-# Kokonut Protocol
+## 📚 Project Structure
 
-## Version : 4
+This project is organized as a Gradle multi-module project, where each module plays a distinct role in the blockchain network.
 
-## Abstract
+### 1. `:library` (Core)
+Contains the core logic and data structures of the blockchain.
+- **Block & Blockchain**: Block creation, hash calculation (SHA-256), chain linking, and validation logic.
+- **Validator & ValidatorPool**: Proof of Stake validator management and stake-weighted selection.
+- **Wallet**: Public/Private key generation and verification (Digital Signatures).
+- **Router**: API definitions for node-to-node communication.
+- **PoS (Proof of Stake)**: Energy-efficient stake-based consensus algorithm.
 
-This protocol describes block chain systems & rules of kokonut.
+### 2. `:fuelnode` (Bootstrap Node)
+Acts as the network entry point and provides Node Discovery services.
+- **Genesis Block**: Distributes the initial block (Genesis Block) to Full Nodes.
+- **Node Discovery**: Manages and propagates the list of Full Nodes participating in the network.
+- **Policy**: Manages protocol versions and network policies.
 
-## Block
+### 3. `:fullnode` (Main Node)
+The core node that maintains and operates the actual blockchain network.
+- **Validation**: Validates and creates new blocks using Proof of Stake (no energy-intensive mining).
+- **Staking**: Nodes stake KNT to become validators.
+- **Block Production**: Selected validators create blocks based on stake weight.
+- **Propagation**: Propagates new blocks to other nodes.
+- **API Server**: Provides an HTTP API for external monitoring of chain status.
 
-- The 'Block' is the collection of data which contains uniqueness.
-- Blocks have meaning and value only when they are connected to each other.
-- Format is JSON(.json).
+### 4. `:lightnode` (Wallet Client)
+A desktop wallet application for users (built with Compose Desktop).
+- **Wallet Management**: Login via `.pem` key files.
+- **Monitoring**: Check mining status and wallet address (Miner ID).
 
-### Basic Structure
+---
 
-- version : The kokonut protocol verison (match to major number of library version).
-- index : The numbering of block which previous block index < next block index.
-- previousHash : The hash of previous block.
-- timestamp : Time relative to UTC. Indicates the time the block difficulty was solved.
-- reward : float number, up to have 6 decimal point
-- data :
-- difficulty : The numbers of leading 0 of hash. All block hash must follow difficulty.
-- nonce : The total times of trying hash function for satisfying difficulty.
-- hash : The output 64-digits string format which came from SHA-256(Secure Hash Algorithm 256-bit) hash function, inputs is the sequential collection of all data's in block.
+## 🚀 Getting Started
 
-```json
-{
-  "version":4,
-  "index":1,
-  "previousHash":"00000000000000000000000000000000000000000000000061bdff5e59b8ff4c",
-  "timestamp":1724547179867,
-  "data": {
-    "reward":16.230218,
-    "miner":"6c60b7550766d5ae24ccc3327f0e47fbaa51e599172795bb9ad06ac82784a92d",
-    "transactions":[],
-    "comment":"kokonut version 4"
-    },
-  "difficulty":6,
-  "nonce":1502929,
-  "hash":"000000f31571551dacab93769546843d2ef483fd0d26181fe8950de617b919ec"}
+### Prerequisites
+- **Java JDK 17** or higher
+- **Kotlin 1.9.22** (Included in Gradle settings)
+
+### Build
+Run the following command in the project root to build the entire project.
+
+```sh
+# Windows
+./gradlew.bat build
+
+# Mac/Linux
+./gradlew build
 ```
 
-### Genesis Block
+### How to Run
 
-It is called genesis block which follows below :
+Each node can be run individually. The recommended order is **Fuel Node → Full Node (Multiple) → Light Node**.
 
-- first block of chain
-- previousHash is "0"
-- reward is 0
-- miner is "0000000000000000000000000000000000000000000000000000000000000000"
-- transactions is empty
-- difficulty is 0
-- nonce is 0
-- hash isn't made by SHA-256 Hash Algorithm. it is artificially generated.
-
-#### Structure
-
+#### 1. Run Fuel Node
+```sh
+./gradlew.bat :fuelnode:run
 ```
-{ 
-  "version":4,
-  "index":0,
-  "previousHash":"0",
-  "timestamp":1725108420520,
-  "data":{
-    "reward":0.0,
-    "ticker":"KNT",
-    "miner":"0000000000000000000000000000000000000000000000000000000000000000",
-    "transactions":[],
-    "comment":"Navigate beyond computing oceans"
-   },
-  "difficulty":0,
-  "nonce":0,
-  "hash":"000000000000000000000000000000000000000000000000190282d71244ac7a"
-}
+- The server starts on `http://[::]:80` (Dual Stack IPv4/IPv6) by default.
+- **Note on IPv6**: When connecting via IPv6, enclose the address in brackets (e.g., `http://[2001:db8::1]:80`).
+- **IPv6 Priority**: This project prioritizes IPv6 for direct peer-to-peer connectivity without NAT. While the server binds to `::` (dual stack), IPv4-only clients may experience limitations in P2P scenarios.
+
+#### 2. Run Full Node
+```sh
+./gradlew.bat :fullnode:run
 ```
 
-## BlockChain
+#### 3. Run Light Node (Wallet)
+```sh
+./gradlew.bat :lightnode:run
+```
+- A GUI window will appear. Load your `.pem` key files to log in.
 
-- The connectivity of blocks.
+---
 
-### Kovault
+## 📡 API Reference
 
-- Kovalut is Database which use SQLite DBMS(DataBase Management System) software.
+Full Nodes and the Fuel Node interact via HTTP APIs.
 
-## Proven Of Work
+### Full Node API
+| Method | Endpoint | Description |
+|:---:|:---|:---|
+| `GET` | `/` | Node status and information dashboard (HTML) |
+| `GET` | `/getLastBlock` | Get the last block of the current chain |
+| `GET` | `/getChain` | Get the entire blockchain data |
+| `GET` | `/isValid` | Check the integrity of the local blockchain |
+| `GET` | `/getTotalCurrencyVolume` | Get the total supply of KNT |
+| `POST` | `/startMining` | Start mining (Miner key required) |
+| `POST` | `/addBlock` | Submit a mined block (Network propagation) |
 
-### Validation Process
-1. Check Miner
-2. Check Index
-3. Check Version
-4. CHeck Difficulty
-5. Check Hash
+### Fuel Node API
+| Method | Endpoint | Description |
+|:---:|:---|:---|
+| `POST` | `/submit` | Register to participate in the Full Node network |
+| `GET` | `/getGenesisBlock` | Download the Genesis Block data |
+| `GET` | `/getFullNodes` | Get the list of active Full Nodes |
 
-### Calculate Hash
-```kotlin
-    fun calculateHash(): String {
-        val input = "$version$index$previousHash$timestamp$data$difficulty$nonce"
-        hash = MessageDigest.getInstance("SHA-256")
-            .digest(input.toByteArray())
-            .fold("") { str, it -> str + "%02x".format(it) }
-        return hash
-    }
+---
 
+## 🛠 Tech Stack
+
+- **Language**: [Kotlin](https://kotlinlang.org/)
+- **Server Framework**: [Ktor](https://ktor.io/) (Netty Engine)
+- **UI Framework**: [Compose Multiplatform](https://www.jetbrains.com/lp/compose-multiplatform/) (Desktop)
+- **Serialization**: Kotlinx Serialization (JSON)
+- **Build Tool**: Gradle Kotlin DSL
+
+## 🤝 Contributing
+
+1. Fork this repository.
+2. Create a new branch (`git checkout -b feature/amazing-feature`).
+3. Commit your changes (`git commit -m 'Add some amazing feature'`).
+4. Push to the branch (`git push origin feature/amazing-feature`).
+5. Open a Pull Request.
+
+---
+
+
+**License**
+This project is licensed under the MIT License. See the `LICENSE` file for details.
+
+## 🐳 Docker Hub & Usage
+
+Official Docker images are available on Docker Hub.
+
+- **Fuel Node**: `volta2030/knt_fuelnode`
+- **Full Node**: `volta2030/knt_fullnode`
+
+### Running with Docker
+
+To ensure data persistence (blockchain data, keys), you **must mount a volume** to `/data`.
+
+#### 1. Run Fuel Node
+The Fuel Node acts as the network bootstrapper.
+
+```bash
+# -p 80:80 : Bind container port 80 to host port 80
+# -v ./data:/data : Persist blockchain data to host's ./data directory
+docker run -d \
+  --name knt_fuelnode \
+  -p 80:80 \
+  -v $(pwd)/data_fuel:/data \
+  volta2030/knt_fuelnode
 ```
 
-## Mining
+#### 2. Run Full Node
+Full Nodes connect to the network. You can specify a peer to connect to using `KOKONUT_PEER`.
 
-### Status
+```bash
+# -e KOKONUT_PEER : Address of a known node (e.g., Fuel Node or another Full Node)
+# -v ./data_full:/data : Use a separate data directory for the Full Node
+docker run -d \
+  --name knt_fullnode \
+  -p 8080:80 \
+  -e KOKONUT_PEER="http://<FUEL_NODE_IP>:80" \
+  -v $(pwd)/data_full:/data \
+  volta2030/knt_fullnode
+```
 
-* READY
-* MINING
-* FAILED
-* MINED
-
-### State Machine Diagram
-
-![image](https://github.com/user-attachments/assets/d53c3d55-3678-4489-a250-5a7bea3d92ee)
-
-
-### Difficulty
-
-### Reward
-
-#### Reduction Time
-
-To Do
-
-## Node
-- Configuration is 3 parts. Fuel, Full and Light Nodes
-
-### Status
-
-* VALID : Able to internet connect & verified by wallet is valid
-* INVALID : Able to internet connect but, non-verified by wallet is invalid
-* DISCONNECTED : Status of not being able to internet connect to node
-
-### State Machine Diagram
-![image](https://github.com/user-attachments/assets/ef25bf2d-73bc-4501-8915-a7551439d591)
-
-
-### Fuel Node
-
-- URL : https://kokonut-fuelnode.onrender.com
-- It contains genesis block
-- Service full node lists
-- Synchronize full nodes
-- Supplies important information to cross validation between full & light node
-
-### Full Node
-
-- URL : -
-- DockerHub : https://hub.docker.com/r/volta2030/knt_fullnode
-- Validate Block and Add to Chain. powered by kokonut
-- Check Chain is valid
-
-### Light Node
-
-- Client Application for block chain system
-- Mine Block. powered by kokonut
-- Check Chain is valid
-
-## Propagation
-
-- It has two mission. 1. Alert stop other full nodes mining 2. Comparison other full nodes than
-  infect longer blockchain.
-
-### Diagram
-![image](https://github.com/user-attachments/assets/e9fe5f3e-e0d6-4410-a43a-13ca6d792fb8)
-
-## Transaction
-
-### Status
-
-* INVALID
-* PENDING
-* READY
-* RESERVED
-* EXECUTED
-
-### State Machine Diagram
-
-![image](https://github.com/user-attachments/assets/2f09706d-d207-416b-bd93-6955b2ff7850)
-
-## Wallet
+> **Critical Note**: Full Nodes **MUST** configure `KOKONUT_PEER` to join an existing network.
+> If `KOKONUT_PEER` is omitted or the target peer is unreachable, the Full Node will **fail to start** (throw an exception).
+> This mechanism prevents accidental network splitting (Split Brain). Only the Fuel Node is allowed to start without a peer to generate the Genesis Block.
+> 
+> **Note**: Replace `<FUEL_NODE_IP>` with the actual IP address or domain of your Fuel Node. If running on the same machine, use the host's local network IP.
