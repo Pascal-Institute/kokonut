@@ -24,7 +24,6 @@ import kokonut.state.MiningState
 import kokonut.util.API.Companion.getFullNodes
 import kokonut.util.API.Companion.getPolicy
 import kokonut.util.API.Companion.propagate
-import kokonut.util.Utility.Companion.genesisBlockID
 import kokonut.util.Utility.Companion.protocolVersion
 import kotlinx.html.*
 import kotlinx.serialization.json.Json
@@ -208,15 +207,15 @@ class Router {
 
         fun Route.getGenesisBlock() {
             get("/getGenesisBlock") {
-                val classLoader = Thread.currentThread().contextClassLoader
-                val inputStream = classLoader.getResourceAsStream("${genesisBlockID}.json")
-
-                inputStream?.use { stream ->
-                    val jsonString = stream.bufferedReader().use { it.readText() }
-                    val genesisBlock: Block = Json.decodeFromString<Block>(jsonString)
+                try {
+                    val genesisBlock = BlockChain.getGenesisBlock()
                     call.respond(genesisBlock)
+                } catch (e: Exception) {
+                    call.respond(
+                            HttpStatusCode.InternalServerError,
+                            "Genesis Block not found: ${e.message}"
+                    )
                 }
-                        ?: run { println("Resource not found: ${genesisBlockID}.json") }
             }
         }
 

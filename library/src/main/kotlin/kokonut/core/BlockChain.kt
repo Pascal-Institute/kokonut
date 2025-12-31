@@ -175,49 +175,48 @@ class BlockChain {
         }
 
         internal fun loadFullNodes() {
-            var maxSize = 0
-            var fullNodeChainSize = 0
+            try {
+                // Determine Fuel Node to query
+                val fuelNodeUrl =
+                        try {
+                            getRandomFuelNode()
+                        } catch (e: Exception) {
+                            println("⚠️ Cannot load Full Nodes: ${e.message}")
+                            return
+                        }
 
-            runBlocking { fullNodes = getRandomFuelNode().getFullNodes() }
+                runBlocking { fullNodes = fuelNodeUrl.getFullNodes() }
 
-            for (it in fullNodes) {
-                fullNode = fullNodes[0]
-                fullNodeChainSize = URL(it.address).getChain().size
-                if (fullNodeChainSize > maxSize) {
-                    fullNode = it
-                    maxSize = fullNodeChainSize
+                if (fullNodes.isNotEmpty()) {
+                    var maxSize = 0
+                    var bestNode = fullNodes[0]
+
+                    for (node in fullNodes) {
+                        try {
+                            val size = URL(node.address).getChain().size
+                            if (size > maxSize) {
+                                maxSize = size
+                                bestNode = node
+                            }
+                        } catch (e: Exception) {
+                            println("⚠️ Failed to check node ${node.address}: ${e.message}")
+                        }
+                    }
+                    fullNode = bestNode
                 }
+            } catch (e: Exception) {
+                println("❌ Error loading Full Nodes: ${e.message}")
             }
         }
 
         private fun loadChain() {
-            if (fullNodes.isEmpty()) {
-                loadChainFromFuelNode()
-            } else {
-                loadChainFromFullNode()
-            }
-        }
-
-        fun loadChainFromFuelNode() = runBlocking {
-            try {
-                val genesisBlock = runBlocking { getPrimaryFuelNode().getGenesisBlock() }
-                val chain = getChain()
-                val blockChain = mutableListOf<Block>()
-                blockChain.add(genesisBlock)
-
-                blockChain.forEach { block ->
-                    if (block !in chain) {
-                        database.insert(block)
-                    }
-                }
-            } catch (e: Exception) {
-                println("Aborted : ${e.message}")
-            }
-
+            // Only sync from local DB
+            // External sync is handled by bootstrapFromPeer or explicit sync calls
             syncChain()
-
             println("Block Chain validity : ${isValid()}")
         }
+
+        // loadChainFromFuelNode removed - replaced by bootstrapFromPeer
 
         fun loadChainFromFullNode(url: URL) = runBlocking {
             try {
@@ -238,24 +237,7 @@ class BlockChain {
             println("Block Chain validity : ${isValid()}")
         }
 
-        fun loadChainFromFullNode() {
-            try {
-                val chainFromFullNode = URL(fullNode.address).getChain()
-                val chain = getChain()
-
-                chainFromFullNode.forEach { block ->
-                    if (block !in chain) {
-                        database.insert(block)
-                    }
-                }
-            } catch (e: Exception) {
-                println("Aborted : ${e.message}")
-            }
-
-            syncChain()
-
-            println("Block Chain validity : ${isValid()}")
-        }
+        // Parameterless loadChainFromFullNode removed - use specific URL version
 
         fun isRegistered(): Boolean {
 
@@ -290,7 +272,11 @@ class BlockChain {
         fun validate(wallet: Wallet, data: Data): Block {
             wallet.miningState = MiningState.MINING // TODO: Rename states to VALIDATING
 
-            loadChainFromFullNode()
+            // Refresh Full Nodes and sync chain
+            loadFullNodes()
+            if (fullNodes.isNotEmpty()) {
+                loadChainFromFullNode(URL(fullNode.address))
+            }
 
             if (!isValid()) {
                 wallet.miningState = MiningState.FAILED
