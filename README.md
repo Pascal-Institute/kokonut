@@ -132,6 +132,42 @@ Full Nodes and the Fuel Node interact via HTTP APIs.
 **License**
 This project is licensed under the MIT License. See the `LICENSE` file for details.
 
-## 🐳 Docker Hub
-- Fuel Node: [volta2030/knt_fuelnode](https://hub.docker.com/r/volta2030/knt_fuelnode)
-- Full Node: [volta2030/knt_fullnode](https://hub.docker.com/r/volta2030/knt_fullnode)
+## 🐳 Docker Hub & Usage
+
+Official Docker images are available on Docker Hub.
+
+- **Fuel Node**: `volta2030/knt_fuelnode`
+- **Full Node**: `volta2030/knt_fullnode`
+
+### Running with Docker
+
+To ensure data persistence (blockchain data, keys), you **must mount a volume** to `/data`.
+
+#### 1. Run Fuel Node
+The Fuel Node acts as the network bootstrapper.
+
+```bash
+# -p 80:80 : Bind container port 80 to host port 80
+# -v ./data:/data : Persist blockchain data to host's ./data directory
+docker run -d \
+  --name knt_fuelnode \
+  -p 80:80 \
+  -v $(pwd)/data_fuel:/data \
+  volta2030/knt_fuelnode
+```
+
+#### 2. Run Full Node
+Full Nodes connect to the network. You can specify a peer to connect to using `KOKONUT_PEER`.
+
+```bash
+# -e KOKONUT_PEER : Address of a known node (e.g., Fuel Node or another Full Node)
+# -v ./data_full:/data : Use a separate data directory for the Full Node
+docker run -d \
+  --name knt_fullnode \
+  -p 8080:80 \
+  -e KOKONUT_PEER="http://<FUEL_NODE_IP>:80" \
+  -v $(pwd)/data_full:/data \
+  volta2030/knt_fullnode
+```
+
+> **Note**: Replace `<FUEL_NODE_IP>` with the actual IP address or domain of your Fuel Node. If running on the same machine, use the host's local network IP.
