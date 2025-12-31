@@ -16,34 +16,10 @@ class BlockChain {
         const val TICKER = "KNT"
         val database by lazy { SQLite() }
 
-        // Known peer for bootstrapping (MUST be set by user)
+        // Known peer for bootstrapping
         // Set via environment variable: KOKONUT_PEER=http://known-node-address
-        // This ensures true decentralization - no hardcoded addresses
-        var knownPeer: String =
-                System.getenv("KOKONUT_PEER")
-                        ?: throw IllegalStateException(
-                                """
-                ❌ KOKONUT_PEER environment variable is not set!
-                
-                To join the Kokonut network, you need to know at least one node address.
-                This can be:
-                  - A friend's node
-                  - A public node
-                  - Any Fuel or Full node in the network
-                
-                Set the environment variable:
-                  Windows PowerShell:  ${'$'}env:KOKONUT_PEER="http://node-address:80"
-                  Linux/Mac:           export KOKONUT_PEER=http://node-address:80
-                  
-                Or set it programmatically:
-                  BlockChain.initialize("http://node-address:80")
-                
-                Example addresses (if available):
-                  - http://kokonut-fuel.duckdns.org:80
-                  - http://your-friend-node.com:80
-                  - http://192.168.1.100:80
-                """.trimIndent()
-                        )
+        var knownPeer: String? = System.getenv("KOKONUT_PEER")
+
         var fullNode = FullNode("", "")
         var fullNodes: List<FullNode> = emptyList()
         private var cachedChain: List<Block>? = null
@@ -54,14 +30,46 @@ class BlockChain {
         // Cached Fuel Nodes (scanned from blockchain)
         private var cachedFuelNodes: List<FuelNodeInfo> = emptyList()
 
-        /** Initialize blockchain from a known peer Uses Peer Discovery to find all Fuel Nodes */
+        /**
+         * Initialize blockchain
+         * 1. Try to load from local DB (Persistence)
+         * 2. If empty, try to bootstrap from peer
+         * 3. If no peer, check if we should create Genesis (Bootstrap Node)
+         */
         fun initialize(peerAddress: String? = null) {
-            // If peerAddress provided, use it instead of environment variable
+            // 1. Try Load from DB
+            loadChain()
+
+            if (getChainSize() > 0) {
+                println("✅ Blockchain loaded from local database. Size: ${getChainSize()}")
+                scanFuelNodes()
+                return
+            }
+
+            // 2. If DB empty, try Bootstrap
             val peer = peerAddress ?: knownPeer
 
-            bootstrapFromPeer(peer)
-            loadFullNodes()
-            loadChain()
+            if (peer != null) {
+                try {
+                    bootstrapFromPeer(peer)
+                    return
+                } catch (e: Exception) {
+                    println("⚠️ Bootstrap failed: ${e.message}")
+                }
+            }
+
+            // 3. If no peer or bootstrap failed, are we the Genesis Node?
+            // For simplicity, if DB is empty and no peer, we assume this is a fresh network start
+            println("🌱 No existing chain and no peer found. Creating Genesis Block...")
+            val genesis = GenesisGenerator.createGenesisBlock()
+            database.insert(genesis)
+
+            // Also create bootstrap fuel registration for self?
+            // This is tricky without knowing our own address.
+            // For now, we just create Genesis. Detailed Fuel registration usually happens via
+            // separate tool or setup.
+
+            syncChain()
             scanFuelNodes()
         }
 

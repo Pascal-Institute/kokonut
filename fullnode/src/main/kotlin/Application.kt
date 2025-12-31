@@ -20,7 +20,7 @@ import kokonut.util.Router.Companion.stopMining
 
 fun main() {
     val blockchain = BlockChain()
-    // BlockChain.initialize() // Initialize manually when network is available
+    BlockChain.initialize()
     isValid()
 
     val host = System.getenv("SERVER_HOST") ?: "0.0.0.0"
