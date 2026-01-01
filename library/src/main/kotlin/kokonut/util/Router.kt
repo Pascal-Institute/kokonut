@@ -9,6 +9,7 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import java.io.File
+import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.file.Paths
 import java.security.PublicKey
@@ -23,8 +24,8 @@ import kokonut.core.FuelNodeInfo
 import kokonut.core.Transaction
 import kokonut.core.ValidatorOnboardingInfo
 import kokonut.state.ValidatorState
+import kokonut.util.API.Companion.getFullNodes
 import kokonut.util.API.Companion.getPolicy
-import kokonut.util.API.Companion.propagate
 import kokonut.util.Utility.Companion.protocolVersion
 import kotlinx.html.*
 import kotlinx.serialization.json.Json
@@ -35,6 +36,57 @@ class Router {
 
         var validatorSessions: MutableSet<ValidatorSession> = mutableSetOf()
         private val onboardingLock = Any()
+
+        private fun advertisedSelfAddress(call: ApplicationCall): String {
+            val configured =
+                    System.getenv("KOKONUT_ADVERTISE_ADDRESS")?.trim().orEmpty().ifBlank {
+                        System.getenv("KOKONUT_FULLNODE_REWARD_RECEIVER")?.trim().orEmpty()
+                    }
+            if (configured.isNotEmpty()) return configured
+
+            val forwardedProto = call.request.headers["X-Forwarded-Proto"]?.trim()
+            val scheme = forwardedProto?.takeIf { it.isNotBlank() } ?: call.request.origin.scheme
+            val host = call.request.host()
+            val port = call.request.port()
+
+            return if ((scheme == "http" && port == 80) || (scheme == "https" && port == 443)) {
+                "$scheme://$host"
+            } else {
+                "$scheme://$host:$port"
+            }
+        }
+
+        private fun propagateToPeer(peerAddress: String, size: Long, id: String, sourceAddress: String) {
+            val url = URL("$peerAddress/propagate?size=$size&id=$id&address=$sourceAddress")
+            val conn = (url.openConnection() as HttpURLConnection)
+            try {
+                conn.requestMethod = "POST"
+                conn.connectTimeout = 2_000
+                conn.readTimeout = 3_000
+                conn.doOutput = true
+                conn.outputStream.use { }
+                conn.inputStream.use { }
+            } catch (_: Exception) {
+                // best-effort
+            } finally {
+                conn.disconnect()
+            }
+        }
+
+        private fun notifyFullNodesToSyncFrom(sourceAddress: String) {
+            try {
+                val fuelNode = BlockChain.getPrimaryFuelNode()
+                val peers = fuelNode.getFullNodes().map { it.address }.filter { it.isNotBlank() }
+                val size = BlockChain.getChainSize()
+                val id = Utility.calculateHash(sourceAddress.hashCode().toLong())
+
+                peers.filter { it != sourceAddress }.distinct().forEach { peer ->
+                    propagateToPeer(peer, size, id, sourceAddress)
+                }
+            } catch (_: Exception) {
+                // best-effort
+            }
+        }
 
         fun Route.root(node: NodeType) {
             if (node == NodeType.FULL) {
@@ -627,6 +679,9 @@ class Router {
                                 BlockChain.database.insert(onboardingBlock)
                                 BlockChain.refreshFromDatabase()
 
+                                // Best-effort: help other FullNodes converge quickly.
+                                notifyFullNodesToSyncFrom(advertisedSelfAddress(call))
+
                                 handshakeMessage =
                                     "Handshake successful. Onboarding reward granted."
                             } else {
@@ -791,14 +846,14 @@ class Router {
                 if (BlockChain.getChainSize() < size) {
                     BlockChain.loadChainFromFullNode(URL(address))
                     call.respond(HttpStatusCode.OK, "Propagate Succeed")
-                    BlockChain.fullNodes.forEach {
-                        run {
-                            if (it.address != address && it.address != fullNode.address) {
-                                val response = URL(it.address).propagate()
-                                println(response)
+                    val selfAddress = advertisedSelfAddress(call)
+                    BlockChain.fullNodes
+                            .map { it.address }
+                            .filter { it.isNotBlank() && it != address && it != selfAddress }
+                            .distinct()
+                            .forEach { peer ->
+                                propagateToPeer(peer, size, id, address)
                             }
-                        }
-                    }
                 } else if (BlockChain.getChainSize() == size) {} else {
 
                     call.respond(HttpStatusCode.Created, "Propagate Failed")
@@ -886,6 +941,9 @@ class Router {
 
                         BlockChain.database.insert(block!!)
                         BlockChain.refreshFromDatabase()
+
+                        // Best-effort: help other FullNodes converge quickly.
+                        notifyFullNodesToSyncFrom(advertisedSelfAddress(call))
 
                         call.respond(
                                 HttpStatusCode.Created,

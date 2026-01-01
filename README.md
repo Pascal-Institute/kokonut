@@ -102,6 +102,7 @@ Full Nodes **must** join an existing network:
 Optional:
 
 - Set `KOKONUT_FULLNODE_REWARD_RECEIVER` to control where the onboarding reward is credited for the Full Node (defaults to the Full Node's own URL as seen by the server).
+- Set `KOKONUT_ADVERTISE_ADDRESS` to the publicly reachable base URL for this Full Node (used as the source address for propagation so other Full Nodes can pull your chain correctly).
 
 #### 3. Run Light Node (Wallet)
 
