@@ -13,6 +13,7 @@ data class Data(
 
         // Block type and metadata
         val type: BlockDataType = BlockDataType.TRANSACTION,
+        val validatorOnboardingInfo: ValidatorOnboardingInfo? = null,
         val fuelNodeInfo: FuelNodeInfo? = null, // For FUEL_REGISTRATION/REMOVAL
         val networkRules: NetworkRules? = null // Only for Genesis Block
 )

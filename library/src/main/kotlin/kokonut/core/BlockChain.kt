@@ -245,6 +245,17 @@ class BlockChain {
             println("Block Chain validity : ${isValid()}")
         }
 
+        /**
+         * Refresh in-memory caches from the persisted chain in SQLite.
+         *
+         * This is important because blocks are inserted directly into the database from HTTP
+         * routes, but most chain reads (e.g., getLastBlock) rely on the in-memory cached chain.
+         */
+        fun refreshFromDatabase() {
+            syncChain()
+            scanFuelNodes()
+        }
+
         // loadChainFromFuelNode removed - replaced by bootstrapFromPeer
 
         fun loadChainFromFullNode(url: URL) = runBlocking {
