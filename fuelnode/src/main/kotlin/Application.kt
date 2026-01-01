@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentHashMap
 import kokonut.core.BlockChain
 import kokonut.util.NodeType
 import kokonut.util.Router.Companion.getChain
+import kokonut.util.Router.Companion.getFullNodes
 import kokonut.util.Router.Companion.getFullNodesFromHeartbeat
 import kokonut.util.Router.Companion.getGenesisBlock
 import kokonut.util.Router.Companion.getPolicy
@@ -52,6 +53,7 @@ fun main() {
                     root(NodeType.FUEL)
                     heartbeat(fullNodes)
                     getFullNodesFromHeartbeat(fullNodes)
+                    getFullNodes(fullNodes)
                     getGenesisBlock()
                     getPolicy()
                     getChain()

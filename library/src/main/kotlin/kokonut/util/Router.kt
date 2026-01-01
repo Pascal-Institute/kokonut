@@ -130,8 +130,143 @@ class Router {
             }
         }
 
-        fun Route.getFullNodes(fullNodes: List<FullNode>) {
-            get("/getFullNodes") { call.respond(fullNodes) }
+        fun Route.getFullNodes(fullNodes: MutableMap<String, Long>) {
+            get("/getFullNodes") {
+                call.respondHtml(HttpStatusCode.OK) {
+                    head {
+                        title("Registered Full Nodes")
+                        style {
+                            unsafe {
+                                raw(
+                                        """
+                                    body {
+                                        font-family: Arial, sans-serif;
+                                        max-width: 1000px;
+                                        margin: 50px auto;
+                                        padding: 20px;
+                                        background-color: #f5f5f5;
+                                    }
+                                    h1 {
+                                        color: #333;
+                                        border-bottom: 3px solid #28a745;
+                                        padding-bottom: 10px;
+                                    }
+                                    .summary {
+                                        background-color: #d4edda;
+                                        border-left: 4px solid #28a745;
+                                        padding: 15px;
+                                        margin: 20px 0;
+                                        border-radius: 5px;
+                                    }
+                                    table {
+                                        width: 100%;
+                                        border-collapse: collapse;
+                                        background-color: white;
+                                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                                        margin-top: 20px;
+                                    }
+                                    th {
+                                        background-color: #28a745;
+                                        color: white;
+                                        padding: 12px;
+                                        text-align: left;
+                                        font-weight: bold;
+                                    }
+                                    td {
+                                        padding: 10px;
+                                        border-bottom: 1px solid #ddd;
+                                    }
+                                    tr:hover {
+                                        background-color: #f5f5f5;
+                                    }
+                                    .node-id {
+                                        font-family: monospace;
+                                        font-size: 12px;
+                                        color: #555;
+                                    }
+                                    .node-address {
+                                        color: #007bff;
+                                        font-weight: 500;
+                                    }
+                                    .no-nodes {
+                                        text-align: center;
+                                        padding: 40px;
+                                        color: #999;
+                                        font-style: italic;
+                                    }
+                                    .online-badge {
+                                        background-color: #28a745;
+                                        color: white;
+                                        padding: 3px 8px;
+                                        border-radius: 4px;
+                                        font-size: 12px;
+                                        font-weight: bold;
+                                    }
+                                    .last-seen {
+                                        font-size: 11px;
+                                        color: #666;
+                                    }
+                                """
+                                )
+                            }
+                        }
+                    }
+                    body {
+                        h1 { +"🥥 Registered Full Nodes" }
+
+                        div(classes = "summary") {
+                            h2 { +"Summary" }
+                            p { +"Total Active Full Nodes: ${fullNodes.size}" }
+                            p { +"Network: Kokonut Blockchain" }
+                            p {
+                                +"Last Updated: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(java.util.Date())}"
+                            }
+                        }
+
+                        if (fullNodes.isEmpty()) {
+                            div(classes = "no-nodes") {
+                                +"No Full Nodes registered yet. Full Nodes will appear here after heartbeat registration."
+                            }
+                        } else {
+                            table {
+                                thead {
+                                    tr {
+                                        th { +"#" }
+                                        th { +"Node ID" }
+                                        th { +"Address" }
+                                        th { +"Last Heartbeat" }
+                                        th { +"Status" }
+                                    }
+                                }
+                                tbody {
+                                    fullNodes.entries.sortedBy { it.key }.forEachIndexed {
+                                            index,
+                                            (address, lastSeen) ->
+                                        val timeDiff = System.currentTimeMillis() - lastSeen
+                                        val minutesAgo = timeDiff / 60000
+
+                                        tr {
+                                            td { +"${index + 1}" }
+                                            td {
+                                                span(classes = "node-id") {
+                                                    +address.split("//").last()
+                                                }
+                                            }
+                                            td { span(classes = "node-address") { +address } }
+                                            td {
+                                                span(classes = "last-seen") {
+                                                    +"${minutesAgo}m ago"
+                                                }
+                                            }
+                                            td { span(classes = "online-badge") { +"🟢 Online" } }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         fun Route.getGenesisBlock() {
@@ -222,13 +357,14 @@ class Router {
         fun Route.getValidators() {
             get("/getValidators") {
                 val validators = BlockChain.validatorPool.getActiveValidators()
-                
+
                 call.respondHtml(HttpStatusCode.OK) {
                     head {
                         title("Active Validators")
                         style {
                             unsafe {
-                                raw("""
+                                raw(
+                                        """
                                     body {
                                         font-family: Arial, sans-serif;
                                         max-width: 1000px;
@@ -280,20 +416,21 @@ class Router {
                                         color: #999;
                                         font-style: italic;
                                     }
-                                """)
+                                """
+                                )
                             }
                         }
                     }
                     body {
                         h1 { +"🥥 Active Validators" }
-                        
+
                         div(classes = "summary") {
                             h2 { +"Summary" }
                             p { +"Total Active Validators: ${validators.size}" }
                             p { +"Total Staked: ${BlockChain.validatorPool.getTotalStaked()} KNT" }
                             p { +"Minimum Stake Required: ${ValidatorPool.MINIMUM_STAKE} KNT" }
                         }
-                        
+
                         if (validators.isEmpty()) {
                             div(classes = "no-validators") {
                                 +"No active validators found. Stake KNT to become a validator!"
@@ -311,26 +448,28 @@ class Router {
                                     }
                                 }
                                 tbody {
-                                    validators.sortedByDescending { it.stakedAmount }.forEachIndexed { index, validator ->
-                                        tr {
-                                            td { +"${index + 1}" }
-                                            td {
-                                                span(classes = "validator-id") {
-                                                    +validator.address
+                                    validators
+                                            .sortedByDescending { it.stakedAmount }
+                                            .forEachIndexed { index, validator ->
+                                                tr {
+                                                    td { +"${index + 1}" }
+                                                    td {
+                                                        span(classes = "validator-id") {
+                                                            +validator.address
+                                                        }
+                                                    }
+                                                    td { +"${validator.stakedAmount} KNT" }
+                                                    td { +"${validator.blocksValidated}" }
+                                                    td { +"${validator.rewardsEarned} KNT" }
+                                                    td {
+                                                        if (validator.isActive) {
+                                                            +"✅ Active"
+                                                        } else {
+                                                            +"❌ Inactive"
+                                                        }
+                                                    }
                                                 }
                                             }
-                                            td { +"${validator.stakedAmount} KNT" }
-                                            td { +"${validator.blocksValidated}" }
-                                            td { +"${validator.rewardsEarned} KNT" }
-                                            td { 
-                                                if (validator.isActive) {
-                                                    +"✅ Active"
-                                                } else {
-                                                    +"❌ Inactive"
-                                                }
-                                            }
-                                        }
-                                    }
                                 }
                             }
                         }
@@ -340,81 +479,87 @@ class Router {
         }
 
         /**
-         * Handshake endpoint for Light Node connection ritual
-         * Returns network information for verification
+         * Handshake endpoint for Light Node connection ritual Returns network information for
+         * verification
          */
         fun Route.handshake() {
             post("/handshake") {
                 try {
                     val request = call.receive<kokonut.core.HandshakeRequest>()
-                    
-                    println("🤝 Handshake request from ${request.nodeType} node (v${request.clientVersion})")
-                    
+
+                    println(
+                            "🤝 Handshake request from ${request.nodeType} node (v${request.clientVersion})"
+                    )
+
                     // Verify public key is provided
                     if (request.publicKey.isBlank()) {
                         println("❌ Handshake rejected: Public key is required")
                         call.respond(
-                            HttpStatusCode.BadRequest,
-                            kokonut.core.HandshakeResponse(
-                                success = false,
-                                message = "Authentication failed: Public key is required for handshake"
-                            )
+                                HttpStatusCode.BadRequest,
+                                kokonut.core.HandshakeResponse(
+                                        success = false,
+                                        message =
+                                                "Authentication failed: Public key is required for handshake"
+                                )
                         )
                         return@post
                     }
-                    
+
                     // Verify protocol compatibility
                     if (request.clientVersion != protocolVersion) {
                         call.respond(
-                            HttpStatusCode.OK,
-                            kokonut.core.HandshakeResponse(
-                                success = false,
-                                message = "Protocol version mismatch. Server: $protocolVersion, Client: ${request.clientVersion}"
-                            )
+                                HttpStatusCode.OK,
+                                kokonut.core.HandshakeResponse(
+                                        success = false,
+                                        message =
+                                                "Protocol version mismatch. Server: $protocolVersion, Client: ${request.clientVersion}"
+                                )
                         )
                         return@post
                     }
-                    
+
                     // Gather network information
                     val genesisBlock = BlockChain.getGenesisBlock()
                     val networkRules = BlockChain.getNetworkRules()
                     val fuelNodes = BlockChain.getFuelNodes()
-                    
-                    val networkInfo = kokonut.core.NetworkInfo(
-                        nodeType = "FULL",
-                        networkId = networkRules.networkId,
-                        genesisHash = genesisBlock.hash,
-                        chainSize = BlockChain.getChainSize(),
-                        protocolVersion = protocolVersion,
-                        totalValidators = BlockChain.validatorPool.getActiveValidators().size,
-                        totalCurrencyVolume = BlockChain.getTotalCurrencyVolume(),
-                        connectedFuelNodes = fuelNodes.size
-                    )
-                    
+
+                    val networkInfo =
+                            kokonut.core.NetworkInfo(
+                                    nodeType = "FULL",
+                                    networkId = networkRules.networkId,
+                                    genesisHash = genesisBlock.hash,
+                                    chainSize = BlockChain.getChainSize(),
+                                    protocolVersion = protocolVersion,
+                                    totalValidators =
+                                            BlockChain.validatorPool.getActiveValidators().size,
+                                    totalCurrencyVolume = BlockChain.getTotalCurrencyVolume(),
+                                    connectedFuelNodes = fuelNodes.size
+                            )
+
                     println("✅ Handshake successful with ${request.nodeType} node")
                     println("   Client Public Key: ${request.publicKey.take(32)}...")
-                    
+
                     call.respond(
-                        HttpStatusCode.OK,
-                        kokonut.core.HandshakeResponse(
-                            success = true,
-                            message = "Handshake successful. Welcome to ${networkRules.networkId}!",
-                            networkInfo = networkInfo
-                        )
+                            HttpStatusCode.OK,
+                            kokonut.core.HandshakeResponse(
+                                    success = true,
+                                    message =
+                                            "Handshake successful. Welcome to ${networkRules.networkId}!",
+                                    networkInfo = networkInfo
+                            )
                     )
                 } catch (e: Exception) {
                     println("❌ Handshake failed: ${e.message}")
                     call.respond(
-                        HttpStatusCode.InternalServerError,
-                        kokonut.core.HandshakeResponse(
-                            success = false,
-                            message = "Handshake failed: ${e.message}"
-                        )
+                            HttpStatusCode.InternalServerError,
+                            kokonut.core.HandshakeResponse(
+                                    success = false,
+                                    message = "Handshake failed: ${e.message}"
+                            )
                     )
                 }
             }
         }
-
 
         fun Route.startValidating() {
             post("/startValidating") {

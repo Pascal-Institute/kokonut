@@ -18,9 +18,12 @@ import kokonut.Policy
 import kokonut.core.Block
 import kokonut.core.BlockChain
 import kokonut.core.BlockChain.Companion.fullNode
+import kokonut.core.HandshakeRequest
 import kokonut.util.Utility.Companion.writeFilePart
 import kokonut.util.Utility.Companion.writePart
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 
@@ -178,9 +181,11 @@ class API {
          */
         fun URL.performHandshake(publicKey: String): kokonut.core.HandshakeResponse {
             if (publicKey.isBlank()) {
-                throw IllegalArgumentException("Public key is required for handshake. Please load your public key first.")
+                throw IllegalArgumentException(
+                        "Public key is required for handshake. Please load your public key first."
+                )
             }
-            
+
             val url = URL("${this}/handshake")
             val conn = url.openConnection() as HttpURLConnection
             conn.requestMethod = "POST"
@@ -191,21 +196,17 @@ class API {
 
             return try {
                 // Create handshake request
-                val request = kokonut.core.HandshakeRequest(
-                    nodeType = "LIGHT",
-                    publicKey = publicKey,
-                    clientVersion = Utility.protocolVersion
-                )
-                
-                val requestJson = Json.encodeToString(
-                    kokonut.core.HandshakeRequest.serializer(),
-                    request
-                )
+                val request =
+                        HandshakeRequest(
+                                nodeType = "LIGHT",
+                                publicKey = publicKey,
+                                clientVersion = Utility.protocolVersion
+                        )
+
+                val requestJson = Json.encodeToString(request)
 
                 // Send request
-                conn.outputStream.use { os ->
-                    os.write(requestJson.toByteArray(Charsets.UTF_8))
-                }
+                conn.outputStream.use { os -> os.write(requestJson.toByteArray(Charsets.UTF_8)) }
 
                 val responseCode = conn.responseCode
 
@@ -224,22 +225,21 @@ class API {
                         Json.decodeFromString(response)
                     } else {
                         kokonut.core.HandshakeResponse(
-                            success = false,
-                            message = "Handshake failed with HTTP code $responseCode"
+                                success = false,
+                                message = "Handshake failed with HTTP code $responseCode"
                         )
                     }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
                 kokonut.core.HandshakeResponse(
-                    success = false,
-                    message = "Handshake error: ${e.message}"
+                        success = false,
+                        message = "Handshake error: ${e.message}"
                 )
             } finally {
                 conn.disconnect()
             }
         }
-
 
         fun URL.getCertified(byteArray: ByteArray, publicKeyFile: File) {
             val boundary = "Boundary-${System.currentTimeMillis()}"
