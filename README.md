@@ -47,6 +47,7 @@ A desktop wallet application for users (built with Compose Desktop).
 ## 🚀 Getting Started
 
 ### Prerequisites
+> **Requirement**: Kokonut requires **Java 17** or higher.
 - **Java JDK 17** or higher
 - **Kotlin 1.9.22** (Included in Gradle settings)
 
