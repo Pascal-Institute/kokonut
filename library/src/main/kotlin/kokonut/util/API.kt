@@ -170,6 +170,77 @@ class API {
             }
         }
 
+        /**
+         * Perform handshake with Full Node to establish connection
+         * @param publicKey REQUIRED public key of the Light Node for authentication
+         * @return HandshakeResponse containing network information
+         * @throws IllegalArgumentException if publicKey is blank
+         */
+        fun URL.performHandshake(publicKey: String): kokonut.core.HandshakeResponse {
+            if (publicKey.isBlank()) {
+                throw IllegalArgumentException("Public key is required for handshake. Please load your public key first.")
+            }
+            
+            val url = URL("${this}/handshake")
+            val conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = "POST"
+            conn.doOutput = true
+            conn.connectTimeout = 10000
+            conn.readTimeout = 10000
+            conn.setRequestProperty("Content-Type", "application/json")
+
+            return try {
+                // Create handshake request
+                val request = kokonut.core.HandshakeRequest(
+                    nodeType = "LIGHT",
+                    publicKey = publicKey,
+                    clientVersion = Utility.protocolVersion
+                )
+                
+                val requestJson = Json.encodeToString(
+                    kokonut.core.HandshakeRequest.serializer(),
+                    request
+                )
+
+                // Send request
+                conn.outputStream.use { os ->
+                    os.write(requestJson.toByteArray(Charsets.UTF_8))
+                }
+
+                val responseCode = conn.responseCode
+
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    val inputStream = conn.inputStream
+                    val reader = BufferedReader(InputStreamReader(inputStream))
+                    val response = reader.use { it.readText() }
+
+                    Json.decodeFromString(response)
+                } else {
+                    // Even on error, try to parse response
+                    val errorStream = conn.errorStream
+                    if (errorStream != null) {
+                        val reader = BufferedReader(InputStreamReader(errorStream))
+                        val response = reader.use { it.readText() }
+                        Json.decodeFromString(response)
+                    } else {
+                        kokonut.core.HandshakeResponse(
+                            success = false,
+                            message = "Handshake failed with HTTP code $responseCode"
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                kokonut.core.HandshakeResponse(
+                    success = false,
+                    message = "Handshake error: ${e.message}"
+                )
+            } finally {
+                conn.disconnect()
+            }
+        }
+
+
         fun URL.getCertified(byteArray: ByteArray, publicKeyFile: File) {
             val boundary = "Boundary-${System.currentTimeMillis()}"
             val connection = this.openConnection() as HttpURLConnection

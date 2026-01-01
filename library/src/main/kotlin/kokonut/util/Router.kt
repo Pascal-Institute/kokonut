@@ -218,6 +218,83 @@ class Router {
             }
         }
 
+        /**
+         * Handshake endpoint for Light Node connection ritual
+         * Returns network information for verification
+         */
+        fun Route.handshake() {
+            post("/handshake") {
+                try {
+                    val request = call.receive<kokonut.core.HandshakeRequest>()
+                    
+                    println("🤝 Handshake request from ${request.nodeType} node (v${request.clientVersion})")
+                    
+                    // Verify public key is provided
+                    if (request.publicKey.isBlank()) {
+                        println("❌ Handshake rejected: Public key is required")
+                        call.respond(
+                            HttpStatusCode.BadRequest,
+                            kokonut.core.HandshakeResponse(
+                                success = false,
+                                message = "Authentication failed: Public key is required for handshake"
+                            )
+                        )
+                        return@post
+                    }
+                    
+                    // Verify protocol compatibility
+                    if (request.clientVersion != protocolVersion) {
+                        call.respond(
+                            HttpStatusCode.OK,
+                            kokonut.core.HandshakeResponse(
+                                success = false,
+                                message = "Protocol version mismatch. Server: $protocolVersion, Client: ${request.clientVersion}"
+                            )
+                        )
+                        return@post
+                    }
+                    
+                    // Gather network information
+                    val genesisBlock = BlockChain.getGenesisBlock()
+                    val networkRules = BlockChain.getNetworkRules()
+                    val fuelNodes = BlockChain.getFuelNodes()
+                    
+                    val networkInfo = kokonut.core.NetworkInfo(
+                        nodeType = "FULL",
+                        networkId = networkRules.networkId,
+                        genesisHash = genesisBlock.hash,
+                        chainSize = BlockChain.getChainSize(),
+                        protocolVersion = protocolVersion,
+                        totalValidators = BlockChain.validatorPool.getActiveValidators().size,
+                        totalCurrencyVolume = BlockChain.getTotalCurrencyVolume(),
+                        connectedFuelNodes = fuelNodes.size
+                    )
+                    
+                    println("✅ Handshake successful with ${request.nodeType} node")
+                    println("   Client Public Key: ${request.publicKey.take(32)}...")
+                    
+                    call.respond(
+                        HttpStatusCode.OK,
+                        kokonut.core.HandshakeResponse(
+                            success = true,
+                            message = "Handshake successful. Welcome to ${networkRules.networkId}!",
+                            networkInfo = networkInfo
+                        )
+                    )
+                } catch (e: Exception) {
+                    println("❌ Handshake failed: ${e.message}")
+                    call.respond(
+                        HttpStatusCode.InternalServerError,
+                        kokonut.core.HandshakeResponse(
+                            success = false,
+                            message = "Handshake failed: ${e.message}"
+                        )
+                    )
+                }
+            }
+        }
+
+
         fun Route.startValidating() {
             post("/startValidating") {
                 val keyPath = "/app/key"
