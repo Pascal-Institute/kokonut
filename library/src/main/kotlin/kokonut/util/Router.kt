@@ -78,7 +78,10 @@ class Router {
         private fun notifyFullNodesToSyncFrom(sourceAddress: String) {
             try {
                 val fuelNode = BlockChain.getPrimaryFuelNode()
-                val peers = fuelNode.getFullNodes().map { it.address }.filter { it.isNotBlank() }
+                val fuelNodeAddress = fuelNode.toString().trimEnd('/')
+                val peers =
+                        (fuelNode.getFullNodes().map { it.address } + fuelNodeAddress)
+                                .filter { it.isNotBlank() }
                 val size = BlockChain.getChainSize()
                 val id = Utility.calculateHash(sourceAddress.hashCode().toLong())
 

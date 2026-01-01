@@ -15,6 +15,7 @@ import kokonut.util.Router.Companion.getFullNodesFromHeartbeat
 import kokonut.util.Router.Companion.getGenesisBlock
 import kokonut.util.Router.Companion.getPolicy
 import kokonut.util.Router.Companion.heartbeat
+import kokonut.util.Router.Companion.propagate
 import kokonut.util.Router.Companion.root
 import kokonut.util.Router.Companion.transactionsDashboard
 
@@ -58,6 +59,7 @@ fun main() {
                     getGenesisBlock()
                     getPolicy()
                     getChain()
+                    propagate()
                     transactionsDashboard()
                 }
             }
