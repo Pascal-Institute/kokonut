@@ -16,6 +16,8 @@ class BlockChain {
         const val TICKER = "KNT"
         private const val TREASURY_ADDRESS_ENV = "KOKONUT_TREASURY_ADDRESS"
         private const val DEFAULT_TREASURY_ADDRESS = "KOKONUT_TREASURY"
+        private const val STAKE_VAULT_ADDRESS_ENV = "KOKONUT_STAKE_VAULT_ADDRESS"
+        private const val DEFAULT_STAKE_VAULT_ADDRESS = "KOKONUT_STAKE_VAULT"
         val database by lazy { SQLite() }
 
         // Known peer for bootstrapping
@@ -114,6 +116,11 @@ class BlockChain {
             fun getTreasuryAddress(): String {
                 return System.getenv(TREASURY_ADDRESS_ENV)?.takeIf { it.isNotBlank() }
                     ?: DEFAULT_TREASURY_ADDRESS
+            }
+
+            fun getStakeVaultAddress(): String {
+                return System.getenv(STAKE_VAULT_ADDRESS_ENV)?.takeIf { it.isNotBlank() }
+                    ?: DEFAULT_STAKE_VAULT_ADDRESS
             }
 
             private fun hasGenesisTreasuryMint(chain: List<Block>): Boolean {
@@ -368,14 +375,15 @@ class BlockChain {
 
         fun getTotalCurrencyVolume(): Double {
             val chain = cachedChain ?: emptyList()
-            val rewards = chain.sumOf { it.data.reward }
             val genesisMinted =
                     chain.sumOf { block ->
                         block.data.transactions
                                 .filter { it.transaction == "GENESIS_MINT" }
                                 .sumOf { it.remittance }
                     }
-            return truncate(rewards + genesisMinted)
+            // B-model: rewards are treasury-paid transfers (not inflation), so total supply is
+            // determined by genesis/external mints.
+            return truncate(genesisMinted)
         }
 
         /**
@@ -451,11 +459,35 @@ class BlockChain {
             val previousHash = lastBlock.hash
             val timestamp = System.currentTimeMillis()
 
-            // Calculate reward (transaction fees in PoS, not block rewards)
-            data.reward = Utility.setReward(index) * ValidatorPool.VALIDATOR_REWARD_PERCENTAGE
+            // Calculate validator reward (paid from treasury as an on-chain tx)
+            val rewardAmount = Utility.setReward(index) * ValidatorPool.VALIDATOR_REWARD_PERCENTAGE
+            val treasuryAddress = getTreasuryAddress()
+            val treasuryBalance = getTreasuryBalance()
+
+            val rewardTx =
+                    if (treasuryBalance >= rewardAmount && rewardAmount > 0.0) {
+                        Transaction(
+                                transaction = ValidatorPool.VALIDATOR_REWARD_TX,
+                                sender = treasuryAddress,
+                                receiver = validatorAddress,
+                                remittance = truncate(rewardAmount),
+                                commission = 0.0
+                        )
+                    } else {
+                        null
+                    }
+
+            data.reward = 0.0
+
+            val rewardTransactions =
+                    if (rewardTx != null) {
+                        data.transactions + rewardTx
+                    } else {
+                        data.transactions
+                    }
 
             // Set validator address in data (critical for validator tracking)
-            val validatedData = data.copy(validator = validatorAddress)
+            val validatedData = data.copy(validator = validatorAddress, transactions = rewardTransactions)
 
             // Create validator signature to prove block authenticity
             val blockData = "$version$index$previousHash$timestamp$validatedData"
@@ -475,11 +507,8 @@ class BlockChain {
 
             validationBlock.hash = validationBlock.calculateHash()
 
-            // Reward the validator
-            validatorPool.rewardValidator(validatorAddress, data.reward)
-
             println("✅ Block #$index validated by: $validatorAddress")
-            println("   Reward: ${data.reward} KNT")
+            println("   Reward: ${rewardTx?.remittance ?: 0.0} KNT")
             println("   Total Validators: ${validatorPool.getActiveValidators().size}")
 
             wallet.validationState = ValidatorState.VALIDATED

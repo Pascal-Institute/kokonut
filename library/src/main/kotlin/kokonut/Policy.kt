@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Policy(
         val version: Int,
-        val minimumStake: Double = 100.0, // Minimum KNT to become validator
+        val minimumStake: Double = 1.0, // Minimum KNT to become validator
 ) {
     fun isValid(block: Block): Boolean {
         return (version == block.version)

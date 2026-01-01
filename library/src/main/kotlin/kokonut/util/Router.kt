@@ -565,8 +565,8 @@ class Router {
 
         fun Route.getPolicy() {
             get("/getPolicy") {
-                // Default minimum stake is 100.0 KNT
-                call.respond(Policy(protocolVersion, 100.0))
+                val minimumStake = BlockChain.getNetworkRules().minFullStake
+                call.respond(Policy(protocolVersion, minimumStake))
             }
         }
 
@@ -904,6 +904,16 @@ class Router {
                 val validatorAddress =
                         Utility.calculateHash(Wallet.loadPublicKey(publicKeyFile.path))
 
+                val policy = BlockChain.getPrimaryFuelNode().getPolicy()
+                val validator = BlockChain.validatorPool.getValidator(validatorAddress)
+                if (validator == null || !validator.isActive || validator.stakedAmount < policy.minimumStake) {
+                    call.respond(
+                        HttpStatusCode.BadRequest,
+                        "Insufficient stake. Required: ${policy.minimumStake} KNT"
+                    )
+                    return@post
+                }
+
                 validatorSessions.add(
                         ValidatorSession(
                                 validatorAddress,
@@ -917,6 +927,118 @@ class Router {
 
                 validatorSessions.find { it.validatorAddress == validatorAddress }!!
                         .validationState = ValidatorState.VALIDATING
+            }
+        }
+
+        fun Route.stakeLock() {
+            post("/stakeLock") {
+                val keyPath = "/app/key"
+                Utility.createDirectory(keyPath)
+
+                val multipart = call.receiveMultipart()
+                var publicKeyFile: File? = null
+                var amount: Double? = null
+                var timestamp: Long? = null
+                var signatureBase64: String? = null
+
+                multipart.forEachPart { part ->
+                    when (part) {
+                        is PartData.FormItem -> {
+                            when (part.name) {
+                                "amount" -> amount = part.value.toDoubleOrNull()
+                                "timestamp" -> timestamp = part.value.toLongOrNull()
+                                "signature" -> signatureBase64 = part.value
+                            }
+                        }
+                        is PartData.FileItem -> {
+                            if (part.name == "public_key") {
+                                val fileBytes = part.streamProvider().use { it.readBytes() }
+                                publicKeyFile =
+                                        part.originalFileName?.let { original -> File(keyPath, original) }
+                                publicKeyFile!!.writeBytes(fileBytes)
+                            }
+                        }
+                        else -> {}
+                    }
+                    part.dispose()
+                }
+
+                if (publicKeyFile == null || amount == null || timestamp == null || signatureBase64.isNullOrBlank()) {
+                    call.respond(HttpStatusCode.BadRequest, "Missing public_key, amount, timestamp, or signature")
+                    Paths.get(keyPath).toFile().deleteRecursively()
+                    return@post
+                }
+
+                val policy = BlockChain.getPrimaryFuelNode().getPolicy()
+                if (amount!! < policy.minimumStake) {
+                    call.respond(
+                            HttpStatusCode.BadRequest,
+                            "Insufficient stake. Required: ${policy.minimumStake} KNT"
+                    )
+                    Paths.get(keyPath).toFile().deleteRecursively()
+                    return@post
+                }
+
+                val publicKey: PublicKey = Wallet.loadPublicKey(publicKeyFile!!.path)
+                val validatorAddress = Utility.calculateHash(publicKey)
+
+                val message = "STAKE_LOCK|$validatorAddress|${amount!!}|${timestamp!!}"
+                val signatureBytes = try {
+                    java.util.Base64.getDecoder().decode(signatureBase64)
+                } catch (e: Exception) {
+                    null
+                }
+
+                if (signatureBytes == null || !Wallet.verifySignature(message.toByteArray(), signatureBytes, publicKey)) {
+                    call.respond(HttpStatusCode.Unauthorized, "Invalid signature")
+                    Paths.get(keyPath).toFile().deleteRecursively()
+                    return@post
+                }
+
+                val balance = BlockChain.getBalance(validatorAddress)
+                if (balance < amount!!) {
+                    call.respond(HttpStatusCode.BadRequest, "Insufficient balance. Balance: $balance KNT")
+                    Paths.get(keyPath).toFile().deleteRecursively()
+                    return@post
+                }
+
+                val stakeVault = BlockChain.getStakeVaultAddress()
+                val lastBlock = BlockChain.getLastBlock()
+                val stakeTx = Transaction(
+                        transaction = "STAKE_LOCK",
+                        sender = validatorAddress,
+                        receiver = stakeVault,
+                        remittance = amount!!,
+                        commission = 0.0
+                )
+                val stakeData =
+                        Data(
+                                reward = 0.0,
+                                ticker = "KNT",
+                                validator = "STAKE_LOCK",
+                                transactions = listOf(stakeTx),
+                                comment = "Stake lock: $validatorAddress",
+                                type = BlockDataType.STAKE_LOCK
+                        )
+                val stakeBlock =
+                        Block(
+                                version = protocolVersion,
+                                index = lastBlock.index + 1,
+                                previousHash = lastBlock.hash,
+                                timestamp = System.currentTimeMillis(),
+                                data = stakeData,
+                                validatorSignature = "",
+                                hash = ""
+                        )
+                stakeBlock.hash = stakeBlock.calculateHash()
+
+                BlockChain.database.insert(stakeBlock)
+                BlockChain.refreshFromDatabase()
+                notifyFullNodesToSyncFrom(advertisedSelfAddress(call))
+
+                call.respond(HttpStatusCode.OK, "Stake locked: ${amount!!} KNT")
+
+                Paths.get(keyPath).toFile().deleteRecursively()
             }
         }
 

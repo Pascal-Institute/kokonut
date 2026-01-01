@@ -7,11 +7,11 @@ Kokonut is a lightweight and scalable blockchain framework written in Kotlin. De
 ## 🌟 Key Features
 
 - **⚡ Proof of Stake (PoS)**: Energy-efficient consensus mechanism - no wasteful mining
-- **🔒 Validator Staking**: Stake KNT tokens to participate in block validation
+- **🔒 StakeVault Staking**: Stake KNT by locking funds to the on-chain stakeVault
 - **📊 Stake-Weighted Selection**: Validators selected probabilistically based on stake amount
 - **🌐 IPv6 P2P**: Direct peer-to-peer connectivity without NAT/port forwarding
-- **🎯 Minimal Rewards**: Transaction fee-based rewards (1% to validators)
-- **🎁 Validator Onboarding Reward**: On first validator registration, the network records a 2 KNT onboarding payout (1 KNT to the Full Node reward receiver, 1 KNT to the validator)
+- **🎯 Treasury-Paid Rewards (B-model)**: Validator rewards are recorded as treasury-paid on-chain transactions
+- **🎁 Validator Onboarding Reward**: On first successful Light Node connect, the network records a 2 KNT onboarding payout (1 KNT to the Full Node reward receiver, 1 KNT to the validator)
 
 ## 📚 Project Structure
 
@@ -40,7 +40,7 @@ Acts as the network entry point and provides Node Discovery services.
 The core node that maintains and operates the actual blockchain network.
 
 - **Validation**: Validates and creates new blocks using Proof of Stake (no energy-intensive mining).
-- **Staking**: Nodes stake KNT to become validators.
+- **Staking**: Validators stake by locking KNT to the stakeVault (on-chain).
 - **Block Production**: Selected validators create blocks based on stake weight.
 - **Propagation**: Propagates new blocks to other nodes.
 - **API Server**: Provides an HTTP API for external monitoring of chain status.
@@ -50,7 +50,7 @@ The core node that maintains and operates the actual blockchain network.
 A desktop wallet application for users (built with Compose Desktop).
 
 - **Wallet Management**: Login via `.pem` key files.
-- **Monitoring**: Check mining status and wallet address (Miner ID).
+- **Monitoring**: Check validating status and wallet address (Validator ID).
 
 ---
 
@@ -103,6 +103,8 @@ Optional:
 
 - Set `KOKONUT_FULLNODE_REWARD_RECEIVER` to control where the onboarding reward is credited for the Full Node (defaults to the Full Node's own URL as seen by the server).
 - Set `KOKONUT_ADVERTISE_ADDRESS` to the publicly reachable base URL for this Full Node (used as the source address for propagation so other Full Nodes can pull your chain correctly).
+- Set `KOKONUT_TREASURY_ADDRESS` to override the treasury address (default: `KOKONUT_TREASURY`).
+- Set `KOKONUT_STAKE_VAULT_ADDRESS` to override the stake vault address (default: `KOKONUT_STAKE_VAULT`).
 
 #### 3. Run Light Node (Wallet)
 
@@ -120,19 +122,20 @@ Full Nodes and the Fuel Node interact via HTTP APIs.
 
 ### Full Node API
 
-| Method | Endpoint                  | Description                                                      |
-| :----: | :------------------------ | :--------------------------------------------------------------- |
-| `GET`  | `/`                       | Node status and information dashboard (HTML)                     |
-| `POST` | `/handshake`              | Client handshake (returns network info)                          |
-| `GET`  | `/getLastBlock`           | Get the last block of the current chain                          |
-| `GET`  | `/getChain`               | Get the entire blockchain data                                   |
-| `GET`  | `/isValid`                | Check the integrity of the local blockchain                      |
-| `GET`  | `/getTotalCurrencyVolume` | Get the total supply of KNT                                      |
-| `GET`  | `/getReward`              | Get the current reward policy value                              |
-| `GET`  | `/getValidators`          | Get the current validator set                                    |
-| `POST` | `/startValidating`        | Register a validator session (triggers 1-time onboarding reward) |
-| `POST` | `/stopValidating`         | Stop validating session                                          |
-| `POST` | `/addBlock`               | Submit a validated block (network propagation)                   |
+| Method | Endpoint                  | Description                                                    |
+| :----: | :------------------------ | :------------------------------------------------------------- |
+| `GET`  | `/`                       | Node status and information dashboard (HTML)                   |
+| `POST` | `/handshake`              | Client handshake (returns network info)                        |
+| `GET`  | `/getLastBlock`           | Get the last block of the current chain                        |
+| `GET`  | `/getChain`               | Get the entire blockchain data                                 |
+| `GET`  | `/isValid`                | Check the integrity of the local blockchain                    |
+| `GET`  | `/getTotalCurrencyVolume` | Get the total supply of KNT                                    |
+| `GET`  | `/getReward`              | Get the current reward policy value                            |
+| `GET`  | `/getValidators`          | Get the current validator set                                  |
+| `POST` | `/stakeLock`              | Lock stake to stakeVault (creates on-chain `STAKE_LOCK` block) |
+| `POST` | `/startValidating`        | Register a validator session (requires stake >= minimum)       |
+| `POST` | `/stopValidating`         | Stop validating session                                        |
+| `POST` | `/addBlock`               | Submit a validated block (network propagation)                 |
 
 ### Fuel Node API
 
@@ -148,14 +151,25 @@ Full Nodes and the Fuel Node interact via HTTP APIs.
 
 ## 🎁 Validator Onboarding Reward (1-time)
 
-When a validator registers for the first time via `POST /startValidating`, the Full Node appends a `VALIDATOR_ONBOARDING` block to the chain and records two onboarding transactions:
+On the first successful Light Node connect (`POST /handshake` from a LIGHT client), the Full Node appends a `VALIDATOR_ONBOARDING` block to the chain and records two onboarding transactions:
 
 - 1 KNT to the Full Node reward receiver (`KOKONUT_FULLNODE_REWARD_RECEIVER`)
 - 1 KNT to the validator address
 
-The "2 KNT withdrawn from Fuel Node" is represented as the sender field in those transactions using the primary Fuel Node address.
+These payouts are funded by the treasury (`KOKONUT_TREASURY_ADDRESS`).
 
 **Persistence**: This onboarding event is stored in `kovault.db` (SQLite). If you keep `kovault.db` via Docker volume mounts, the 1-time rule survives container rebuilds.
+
+---
+
+## 🔒 Staking (stakeVault lock)
+
+To become an active validator, you must lock at least the network minimum stake (currently **1 KNT**) to the stakeVault address.
+
+- Full Nodes expose `POST /stakeLock`, which appends a `STAKE_LOCK` block containing an on-chain transfer from your validator address to the stakeVault.
+- Light Node "Start Staking" will automatically call `POST /stakeLock` (if needed) before starting validation.
+
+**Note**: In the current model, validator stake and rewards are derived from the blockchain history (the chain is the source of truth).
 
 ---
 

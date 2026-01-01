@@ -17,6 +17,7 @@ import kokonut.util.Router.Companion.handshake
 import kokonut.util.Router.Companion.isValid
 import kokonut.util.Router.Companion.root
 import kokonut.util.Router.Companion.startValidating
+import kokonut.util.Router.Companion.stakeLock
 import kokonut.util.Router.Companion.stopValidating
 import kokonut.util.Router.Companion.transactionsDashboard
 import kokonut.util.Utility
@@ -57,6 +58,7 @@ fun main() {
                     getChain()
                     transactionsDashboard()
                     getValidators()
+                    stakeLock()
                     startValidating()
                     addBlock()
                     stopValidating()

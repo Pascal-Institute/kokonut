@@ -14,6 +14,7 @@ import java.io.IOException
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.Base64
 import kokonut.Policy
 import kokonut.core.Block
 import kokonut.core.BlockChain
@@ -307,6 +308,78 @@ class API {
                     connection.inputStream.bufferedReader().use { reader ->
                         val response = reader.readText()
                         println("Response: $response, Start Validating")
+                    }
+                    true
+                } else {
+                    println("Failed with HTTP error code: $responseCode")
+                    connection.errorStream?.bufferedReader()?.use { reader ->
+                        val errorResponse = reader.readText()
+                        println("Error Response: $errorResponse")
+                    }
+                    false
+                }
+            } catch (e: IOException) {
+                e.printStackTrace()
+                false
+            } finally {
+                connection.disconnect()
+            }
+        }
+
+        fun URL.stakeLock(wallet: Wallet, publicKeyFile: File, amount: Double): Boolean {
+            val boundary = "Boundary-${System.currentTimeMillis()}"
+            val connection = URL("${this}/stakeLock").openConnection() as HttpURLConnection
+            connection.requestMethod = "POST"
+            connection.doOutput = true
+            connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
+            connection.setRequestProperty("Accept", "application/json")
+
+            val timestamp = System.currentTimeMillis()
+            val validatorAddress = wallet.validatorAddress
+            val message = "STAKE_LOCK|$validatorAddress|$amount|$timestamp"
+            val signatureBytes = Wallet.signData(message.toByteArray(), wallet.privateKey)
+            val signatureBase64 = Base64.getEncoder().encodeToString(signatureBytes)
+
+            return try {
+                connection.outputStream.use { os ->
+                    writePart(
+                            os,
+                            boundary,
+                            "amount",
+                            "text/plain; charset=UTF-8",
+                            amount.toString().toByteArray(Charsets.UTF_8)
+                    )
+                    writePart(
+                            os,
+                            boundary,
+                            "timestamp",
+                            "text/plain; charset=UTF-8",
+                            timestamp.toString().toByteArray(Charsets.UTF_8)
+                    )
+                    writePart(
+                            os,
+                            boundary,
+                            "signature",
+                            "text/plain; charset=UTF-8",
+                            signatureBase64.toByteArray(Charsets.UTF_8)
+                    )
+
+                    writeFilePart(
+                            os,
+                            boundary,
+                            "public_key",
+                            "application/x-pem-file",
+                            publicKeyFile
+                    )
+
+                    os.write("--$boundary--\r\n".toByteArray(Charsets.UTF_8))
+                }
+
+                val responseCode = connection.responseCode
+                if (responseCode in 200..299) {
+                    connection.inputStream.bufferedReader().use { reader ->
+                        val response = reader.readText()
+                        println("Response: $response, Stake Lock")
                     }
                     true
                 } else {

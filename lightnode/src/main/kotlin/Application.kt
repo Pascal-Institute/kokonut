@@ -32,6 +32,7 @@ import kokonut.core.NetworkInfo
 import kokonut.state.ValidatorState
 import kokonut.util.API.Companion.addBlock
 import kokonut.util.API.Companion.performHandshake
+import kokonut.util.API.Companion.stakeLock
 import kokonut.util.API.Companion.startValidating
 import kokonut.util.NodeType
 import kokonut.util.Wallet
@@ -333,6 +334,24 @@ fun App() {
                                         )
 
                                 val url = URL(peerAddress)
+                                val requiredStake = BlockChain.getNetworkRules().minFullStake
+                                val currentStake =
+                                    BlockChain.validatorPool
+                                        .getValidator(wallet.validatorAddress)
+                                        ?.stakedAmount
+                                        ?: 0.0
+
+                                if (currentStake < requiredStake) {
+                                    val toLock = requiredStake - currentStake
+                                    if (!url.stakeLock(wallet, File(selectedPublicKeyFilePath), toLock)) {
+                                    errorMessage = "❌ Stake lock failed"
+                                    return@Button
+                                    }
+
+                                    // Sync to observe the newly appended stake lock block.
+                                    BlockChain.loadChainFromFullNode(url)
+                                }
+
                                 if (url.startValidating(File(selectedPublicKeyFilePath))) {
                                     validationState = ValidatorState.VALIDATING
                                     connectionMessage = "✅ Staking Started! Validating blocks..."
