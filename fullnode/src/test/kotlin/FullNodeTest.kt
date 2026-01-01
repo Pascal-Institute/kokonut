@@ -19,7 +19,6 @@ class FullNodeTest {
 
                 val block =
                         Block(
-                                version = 1,
                                 index = 1,
                                 previousHash = "0000000000000000",
                                 timestamp = System.currentTimeMillis(),

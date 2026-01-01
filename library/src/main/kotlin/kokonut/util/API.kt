@@ -197,12 +197,7 @@ class API {
 
             return try {
                 // Create handshake request
-                val request =
-                        HandshakeRequest(
-                                nodeType = "LIGHT",
-                                publicKey = publicKey,
-                                clientVersion = Utility.protocolVersion
-                        )
+                val request = HandshakeRequest(nodeType = "LIGHT", publicKey = publicKey)
 
                 val requestJson = Json.encodeToString(request)
 

@@ -168,7 +168,8 @@ fun App() {
                                 // Force sync from the connected Full Node so the local DB sees
                                 // any new blocks (e.g., onboarding) created during handshake.
                                 BlockChain.loadChainFromFullNode(url)
-                                networkInfo = networkInfo?.copy(chainSize = BlockChain.getChainSize())
+                                networkInfo =
+                                        networkInfo?.copy(chainSize = BlockChain.getChainSize())
 
                                 // Auto-load validator address
                                 validatorAddress = wallet.validatorAddress
@@ -220,7 +221,6 @@ fun App() {
                     InfoRow("Network ID", networkInfo!!.networkId)
                     InfoRow("Genesis Hash", networkInfo!!.genesisHash.take(16) + "...")
                     InfoRow("Chain Size", "${networkInfo!!.chainSize} blocks")
-                    InfoRow("Protocol Version", "v${networkInfo!!.protocolVersion}")
                     InfoRow("Total Validators", "${networkInfo!!.totalValidators}")
                     InfoRow("Total KNT", "${networkInfo!!.totalCurrencyVolume}")
                     InfoRow("Fuel Nodes", "${networkInfo!!.connectedFuelNodes}")
@@ -336,16 +336,22 @@ fun App() {
                                 val url = URL(peerAddress)
                                 val requiredStake = BlockChain.getNetworkRules().minFullStake
                                 val currentStake =
-                                    BlockChain.validatorPool
-                                        .getValidator(wallet.validatorAddress)
-                                        ?.stakedAmount
-                                        ?: 0.0
+                                        BlockChain.validatorPool.getValidator(
+                                                        wallet.validatorAddress
+                                                )
+                                                ?.stakedAmount
+                                                ?: 0.0
 
                                 if (currentStake < requiredStake) {
                                     val toLock = requiredStake - currentStake
-                                    if (!url.stakeLock(wallet, File(selectedPublicKeyFilePath), toLock)) {
-                                    errorMessage = "❌ Stake lock failed"
-                                    return@Button
+                                    if (!url.stakeLock(
+                                                    wallet,
+                                                    File(selectedPublicKeyFilePath),
+                                                    toLock
+                                            )
+                                    ) {
+                                        errorMessage = "❌ Stake lock failed"
+                                        return@Button
                                     }
 
                                     // Sync to observe the newly appended stake lock block.

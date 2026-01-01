@@ -7,6 +7,5 @@ fun main() {
     BlockChain.initialize(NodeType.FUEL)
 
     val policy = BlockChain.getPrimaryFuelNode().getPolicy()
-    println("Policy Version: ${policy.version}")
     println("Minimum Stake: ${policy.minimumStake} KNT")
 }

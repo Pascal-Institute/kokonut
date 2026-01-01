@@ -7,7 +7,6 @@ import kokonut.util.API.Companion.getChain
 import kokonut.util.API.Companion.getFullNodes
 import kokonut.util.API.Companion.getGenesisBlock
 import kokonut.util.FullNode
-import kokonut.util.Utility.Companion.protocolVersion
 import kokonut.util.Utility.Companion.truncate
 import kotlinx.coroutines.runBlocking
 
@@ -95,12 +94,12 @@ class BlockChain {
 
                 // Record initial treasury funding (external supply injection)
                 val mintBlock =
-                    GenesisGenerator.createGenesisTreasuryMintBlock(
-                        treasuryAddress = getTreasuryAddress(),
-                        previousHash = genesis.hash,
-                        index = 1,
-                        amount = GenesisGenerator.GENESIS_TREASURY_MINT_AMOUNT
-                    )
+                        GenesisGenerator.createGenesisTreasuryMintBlock(
+                                treasuryAddress = getTreasuryAddress(),
+                                previousHash = genesis.hash,
+                                index = 1,
+                                amount = GenesisGenerator.GENESIS_TREASURY_MINT_AMOUNT
+                        )
                 database.insert(mintBlock)
 
                 refreshFromDatabase()
@@ -113,59 +112,59 @@ class BlockChain {
             }
         }
 
-            fun getTreasuryAddress(): String {
-                return System.getenv(TREASURY_ADDRESS_ENV)?.takeIf { it.isNotBlank() }
+        fun getTreasuryAddress(): String {
+            return System.getenv(TREASURY_ADDRESS_ENV)?.takeIf { it.isNotBlank() }
                     ?: DEFAULT_TREASURY_ADDRESS
-            }
+        }
 
-            fun getStakeVaultAddress(): String {
-                return System.getenv(STAKE_VAULT_ADDRESS_ENV)?.takeIf { it.isNotBlank() }
+        fun getStakeVaultAddress(): String {
+            return System.getenv(STAKE_VAULT_ADDRESS_ENV)?.takeIf { it.isNotBlank() }
                     ?: DEFAULT_STAKE_VAULT_ADDRESS
-            }
+        }
 
-            private fun hasGenesisTreasuryMint(chain: List<Block>): Boolean {
-                return chain.any { block ->
+        private fun hasGenesisTreasuryMint(chain: List<Block>): Boolean {
+            return chain.any { block ->
                 block.data.transactions.any { tx ->
                     tx.transaction == "GENESIS_MINT" && tx.receiver == getTreasuryAddress()
                 }
-                }
             }
+        }
 
-            /**
-             * Ensures the Genesis treasury mint block exists exactly once.
-             *
-             * Guardrails:
-             * - Never inserts if already present.
-             * - Only auto-inserts when the chain is effectively fresh (Genesis-only).
-             */
-            private fun ensureGenesisTreasuryMintIfNeeded() {
-                val chain = cachedChain ?: emptyList()
-                if (chain.isEmpty()) return
-                if (hasGenesisTreasuryMint(chain)) return
+        /**
+         * Ensures the Genesis treasury mint block exists exactly once.
+         *
+         * Guardrails:
+         * - Never inserts if already present.
+         * - Only auto-inserts when the chain is effectively fresh (Genesis-only).
+         */
+        private fun ensureGenesisTreasuryMintIfNeeded() {
+            val chain = cachedChain ?: emptyList()
+            if (chain.isEmpty()) return
+            if (hasGenesisTreasuryMint(chain)) return
 
-                // Only safe to auto-mutate a brand-new chain.
-                if (chain.size != 1L.toInt() || chain.first().index != 0L) {
+            // Only safe to auto-mutate a brand-new chain.
+            if (chain.size != 1L.toInt() || chain.first().index != 0L) {
                 println(
-                    "⚠️ Genesis treasury mint is missing but chain is not fresh; skipping auto-insert to avoid rewriting history."
+                        "⚠️ Genesis treasury mint is missing but chain is not fresh; skipping auto-insert to avoid rewriting history."
                 )
                 return
-                }
+            }
 
-                val genesis = chain.first()
-                val mintBlock =
+            val genesis = chain.first()
+            val mintBlock =
                     GenesisGenerator.createGenesisTreasuryMintBlock(
-                        treasuryAddress = getTreasuryAddress(),
-                        previousHash = genesis.hash,
-                        index = 1,
-                        amount = GenesisGenerator.GENESIS_TREASURY_MINT_AMOUNT
+                            treasuryAddress = getTreasuryAddress(),
+                            previousHash = genesis.hash,
+                            index = 1,
+                            amount = GenesisGenerator.GENESIS_TREASURY_MINT_AMOUNT
                     )
 
-                database.insert(mintBlock)
-                refreshFromDatabase()
-                println(
+            database.insert(mintBlock)
+            refreshFromDatabase()
+            println(
                     "🏦 Inserted one-time Genesis treasury mint: ${GenesisGenerator.GENESIS_TREASURY_MINT_AMOUNT} KNT -> ${getTreasuryAddress()}"
-                )
-            }
+            )
+        }
 
         /**
          * Bootstrap from a known peer (Peer Discovery) Downloads Genesis and blockchain, then scans
@@ -377,9 +376,9 @@ class BlockChain {
             val chain = cachedChain ?: emptyList()
             val genesisMinted =
                     chain.sumOf { block ->
-                        block.data.transactions
-                                .filter { it.transaction == "GENESIS_MINT" }
-                                .sumOf { it.remittance }
+                        block.data.transactions.filter { it.transaction == "GENESIS_MINT" }.sumOf {
+                            it.remittance
+                        }
                     }
             // B-model: rewards are treasury-paid transfers (not inflation), so total supply is
             // determined by genesis/external mints.
@@ -454,7 +453,6 @@ class BlockChain {
 
             val lastBlock = getLastBlock()
 
-            val version = protocolVersion
             val index = lastBlock.index + 1
             val previousHash = lastBlock.hash
             val timestamp = System.currentTimeMillis()
@@ -487,20 +485,20 @@ class BlockChain {
                     }
 
             // Set validator address in data (critical for validator tracking)
-            val validatedData = data.copy(validator = validatorAddress, transactions = rewardTransactions)
+            val validatedData =
+                    data.copy(validator = validatorAddress, transactions = rewardTransactions)
 
             // Create validator signature to prove block authenticity
-            val blockData = "$version$index$previousHash$timestamp$validatedData"
+            val blockData = "$index$previousHash$timestamp$validatedData"
             val signature = Wallet.signData(blockData.toByteArray(), wallet.privateKey)
             val validatorSignature = signature.fold("") { str, it -> str + "%02x".format(it) }
 
             val validationBlock =
                     Block(
-                            version = version,
                             index = index,
                             previousHash = previousHash,
                             timestamp = timestamp,
-                            data = validatedData,  // Use validatedData with validator set
+                            data = validatedData, // Use validatedData with validator set
                             validatorSignature = validatorSignature,
                             hash = ""
                     )
@@ -515,7 +513,6 @@ class BlockChain {
 
             return validationBlock
         }
-
 
         fun getChain(): MutableList<Block> {
             return database.fetch()

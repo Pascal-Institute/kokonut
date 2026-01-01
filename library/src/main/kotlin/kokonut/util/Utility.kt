@@ -27,9 +27,6 @@ class Utility {
         val libraryVersion: String
             get() = properties.getProperty("kokonut_version", "0.0.0")
 
-        val protocolVersion: Int
-            get() = libraryVersion.split(".")[majorIndex].toInt()
-
         fun checkHealth(fullNodes: MutableList<FullNode>) {
             val timer = Timer()
             timer.scheduleAtFixedRate(
@@ -92,88 +89,80 @@ class Utility {
             println("🔄 Heartbeat service started (interval: 10 minutes)")
         }
 
-            fun normalizeNodeAddress(
+        fun normalizeNodeAddress(
                 address: String,
                 remoteHost: String,
                 forwardedForHeader: String? = null
-            ): String {
-                val clientHost =
-                    forwardedForHeader
-                        ?.split(',')
-                        ?.firstOrNull()
-                        ?.trim()
-                        ?.takeIf { it.isNotEmpty() }
-                        ?: remoteHost
+        ): String {
+            val clientHost =
+                    forwardedForHeader?.split(',')?.firstOrNull()?.trim()?.takeIf {
+                        it.isNotEmpty()
+                    }
+                            ?: remoteHost
 
-                if (clientHost.isBlank()) return address
+            if (clientHost.isBlank()) return address
 
-                val normalizedInput =
+            val normalizedInput =
                     if (address.contains("://")) {
-                    address
+                        address
                     } else {
-                    // Accept inputs like "0.0.0.0:80" and normalize to a URL.
-                    "http://$address"
+                        // Accept inputs like "0.0.0.0:80" and normalize to a URL.
+                        "http://$address"
                     }
 
-                val uri =
+            val uri =
                     try {
-                    URI(normalizedInput)
+                        URI(normalizedInput)
                     } catch (_: URISyntaxException) {
-                    return address
+                        return address
                     }
 
-                val scheme = uri.scheme ?: "http"
-                val originalHost = uri.host ?: return address
-                val originalPort =
+            val scheme = uri.scheme ?: "http"
+            val originalHost = uri.host ?: return address
+            val originalPort =
                     if (uri.port >= 0) uri.port
                     else if (scheme.equals("https", ignoreCase = true)) 443 else 80
 
-                val wildcardOrLoopbackHosts =
-                    setOf(
-                        "0.0.0.0",
-                        "127.0.0.1",
-                        "localhost",
-                        "::",
-                        "0:0:0:0:0:0:0:0"
-                    )
+            val wildcardOrLoopbackHosts =
+                    setOf("0.0.0.0", "127.0.0.1", "localhost", "::", "0:0:0:0:0:0:0:0")
 
-                val hostToUse =
+            val hostToUse =
                     if (wildcardOrLoopbackHosts.contains(originalHost.lowercase())) clientHost
                     else originalHost
 
-                val path = uri.rawPath ?: ""
-                val query = uri.rawQuery?.let { "?$it" } ?: ""
+            val path = uri.rawPath ?: ""
+            val query = uri.rawQuery?.let { "?$it" } ?: ""
 
-                return "$scheme://$hostToUse:$originalPort$path$query"
+            return "$scheme://$hostToUse:$originalPort$path$query"
+        }
+
+        fun resolveAdvertiseAddress(
+                bindHost: String,
+                bindPort: Int,
+                advertiseUrlEnv: String?,
+                advertiseHostEnv: String?
+        ): String {
+            val url = advertiseUrlEnv?.trim().orEmpty()
+            if (url.isNotEmpty()) {
+                return if (url.contains("://")) url else "http://$url"
             }
 
-            fun resolveAdvertiseAddress(
-                    bindHost: String,
-                    bindPort: Int,
-                    advertiseUrlEnv: String?,
-                    advertiseHostEnv: String?
-            ): String {
-                val url = advertiseUrlEnv?.trim().orEmpty()
-                if (url.isNotEmpty()) {
-                    return if (url.contains("://")) url else "http://$url"
-                }
-
-                val host = advertiseHostEnv?.trim().orEmpty()
-                if (host.isNotEmpty()) {
-                    return "http://$host:$bindPort"
-                }
-
-                return "http://$bindHost:$bindPort"
+            val host = advertiseHostEnv?.trim().orEmpty()
+            if (host.isNotEmpty()) {
+                return "http://$host:$bindPort"
             }
 
-            fun getAdvertiseAddress(bindHost: String, bindPort: Int): String {
-                return resolveAdvertiseAddress(
-                        bindHost = bindHost,
-                        bindPort = bindPort,
-                        advertiseUrlEnv = System.getenv("KOKONUT_ADVERTISE_URL"),
-                        advertiseHostEnv = System.getenv("KOKONUT_ADVERTISE_HOST")
-                )
-            }
+            return "http://$bindHost:$bindPort"
+        }
+
+        fun getAdvertiseAddress(bindHost: String, bindPort: Int): String {
+            return resolveAdvertiseAddress(
+                    bindHost = bindHost,
+                    bindPort = bindPort,
+                    advertiseUrlEnv = System.getenv("KOKONUT_ADVERTISE_URL"),
+                    advertiseHostEnv = System.getenv("KOKONUT_ADVERTISE_HOST")
+            )
+        }
 
         fun getJarDirectory(): File {
             val uri: URI = Utility::class.java.protectionDomain.codeSource.location.toURI()

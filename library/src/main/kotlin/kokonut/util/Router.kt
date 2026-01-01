@@ -18,7 +18,6 @@ import java.util.Date
 import kokonut.Policy
 import kokonut.core.Block
 import kokonut.core.BlockChain
-import kokonut.core.BlockChain.Companion.fullNode
 import kokonut.core.BlockChain.Companion.loadFullNodes
 import kokonut.core.BlockDataType
 import kokonut.core.Data
@@ -28,7 +27,6 @@ import kokonut.core.ValidatorOnboardingInfo
 import kokonut.state.ValidatorState
 import kokonut.util.API.Companion.getFullNodes
 import kokonut.util.API.Companion.getPolicy
-import kokonut.util.Utility.Companion.protocolVersion
 import kotlinx.html.*
 import kotlinx.serialization.json.Json
 
@@ -58,7 +56,12 @@ class Router {
             }
         }
 
-        private fun propagateToPeer(peerAddress: String, size: Long, id: String, sourceAddress: String) {
+        private fun propagateToPeer(
+                peerAddress: String,
+                size: Long,
+                id: String,
+                sourceAddress: String
+        ) {
             val url = URL("$peerAddress/propagate?size=$size&id=$id&address=$sourceAddress")
             val conn = (url.openConnection() as HttpURLConnection)
             try {
@@ -66,8 +69,8 @@ class Router {
                 conn.connectTimeout = 2_000
                 conn.readTimeout = 3_000
                 conn.doOutput = true
-                conn.outputStream.use { }
-                conn.inputStream.use { }
+                conn.outputStream.use {}
+                conn.inputStream.use {}
             } catch (_: Exception) {
                 // best-effort
             } finally {
@@ -80,8 +83,9 @@ class Router {
                 val fuelNode = BlockChain.getPrimaryFuelNode()
                 val fuelNodeAddress = fuelNode.toString().trimEnd('/')
                 val peers =
-                        (fuelNode.getFullNodes().map { it.address } + fuelNodeAddress)
-                                .filter { it.isNotBlank() }
+                        (fuelNode.getFullNodes().map { it.address } + fuelNodeAddress).filter {
+                            it.isNotBlank()
+                        }
                 val size = BlockChain.getChainSize()
                 val id = Utility.calculateHash(sourceAddress.hashCode().toLong())
 
@@ -146,7 +150,6 @@ class Router {
                                 p { +"🌐 Peer: ${BlockChain.knownPeer ?: "Not configured"}" }
                             }
 
-                            h1 { +"Kokonut Protocol Version : $protocolVersion" }
                             h1 { +"Timestamp : ${System.currentTimeMillis()}" }
                             h1 { +"Get Chain : /getChain" }
                             h1 { +"Get Connected Validators : /getConnectedValidators" }
@@ -163,7 +166,6 @@ class Router {
                     call.respondHtml(HttpStatusCode.OK) {
                         head { title("Kokonut Full Node") }
                         body {
-                            h1 { +"Kokonut protocol version : $protocolVersion" }
                             h1 { +"Timestamp : ${System.currentTimeMillis()}" }
                             h1 { +"Get policy : /getPolicy" }
                             h1 { +"Get genesis block : /getGenesisBlock" }
@@ -178,9 +180,7 @@ class Router {
         fun Route.transactionsDashboard() {
             get("/transactions") {
                 val limit =
-                        call.request.queryParameters["limit"]
-                                ?.toIntOrNull()
-                                ?.coerceIn(1, 2000)
+                        call.request.queryParameters["limit"]?.toIntOrNull()?.coerceIn(1, 2000)
                                 ?: 200
 
                 if (!BlockChain.isValid()) {
@@ -205,7 +205,8 @@ class Router {
                 )
 
                 val rows =
-                        chain.flatMap { block ->
+                        chain
+                                .flatMap { block ->
                                     val txs = block.data.transactions
                                     txs.map { tx ->
                                         TxRow(
@@ -312,9 +313,7 @@ class Router {
                                     rows.forEach { row ->
                                         tr {
                                             td { +row.blockIndex.toString() }
-                                            td {
-                                                +dateFormat.format(Date(row.timestamp))
-                                            }
+                                            td { +dateFormat.format(Date(row.timestamp)) }
                                             td { +row.transaction }
                                             td { span(classes = "mono") { +row.sender } }
                                             td { span(classes = "mono") { +row.receiver } }
@@ -506,7 +505,6 @@ class Router {
                 call.respondHtml(HttpStatusCode.OK) {
                     head { title("Get Last Block") }
                     body {
-                        h1 { +"version : ${lastBlock.version}" }
                         h1 { +"index : ${lastBlock.index}" }
                         h1 { +"previousHash : ${lastBlock.previousHash}" }
                         h1 { +"timestamp : ${lastBlock.timestamp}" }
@@ -566,7 +564,7 @@ class Router {
         fun Route.getPolicy() {
             get("/getPolicy") {
                 val minimumStake = BlockChain.getNetworkRules().minFullStake
-                call.respond(Policy(protocolVersion, minimumStake))
+                call.respond(Policy(minimumStake))
             }
         }
 
@@ -703,9 +701,7 @@ class Router {
                 try {
                     val request = call.receive<kokonut.core.HandshakeRequest>()
 
-                    println(
-                            "🤝 Handshake request from ${request.nodeType} node (v${request.clientVersion})"
-                    )
+                    println("🤝 Handshake request from ${request.nodeType} node")
 
                     // Verify public key is provided
                     if (request.publicKey.isBlank()) {
@@ -721,137 +717,117 @@ class Router {
                         return@post
                     }
 
-                    // Verify protocol compatibility
-                    if (request.clientVersion != protocolVersion) {
-                        call.respond(
-                                HttpStatusCode.OK,
-                                kokonut.core.HandshakeResponse(
-                                        success = false,
-                                        message =
-                                                "Protocol version mismatch. Server: $protocolVersion, Client: ${request.clientVersion}"
-                                )
-                        )
-                        return@post
-                    }
-
                     // Gather network information
                     val genesisBlock = BlockChain.getGenesisBlock()
                     val networkRules = BlockChain.getNetworkRules()
                     val fuelNodes = BlockChain.getFuelNodes()
 
-                        var handshakeMessage =
+                    var handshakeMessage =
                             "Handshake successful. Welcome to ${networkRules.networkId}!"
 
-                        // 1-time validator onboarding reward on first successful LIGHT connect
-                        if (request.nodeType.uppercase() == "LIGHT") {
+                    // 1-time validator onboarding reward on first successful LIGHT connect
+                    if (request.nodeType.uppercase() == "LIGHT") {
                         val validatorAddress = Utility.calculateHash(request.publicKey)
                         synchronized(onboardingLock) {
                             val alreadyOnboarded =
-                                BlockChain.getChain().any { block ->
-                                block.data.type == BlockDataType.VALIDATOR_ONBOARDING &&
-                                    block.data.validatorOnboardingInfo
-                                        ?.validatorAddress == validatorAddress
-                                }
-
-                            if (!alreadyOnboarded) {
-                            val treasuryAddress = BlockChain.getTreasuryAddress()
-                            val treasuryBalance = BlockChain.getTreasuryBalance()
-
-                            if (treasuryBalance >= 2.0) {
-                                val fuelNodeAddress =
-                                    try {
-                                    BlockChain.getPrimaryFuelNode().toString()
-                                    } catch (e: Exception) {
-                                    "FUELNODE"
+                                    BlockChain.getChain().any { block ->
+                                        block.data.type == BlockDataType.VALIDATOR_ONBOARDING &&
+                                                block.data
+                                                        .validatorOnboardingInfo
+                                                        ?.validatorAddress == validatorAddress
                                     }
 
-                                val fullNodeAddress =
-                                    (System.getenv("KOKONUT_FULLNODE_REWARD_RECEIVER")
-                                            ?.takeIf { it.isNotBlank() }
-                                            ?: run {
-                                            val scheme =
-                                                call.request.origin
-                                                    .scheme
-                                            val host =
-                                                call.request.host()
-                                            val port =
-                                                call.request.port()
-                                            "$scheme://$host:$port"
-                                            })
+                            if (!alreadyOnboarded) {
+                                val treasuryAddress = BlockChain.getTreasuryAddress()
+                                val treasuryBalance = BlockChain.getTreasuryBalance()
 
-                                val onboardingInfo =
-                                    ValidatorOnboardingInfo(
-                                        validatorAddress = validatorAddress,
-                                        fullNodeAddress = fullNodeAddress,
-                                        fuelNodeAddress = fuelNodeAddress,
-                                        amountToFullNode = 1.0,
-                                        amountToValidator = 1.0,
-                                        totalWithdrawn = 2.0
-                                    )
+                                if (treasuryBalance >= 2.0) {
+                                    val fuelNodeAddress =
+                                            try {
+                                                BlockChain.getPrimaryFuelNode().toString()
+                                            } catch (e: Exception) {
+                                                "FUELNODE"
+                                            }
 
-                                val transactions =
-                                    listOf(
-                                        Transaction(
-                                            transaction =
-                                                "VALIDATOR_ONBOARDING_FULLNODE",
-                                            sender = treasuryAddress,
-                                            receiver = fullNodeAddress,
-                                            remittance = 1.0,
-                                            commission = 0.0
-                                        ),
-                                        Transaction(
-                                            transaction =
-                                                "VALIDATOR_ONBOARDING_VALIDATOR",
-                                            sender = treasuryAddress,
-                                            receiver = validatorAddress,
-                                            remittance = 1.0,
-                                            commission = 0.0
-                                        )
-                                    )
+                                    val fullNodeAddress =
+                                            (System.getenv("KOKONUT_FULLNODE_REWARD_RECEIVER")
+                                                    ?.takeIf { it.isNotBlank() }
+                                                    ?: run {
+                                                        val scheme = call.request.origin.scheme
+                                                        val host = call.request.host()
+                                                        val port = call.request.port()
+                                                        "$scheme://$host:$port"
+                                                    })
 
-                                val lastBlock = BlockChain.getLastBlock()
-                                val onboardingData =
-                                    Data(
-                                        reward = 0.0,
-                                        ticker = "KNT",
-                                        validator = "ONBOARDING",
-                                        transactions = transactions,
-                                        comment =
-                                            "Validator onboarding: $validatorAddress",
-                                        type =
-                                            BlockDataType.VALIDATOR_ONBOARDING,
-                                        validatorOnboardingInfo =
-                                            onboardingInfo
-                                    )
+                                    val onboardingInfo =
+                                            ValidatorOnboardingInfo(
+                                                    validatorAddress = validatorAddress,
+                                                    fullNodeAddress = fullNodeAddress,
+                                                    fuelNodeAddress = fuelNodeAddress,
+                                                    amountToFullNode = 1.0,
+                                                    amountToValidator = 1.0,
+                                                    totalWithdrawn = 2.0
+                                            )
 
-                                val onboardingBlock =
-                                    Block(
-                                        version = protocolVersion,
-                                        index = lastBlock.index + 1,
-                                        previousHash = lastBlock.hash,
-                                        timestamp = System.currentTimeMillis(),
-                                        data = onboardingData,
-                                        validatorSignature = "",
-                                        hash = ""
-                                    )
+                                    val transactions =
+                                            listOf(
+                                                    Transaction(
+                                                            transaction =
+                                                                    "VALIDATOR_ONBOARDING_FULLNODE",
+                                                            sender = treasuryAddress,
+                                                            receiver = fullNodeAddress,
+                                                            remittance = 1.0,
+                                                            commission = 0.0
+                                                    ),
+                                                    Transaction(
+                                                            transaction =
+                                                                    "VALIDATOR_ONBOARDING_VALIDATOR",
+                                                            sender = treasuryAddress,
+                                                            receiver = validatorAddress,
+                                                            remittance = 1.0,
+                                                            commission = 0.0
+                                                    )
+                                            )
 
-                                onboardingBlock.hash =
-                                    onboardingBlock.calculateHash()
-                                BlockChain.database.insert(onboardingBlock)
-                                BlockChain.refreshFromDatabase()
+                                    val lastBlock = BlockChain.getLastBlock()
+                                    val onboardingData =
+                                            Data(
+                                                    reward = 0.0,
+                                                    ticker = "KNT",
+                                                    validator = "ONBOARDING",
+                                                    transactions = transactions,
+                                                    comment =
+                                                            "Validator onboarding: $validatorAddress",
+                                                    type = BlockDataType.VALIDATOR_ONBOARDING,
+                                                    validatorOnboardingInfo = onboardingInfo
+                                            )
 
-                                // Best-effort: help other FullNodes converge quickly.
-                                notifyFullNodesToSyncFrom(advertisedSelfAddress(call))
+                                    val onboardingBlock =
+                                            Block(
+                                                    index = lastBlock.index + 1,
+                                                    previousHash = lastBlock.hash,
+                                                    timestamp = System.currentTimeMillis(),
+                                                    data = onboardingData,
+                                                    validatorSignature = "",
+                                                    hash = ""
+                                            )
 
-                                handshakeMessage =
-                                    "Handshake successful. Onboarding reward granted."
-                            } else {
-                                handshakeMessage =
-                                    "Handshake successful. Onboarding skipped (insufficient treasury balance)."
-                            }
+                                    onboardingBlock.hash = onboardingBlock.calculateHash()
+                                    BlockChain.database.insert(onboardingBlock)
+                                    BlockChain.refreshFromDatabase()
+
+                                    // Best-effort: help other FullNodes converge quickly.
+                                    notifyFullNodesToSyncFrom(advertisedSelfAddress(call))
+
+                                    handshakeMessage =
+                                            "Handshake successful. Onboarding reward granted."
+                                } else {
+                                    handshakeMessage =
+                                            "Handshake successful. Onboarding skipped (insufficient treasury balance)."
+                                }
                             }
                         }
-                        }
+                    }
 
                     val networkInfo =
                             kokonut.core.NetworkInfo(
@@ -859,7 +835,6 @@ class Router {
                                     networkId = networkRules.networkId,
                                     genesisHash = genesisBlock.hash,
                                     chainSize = BlockChain.getChainSize(),
-                                    protocolVersion = protocolVersion,
                                     totalValidators =
                                             BlockChain.validatorPool.getActiveValidators().size,
                                     totalCurrencyVolume = BlockChain.getTotalCurrencyVolume(),
@@ -873,7 +848,7 @@ class Router {
                             HttpStatusCode.OK,
                             kokonut.core.HandshakeResponse(
                                     success = true,
-                                message = handshakeMessage,
+                                    message = handshakeMessage,
                                     networkInfo = networkInfo
                             )
                     )
@@ -906,10 +881,13 @@ class Router {
 
                 val policy = BlockChain.getPrimaryFuelNode().getPolicy()
                 val validator = BlockChain.validatorPool.getValidator(validatorAddress)
-                if (validator == null || !validator.isActive || validator.stakedAmount < policy.minimumStake) {
+                if (validator == null ||
+                                !validator.isActive ||
+                                validator.stakedAmount < policy.minimumStake
+                ) {
                     call.respond(
-                        HttpStatusCode.BadRequest,
-                        "Insufficient stake. Required: ${policy.minimumStake} KNT"
+                            HttpStatusCode.BadRequest,
+                            "Insufficient stake. Required: ${policy.minimumStake} KNT"
                     )
                     return@post
                 }
@@ -954,7 +932,9 @@ class Router {
                             if (part.name == "public_key") {
                                 val fileBytes = part.streamProvider().use { it.readBytes() }
                                 publicKeyFile =
-                                        part.originalFileName?.let { original -> File(keyPath, original) }
+                                        part.originalFileName?.let { original ->
+                                            File(keyPath, original)
+                                        }
                                 publicKeyFile!!.writeBytes(fileBytes)
                             }
                         }
@@ -963,8 +943,15 @@ class Router {
                     part.dispose()
                 }
 
-                if (publicKeyFile == null || amount == null || timestamp == null || signatureBase64.isNullOrBlank()) {
-                    call.respond(HttpStatusCode.BadRequest, "Missing public_key, amount, timestamp, or signature")
+                if (publicKeyFile == null ||
+                                amount == null ||
+                                timestamp == null ||
+                                signatureBase64.isNullOrBlank()
+                ) {
+                    call.respond(
+                            HttpStatusCode.BadRequest,
+                            "Missing public_key, amount, timestamp, or signature"
+                    )
                     Paths.get(keyPath).toFile().deleteRecursively()
                     return@post
                 }
@@ -983,13 +970,20 @@ class Router {
                 val validatorAddress = Utility.calculateHash(publicKey)
 
                 val message = "STAKE_LOCK|$validatorAddress|${amount!!}|${timestamp!!}"
-                val signatureBytes = try {
-                    java.util.Base64.getDecoder().decode(signatureBase64)
-                } catch (e: Exception) {
-                    null
-                }
+                val signatureBytes =
+                        try {
+                            java.util.Base64.getDecoder().decode(signatureBase64)
+                        } catch (e: Exception) {
+                            null
+                        }
 
-                if (signatureBytes == null || !Wallet.verifySignature(message.toByteArray(), signatureBytes, publicKey)) {
+                if (signatureBytes == null ||
+                                !Wallet.verifySignature(
+                                        message.toByteArray(),
+                                        signatureBytes,
+                                        publicKey
+                                )
+                ) {
                     call.respond(HttpStatusCode.Unauthorized, "Invalid signature")
                     Paths.get(keyPath).toFile().deleteRecursively()
                     return@post
@@ -997,20 +991,24 @@ class Router {
 
                 val balance = BlockChain.getBalance(validatorAddress)
                 if (balance < amount!!) {
-                    call.respond(HttpStatusCode.BadRequest, "Insufficient balance. Balance: $balance KNT")
+                    call.respond(
+                            HttpStatusCode.BadRequest,
+                            "Insufficient balance. Balance: $balance KNT"
+                    )
                     Paths.get(keyPath).toFile().deleteRecursively()
                     return@post
                 }
 
                 val stakeVault = BlockChain.getStakeVaultAddress()
                 val lastBlock = BlockChain.getLastBlock()
-                val stakeTx = Transaction(
-                        transaction = "STAKE_LOCK",
-                        sender = validatorAddress,
-                        receiver = stakeVault,
-                        remittance = amount!!,
-                        commission = 0.0
-                )
+                val stakeTx =
+                        Transaction(
+                                transaction = "STAKE_LOCK",
+                                sender = validatorAddress,
+                                receiver = stakeVault,
+                                remittance = amount!!,
+                                commission = 0.0
+                        )
                 val stakeData =
                         Data(
                                 reward = 0.0,
@@ -1022,7 +1020,6 @@ class Router {
                         )
                 val stakeBlock =
                         Block(
-                                version = protocolVersion,
                                 index = lastBlock.index + 1,
                                 previousHash = lastBlock.hash,
                                 timestamp = System.currentTimeMillis(),
@@ -1134,9 +1131,7 @@ class Router {
                             .map { it.address }
                             .filter { it.isNotBlank() && it != address && it != selfAddress }
                             .distinct()
-                            .forEach { peer ->
-                                propagateToPeer(peer, size, id, address)
-                            }
+                            .forEach { peer -> propagateToPeer(peer, size, id, address) }
                 } else if (BlockChain.getChainSize() == size) {} else {
 
                     call.respond(HttpStatusCode.Created, "Propagate Failed")
@@ -1210,13 +1205,7 @@ class Router {
                         )
                     }
 
-                    // Check Version
-                    if (policy.version != block!!.version) {
-                        call.respond(
-                                HttpStatusCode.Created,
-                                "Block Add Failed : Fuel Node version ${policy.version} and Client version ${block!!.version} is different"
-                        )
-                    }
+                    // Check Version - Removed
 
                     // Check Hash
                     val calculatedHash = block!!.calculateHash()
@@ -1322,7 +1311,6 @@ class Router {
 
                 val registrationBlock =
                         Block(
-                                version = protocolVersion,
                                 index = lastBlock.index + 1,
                                 previousHash = lastBlock.hash,
                                 timestamp = System.currentTimeMillis(),

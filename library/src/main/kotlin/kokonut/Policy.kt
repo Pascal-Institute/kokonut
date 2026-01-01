@@ -6,10 +6,10 @@ import kotlinx.serialization.Serializable
 /** Network policy for PoS blockchain No difficulty needed in PoS */
 @Serializable
 data class Policy(
-        val version: Int,
         val minimumStake: Double = 1.0, // Minimum KNT to become validator
 ) {
     fun isValid(block: Block): Boolean {
-        return (version == block.version)
+        // Version check removed
+        return true
     }
 }
