@@ -14,8 +14,8 @@ import kokonut.util.Router.Companion.getReward
 import kokonut.util.Router.Companion.getTotalCurrencyVolume
 import kokonut.util.Router.Companion.isValid
 import kokonut.util.Router.Companion.root
-import kokonut.util.Router.Companion.startMining
-import kokonut.util.Router.Companion.stopMining
+import kokonut.util.Router.Companion.startValidating
+import kokonut.util.Router.Companion.stopValidating
 import kokonut.util.Utility
 
 fun main() {
@@ -48,9 +48,9 @@ fun main() {
                     getTotalCurrencyVolume()
                     getReward()
                     getChain()
-                    startMining()
+                    startValidating()
                     addBlock()
-                    stopMining()
+                    stopValidating()
                 }
             }
             .start(true)

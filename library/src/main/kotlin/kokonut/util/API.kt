@@ -217,8 +217,8 @@ class API {
             }
         }
 
-        fun URL.startMining(publicKeyFile: File): Boolean {
-            val connection = URL("${this}/startMining").openConnection() as HttpURLConnection
+        fun URL.startValidating(publicKeyFile: File): Boolean {
+            val connection = URL("${this}/startValidating").openConnection() as HttpURLConnection
             connection.requestMethod = "POST"
             connection.doOutput = true
             connection.setRequestProperty("Content-Type", "application/x-pem-file")
@@ -234,7 +234,7 @@ class API {
                 if (responseCode in 200..299) {
                     connection.inputStream.bufferedReader().use { reader ->
                         val response = reader.readText()
-                        println("Response: $response, Start Mining")
+                        println("Response: $response, Start Validating")
                     }
                 } else {
                     println("Failed with HTTP error code: $responseCode")
@@ -324,7 +324,7 @@ class API {
             }
         }
 
-        fun URL.stopMining(publicKeyFile: File) {
+        fun URL.stopValidating(publicKeyFile: File) {
             val connection = this.openConnection() as HttpURLConnection
             connection.requestMethod = "POST"
             connection.doOutput = true
@@ -341,7 +341,7 @@ class API {
                 if (responseCode in 200..299) {
                     connection.inputStream.bufferedReader().use { reader ->
                         val response = reader.readText()
-                        println("Response: $response, Stop Mining")
+                        println("Response: $response, Stop Validating")
                     }
                 } else {
                     println("Failed with HTTP error code: $responseCode")

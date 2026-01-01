@@ -7,6 +7,7 @@ import androidx.compose.material.AlertDialog
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
+import androidx.compose.material.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -19,7 +20,9 @@ import androidx.compose.ui.window.application
 import java.awt.FileDialog
 import java.awt.Frame
 import java.io.File
-import kokonut.state.MiningState
+import kokonut.core.BlockChain
+import kokonut.state.ValidatorState
+import kokonut.util.NodeType
 import kokonut.util.Wallet
 
 @Composable
@@ -32,20 +35,31 @@ fun App() {
         mutableStateOf<String?>("Please load a private key...")
     }
 
-    var minerID by remember { mutableStateOf("") }
+    var validatorAddress by remember { mutableStateOf("") }
+    var peerAddress by remember { mutableStateOf("http://127.0.0.1:80") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    var miningState by remember { mutableStateOf(MiningState.READY) }
+    var validationState by remember { mutableStateOf(ValidatorState.READY) }
 
     var showSuccessDialog by remember { mutableStateOf(false) }
     var showKeyGenDialog by remember { mutableStateOf(false) }
 
     MaterialTheme {
         Column {
-            Row { Text(if (minerID.isNotEmpty()) miningState.toString() else "") }
+            Row { Text(if (validatorAddress.isNotEmpty()) validationState.toString() else "") }
 
             Row {
-                Text("Miner ID : ")
-                Text(minerID)
+                Text("Validator Address : ")
+                Text(validatorAddress)
+            }
+
+            Row {
+                Text(modifier = Modifier.width(100.dp).height(50.dp), text = "Node URL : ")
+                TextField(
+                        value = peerAddress,
+                        onValueChange = { peerAddress = it },
+                        modifier = Modifier.width(300.dp).height(50.dp)
+                )
             }
 
             Row {
@@ -89,17 +103,27 @@ fun App() {
             Row {
                 Button(
                         onClick = {
-                            // BlockChain.initialize(NodeType.LIGHT)
-                            val wallet =
-                                    Wallet(
-                                            privateKeyFile = File(selectedPrivateKeyFilePath),
-                                            publicKeyFile = File(selectedPublicKeyFilePath)
-                                    )
+                            try {
+                                BlockChain.initialize(NodeType.LIGHT, peerAddress)
 
-                            if (wallet.isValid()) {
-                                showSuccessDialog = true
-                                minerID = wallet.miner
-                                miningState = wallet.miningState
+                                val wallet =
+                                        Wallet(
+                                                privateKeyFile = File(selectedPrivateKeyFilePath),
+                                                publicKeyFile = File(selectedPublicKeyFilePath)
+                                        )
+
+                                if (wallet.isValid()) {
+                                    showSuccessDialog = true
+                                    validatorAddress = wallet.validatorAddress
+                                    validationState = wallet.validationState
+                                }
+                            } catch (e: Exception) {
+                                errorMessage =
+                                        "Connection configuration saved. (Note: Actual connection may vary based on implementation)\nError details: ${e.message}"
+                                // For now, we allow login even if connection fails, or we can block
+                                // it.
+                                // Given the request to 'write logic', we try to connect.
+                                // If it throws, we show error.
                             }
                         }
                 ) { Text("Login") }
@@ -154,6 +178,15 @@ fun App() {
                         confirmButton = {
                             Button(onClick = { showKeyGenDialog = false }) { Text("OK") }
                         }
+                )
+            }
+
+            if (errorMessage != null) {
+                AlertDialog(
+                        onDismissRequest = { errorMessage = null },
+                        title = { Text("Connection Status") },
+                        text = { Text(errorMessage!!) },
+                        confirmButton = { Button(onClick = { errorMessage = null }) { Text("OK") } }
                 )
             }
         }

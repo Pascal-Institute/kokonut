@@ -20,7 +20,7 @@ import kokonut.core.BlockChain.Companion.loadFullNodes
 import kokonut.core.BlockDataType
 import kokonut.core.Data
 import kokonut.core.FuelNodeInfo
-import kokonut.state.MiningState
+import kokonut.state.ValidatorState
 import kokonut.util.API.Companion.getPolicy
 import kokonut.util.API.Companion.propagate
 import kokonut.util.Utility.Companion.protocolVersion
@@ -31,7 +31,7 @@ class Router {
 
     companion object {
 
-        var miners: MutableSet<Miner> = mutableSetOf()
+        var validatorSessions: MutableSet<ValidatorSession> = mutableSetOf()
 
         fun Route.root(node: NodeType) {
             if (node == NodeType.FULL) {
@@ -89,7 +89,7 @@ class Router {
                             h1 { +"Kokonut Protocol Version : $protocolVersion" }
                             h1 { +"Timestamp : ${System.currentTimeMillis()}" }
                             h1 { +"Get Chain : /getChain" }
-                            h1 { +"Get Miners : /getMiners" }
+                            h1 { +"Get Connected Validators : /getConnectedValidators" }
                             h1 { +"Get Last Block : /getLastBlock" }
                             h1 { +"Chain Validation : /isValid" }
                             h1 { +"Get Total Currency Volume : /getTotalCurrencyVolume" }
@@ -178,11 +178,11 @@ class Router {
             }
         }
 
-        fun Route.getMiners() {
-            get("/getMiners") {
+        fun Route.getConnectedValidators() {
+            get("/getConnectedValidators") {
                 call.respondHtml(HttpStatusCode.OK) {
                     head { title("Kokonut Full Node") }
-                    body { h1 { +miners.toString() } }
+                    body { h1 { +validatorSessions.toString() } }
                 }
             }
         }
@@ -218,8 +218,8 @@ class Router {
             }
         }
 
-        fun Route.startMining() {
-            post("/startMining") {
+        fun Route.startValidating() {
+            post("/startValidating") {
                 val keyPath = "/app/key"
 
                 Utility.createDirectory(keyPath)
@@ -229,14 +229,22 @@ class Router {
                 val publicKeyFile = File(keyPath, fileName)
                 publicKeyFile.writeBytes(fileBytes)
 
-                val miner = Utility.calculateHash(Wallet.loadPublicKey(publicKeyFile.path))
+                val validatorAddress =
+                        Utility.calculateHash(Wallet.loadPublicKey(publicKeyFile.path))
 
-                miners.add(Miner(miner, call.request.origin.remoteHost, MiningState.READY))
+                validatorSessions.add(
+                        ValidatorSession(
+                                validatorAddress,
+                                call.request.origin.remoteHost,
+                                ValidatorState.READY
+                        )
+                )
 
-                println("Miner : $miner start mining...")
-                call.respond("Mining Approved...")
+                println("Validator : $validatorAddress start validating...")
+                call.respond("Validating Approved...")
 
-                miners.find { it.miner == miner }!!.miningState = MiningState.MINING
+                validatorSessions.find { it.validatorAddress == validatorAddress }!!
+                        .validationState = ValidatorState.VALIDATING
             }
         }
 
@@ -429,7 +437,7 @@ class Router {
                     }
                 } else {
                     call.respondText(
-                            "Missing block or miner public key",
+                            "Missing block or validator public key",
                             status = HttpStatusCode.BadRequest
                     )
                 }
@@ -437,8 +445,8 @@ class Router {
             }
         }
 
-        fun Route.stopMining() {
-            post("/stopMining") {
+        fun Route.stopValidating() {
+            post("/stopValidating") {
                 val keyPath = "/app/key"
                 Utility.createDirectory(keyPath)
                 val fileName = call.request.header("fileName") ?: "public_key.pem"
@@ -446,11 +454,12 @@ class Router {
                 val publicKeyFile = File(keyPath, fileName)
                 publicKeyFile.writeBytes(fileBytes)
 
-                val miner = Utility.calculateHash(Wallet.loadPublicKey(publicKeyFile.path))
+                val validatorAddress =
+                        Utility.calculateHash(Wallet.loadPublicKey(publicKeyFile.path))
 
-                println("Miner : $miner stop mining...")
+                println("Validator : $validatorAddress stop validating...")
 
-                call.respond("Mining Cancelled...")
+                call.respond("Validation Cancelled...")
             }
         }
 

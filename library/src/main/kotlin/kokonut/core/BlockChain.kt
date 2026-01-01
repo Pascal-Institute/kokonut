@@ -1,7 +1,7 @@
 package kokonut.core
 
 import java.net.URL
-import kokonut.state.MiningState
+import kokonut.state.ValidatorState
 import kokonut.util.*
 import kokonut.util.API.Companion.getChain
 import kokonut.util.API.Companion.getFullNodes
@@ -299,7 +299,7 @@ class BlockChain {
          * their stake, not computational power
          */
         fun validate(wallet: Wallet, data: Data): Block {
-            wallet.miningState = MiningState.MINING // TODO: Rename states to VALIDATING
+            wallet.validationState = ValidatorState.VALIDATING
 
             // Refresh Full Nodes and sync chain
             loadFullNodes()
@@ -308,7 +308,7 @@ class BlockChain {
             }
 
             if (!isValid()) {
-                wallet.miningState = MiningState.FAILED
+                wallet.validationState = ValidatorState.FAILED
                 throw IllegalStateException("Chain is Invalid. Stop Validation...")
             }
 
@@ -317,7 +317,7 @@ class BlockChain {
             val validator = validatorPool.getValidator(validatorAddress)
 
             if (validator == null || !validator.isActive) {
-                wallet.miningState = MiningState.FAILED
+                wallet.validationState = ValidatorState.FAILED
                 throw IllegalStateException(
                         "Wallet is not registered as active validator. Stake KNT to become a validator."
                 )
@@ -326,7 +326,7 @@ class BlockChain {
             // Select validator for this block (probabilistic based on stake)
             val selectedValidator = validatorPool.selectValidator()
             if (selectedValidator == null || selectedValidator.address != validatorAddress) {
-                wallet.miningState = MiningState.FAILED
+                wallet.validationState = ValidatorState.FAILED
                 throw IllegalStateException(
                         "Validator not selected for this block. Try again on next block."
                 )
@@ -367,7 +367,7 @@ class BlockChain {
             println("   Reward: ${data.reward} KNT")
             println("   Total Validators: ${validatorPool.getActiveValidators().size}")
 
-            wallet.miningState = MiningState.MINED // TODO: Rename to VALIDATED
+            wallet.validationState = ValidatorState.VALIDATED
 
             return validationBlock
         }
