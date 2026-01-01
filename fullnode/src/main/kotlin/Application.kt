@@ -9,6 +9,7 @@ import kokonut.core.BlockChain.Companion.isValid
 import kokonut.util.NodeType
 import kokonut.util.Router.Companion.addBlock
 import kokonut.util.Router.Companion.getChain
+import kokonut.util.Router.Companion.getGenesisBlock
 import kokonut.util.Router.Companion.getLastBlock
 import kokonut.util.Router.Companion.getReward
 import kokonut.util.Router.Companion.getTotalCurrencyVolume
@@ -49,6 +50,7 @@ fun main() {
                     root(NodeType.FULL)
                     handshake()
                     isValid()
+                    getGenesisBlock()
                     getLastBlock()
                     getTotalCurrencyVolume()
                     getReward()
