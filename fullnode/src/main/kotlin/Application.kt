@@ -13,10 +13,10 @@ import kokonut.util.Router.Companion.getLastBlock
 import kokonut.util.Router.Companion.getReward
 import kokonut.util.Router.Companion.getTotalCurrencyVolume
 import kokonut.util.Router.Companion.isValid
-import kokonut.util.Router.Companion.register
 import kokonut.util.Router.Companion.root
 import kokonut.util.Router.Companion.startMining
 import kokonut.util.Router.Companion.stopMining
+import kokonut.util.Utility
 
 fun main() {
     val blockchain = BlockChain()
@@ -24,12 +24,25 @@ fun main() {
     isValid()
 
     val host = System.getenv("SERVER_HOST") ?: "0.0.0.0"
-    embeddedServer(Netty, host = host, port = 80) {
+    val port = 80
+
+    // Start automatic heartbeat to Fuel Node
+    val myAddress = "http://$host:$port"
+    val fuelNodeAddress = BlockChain.knownPeer
+
+    if (fuelNodeAddress != null) {
+        println("🚀 Starting automatic registration to Fuel Node...")
+        Utility.startHeartbeat(myAddress, fuelNodeAddress)
+    } else {
+        println("⚠️ No KOKONUT_PEER configured. Skipping automatic registration.")
+        println("   Set KOKONUT_PEER environment variable to enable automatic registration.")
+    }
+
+    embeddedServer(Netty, host = host, port = port) {
                 install(ContentNegotiation) { json() }
 
                 routing {
                     root(NodeType.FULL)
-                    register()
                     isValid()
                     getLastBlock()
                     getTotalCurrencyVolume()

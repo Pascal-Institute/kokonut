@@ -21,7 +21,6 @@ import kokonut.core.BlockDataType
 import kokonut.core.Data
 import kokonut.core.FuelNodeInfo
 import kokonut.state.MiningState
-import kokonut.util.API.Companion.getFullNodes
 import kokonut.util.API.Companion.getPolicy
 import kokonut.util.API.Companion.propagate
 import kokonut.util.Utility.Companion.protocolVersion
@@ -56,43 +55,21 @@ class Router {
                                             font-size: 18px;
                                             margin: 10px 0;
                                         }
-                                        .status {
-                                            font-weight: bold;
-                                            color: ${if (BlockChain.isRegistered()) "#28a745" else "#dc3545"};
-                                        }
-                                        .register-btn {
-                                            background-color: #007bff;
-                                            color: white;
-                                            padding: 15px 30px;
-                                            border: none;
-                                            border-radius: 5px;
-                                            font-size: 16px;
-                                            cursor: pointer;
+                                        .status-box {
+                                            background-color: #e7f3ff;
+                                            border-left: 4px solid #007bff;
+                                            padding: 15px;
                                             margin: 20px 0;
-                                            display: ${if (BlockChain.isRegistered()) "none" else "inline-block"};
-                                        }
-                                        .register-btn:hover {
-                                            background-color: #0056b3;
-                                        }
-                                        .register-btn:disabled {
-                                            background-color: #6c757d;
-                                            cursor: not-allowed;
-                                        }
-                                        #message {
-                                            padding: 10px;
-                                            margin: 10px 0;
                                             border-radius: 5px;
-                                            display: none;
                                         }
-                                        .success {
-                                            background-color: #d4edda;
-                                            color: #155724;
-                                            border: 1px solid #c3e6cb;
+                                        .status-box h2 {
+                                            margin: 0 0 10px 0;
+                                            color: #007bff;
+                                            font-size: 16px;
                                         }
-                                        .error {
-                                            background-color: #f8d7da;
-                                            color: #721c24;
-                                            border: 1px solid #f5c6cb;
+                                        .status-box p {
+                                            margin: 5px 0;
+                                            font-size: 14px;
                                         }
                                     """
                                     )
@@ -100,16 +77,15 @@ class Router {
                             }
                         }
                         body {
-                            h1 {
-                                +"Full Node Registration : "
-                                span("status") { +BlockChain.isRegistered().toString() }
+                            h1 { +"🥥 Kokonut Full Node" }
+
+                            div(classes = "status-box") {
+                                h2 { +"🔄 Automatic Registration Status" }
+                                p { +"✅ Heartbeat-based registration is active" }
+                                p { +"💓 Sending heartbeat every 10 minutes" }
+                                p { +"🌐 Peer: ${BlockChain.knownPeer ?: "Not configured"}" }
                             }
-                            button(classes = "register-btn") {
-                                id = "registerBtn"
-                                onClick = "registerNode()"
-                                +"Register to Fuel Node"
-                            }
-                            div { id = "message" }
+
                             h1 { +"Kokonut Protocol Version : $protocolVersion" }
                             h1 { +"Timestamp : ${System.currentTimeMillis()}" }
                             h1 { +"Get Chain : /getChain" }
@@ -118,24 +94,6 @@ class Router {
                             h1 { +"Chain Validation : /isValid" }
                             h1 { +"Get Total Currency Volume : /getTotalCurrencyVolume" }
                             h1 { +"Get Reward : /getReward?index=index" }
-
-                            script {
-                                unsafe {
-                                    raw(
-                                            """
-                                        function registerNode() {
-                                            const btn = document.getElementById('registerBtn');
-                                            const msg = document.getElementById('message');
-                                            
-                                            btn.disabled = true;
-                                            btn.textContent = 'Registering...';
-                                            
-                                            window.location.href = '/register';
-                                        }
-                                    """
-                                    )
-                                }
-                            }
                         }
                     }
                 }
@@ -149,36 +107,6 @@ class Router {
                             h1 { +"Get policy : /getPolicy" }
                             h1 { +"Get genesis block : /getGenesisBlock" }
                             h1 { +"Get full nodes : /getFullNodes" }
-                        }
-                    }
-                }
-            }
-        }
-
-        fun Route.register() {
-            get("/register") {
-                call.respondHtml(HttpStatusCode.OK) {
-                    head { title { +"Service Configuration" } }
-                    body {
-                        h1 { +"Configure Your Service" }
-                        form(
-                                action = "${BlockChain.getPrimaryFuelNode()}/submit",
-                                method = FormMethod.post,
-                                encType = FormEncType.multipartFormData
-                        ) {
-                            p {
-                                label { +"Service ID: " }
-                                label { +"Public Key (.pem) : " }
-                                input(type = InputType.file, name = "publicKey") {
-                                    placeholder = "Enter Directory your Wallet Public Key file"
-                                }
-                                label { +"Private Key (.pem) : " }
-                                input(type = InputType.file, name = "privateKey") {
-                                    placeholder = "Enter Directory your Wallet Public Key file"
-                                }
-                            }
-
-                            p { submitInput { value = "Submit" } }
                         }
                     }
                 }
@@ -312,84 +240,69 @@ class Router {
             }
         }
 
-        fun Route.submit(fullNodes: MutableList<FullNode>): MutableList<FullNode> {
-            var wallet: Wallet? = null
-
-            post("/submit") {
-                val keyPath = "/app/key"
-                Utility.createDirectory(keyPath)
-
-                var publicKey: File? = null
-                var privateKey: File? = null
-                val multipartData = call.receiveMultipart()
-                val address: String =
-                        call.request.headers["Origin"]
-                                ?: run {
-                                    call.respondText(
-                                            "Missing 'Origin' header",
-                                            status = HttpStatusCode.BadRequest
-                                    )
-                                    return@post
-                                }
-
-                multipartData.forEachPart { part ->
-                    when (part) {
-                        is PartData.FileItem -> {
-                            val fileBytes = part.streamProvider().use { it.readBytes() }
-                            when (part.name) {
-                                "publicKey" -> {
-                                    publicKey =
-                                            File(keyPath, part.originalFileName ?: "publicKey.pem")
-                                                    .apply { writeBytes(fileBytes) }
-                                    println("Uploaded public key: ${part.originalFileName}")
-                                }
-                                "privateKey" -> {
-                                    privateKey =
-                                            File(keyPath, part.originalFileName ?: "privateKey.pem")
-                                                    .apply { writeBytes(fileBytes) }
-                                    println("Uploaded private key: ${part.originalFileName}")
-                                }
-                            }
-                        }
-                        else -> Unit
-                    }
-                    part.dispose()
-                }
-
-                if (publicKey == null || privateKey == null) {
-                    call.respondText(
-                            "Missing keys in the request",
-                            status = HttpStatusCode.BadRequest
-                    )
-                    return@post
-                }
-
+        /**
+         * Heartbeat endpoint for automatic Full Node registration Full Nodes send heartbeat every
+         * 10 minutes to maintain registration Nodes that don't send heartbeat for 15 minutes are
+         * automatically removed
+         */
+        fun Route.heartbeat(fullNodes: MutableMap<String, Long>) {
+            post("/heartbeat") {
                 try {
-                    wallet = Wallet(privateKey!!, publicKey!!)
+                    @kotlinx.serialization.Serializable
+                    data class HeartbeatRequest(val address: String)
 
-                    val data = "verify fullnode".toByteArray()
-                    val signatureBytes = Wallet.signData(data, wallet!!.privateKey)
-                    val isValid = Wallet.verifySignature(data, signatureBytes, wallet!!.publicKey)
-                    val id = Utility.calculateHash(wallet!!.publicKey)
+                    val request = call.receive<HeartbeatRequest>()
+                    val address = request.address
+                    val now = System.currentTimeMillis()
 
-                    // Check if the node ID is already present
-                    val nodeExists =
-                            BlockChain.getRandomFuelNode().getFullNodes().any { it.id == id }
-                    if (!isValid || nodeExists) {
-                        call.respondText("Registration failed: ${HttpStatusCode.BadRequest}")
-                        return@post
+                    // Update or add node with current timestamp
+                    val isNewNode = !fullNodes.containsKey(address)
+                    fullNodes[address] = now
+
+                    if (isNewNode) {
+                        println("✅ New Full Node registered: $address")
+                    } else {
+                        println("💓 Heartbeat received from: $address")
                     }
 
-                    call.respondText("Registration succeeded: ${HttpStatusCode.OK}")
-                    fullNodes.add(FullNode(id = id, address = address))
+                    call.respond(
+                            HttpStatusCode.OK,
+                            mapOf(
+                                    "status" to "success",
+                                    "message" to
+                                            if (isNewNode) "Registered successfully"
+                                            else "Heartbeat received",
+                                    "timestamp" to now
+                            )
+                    )
                 } catch (e: Exception) {
-                    call.respondText(
-                            "An error occurred: ${e.message}",
-                            status = HttpStatusCode.InternalServerError
+                    println("❌ Heartbeat error: ${e.message}")
+                    call.respond(
+                            HttpStatusCode.BadRequest,
+                            mapOf(
+                                    "status" to "error",
+                                    "message" to "Invalid heartbeat request: ${e.message}"
+                            )
                     )
                 }
             }
-            return fullNodes
+        }
+
+        /**
+         * Get active Full Nodes (for backward compatibility) Converts heartbeat map to FullNode
+         * list
+         */
+        fun Route.getFullNodesFromHeartbeat(fullNodes: MutableMap<String, Long>) {
+            get("/getFullNodes") {
+                val activeNodes =
+                        fullNodes.map { (address, _) ->
+                            FullNode(
+                                    id = Utility.calculateHash(address.hashCode().toLong()),
+                                    address = address
+                            )
+                        }
+                call.respond(activeNodes)
+            }
         }
 
         fun Route.propagate() {

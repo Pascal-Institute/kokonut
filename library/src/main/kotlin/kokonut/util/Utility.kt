@@ -8,6 +8,7 @@ import java.nio.file.Paths
 import java.security.*
 import java.util.*
 import kokonut.util.API.Companion.isHealthy
+import kokonut.util.API.Companion.sendHeartbeat
 import kotlin.math.*
 
 class Utility {
@@ -44,6 +45,50 @@ class Utility {
                     0,
                     300_000
             )
+        }
+
+        /**
+         * Start automatic heartbeat to Fuel Node Full Node will automatically register and maintain
+         * its presence in the network
+         * @param myAddress The address of this Full Node
+         * @param fuelNodeAddress The address of the Fuel Node to send heartbeat to
+         */
+        fun startHeartbeat(myAddress: String, fuelNodeAddress: String) {
+            val timer = Timer("Heartbeat-Timer", true)
+
+            // Send initial heartbeat immediately
+            try {
+                val success = URL(fuelNodeAddress).sendHeartbeat(myAddress)
+                if (success) {
+                    println("✅ Registered to Fuel Node: $fuelNodeAddress")
+                } else {
+                    println("⚠️ Initial registration failed, will retry in 10 minutes")
+                }
+            } catch (e: Exception) {
+                println("⚠️ Initial registration error: ${e.message}")
+            }
+
+            // Schedule periodic heartbeat every 10 minutes (600,000 ms)
+            timer.scheduleAtFixedRate(
+                    object : TimerTask() {
+                        override fun run() {
+                            try {
+                                val success = URL(fuelNodeAddress).sendHeartbeat(myAddress)
+                                if (success) {
+                                    println("💓 Heartbeat sent successfully")
+                                } else {
+                                    println("⚠️ Heartbeat failed, will retry in 10 minutes")
+                                }
+                            } catch (e: Exception) {
+                                println("⚠️ Heartbeat error: ${e.message}")
+                            }
+                        }
+                    },
+                    600_000, // Initial delay: 10 minutes
+                    600_000 // Period: 10 minutes
+            )
+
+            println("🔄 Heartbeat service started (interval: 10 minutes)")
         }
 
         fun getJarDirectory(): File {

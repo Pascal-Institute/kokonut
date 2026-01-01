@@ -8,6 +8,12 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import java.io.BufferedReader
+import java.io.File
+import java.io.IOException
+import java.io.InputStreamReader
+import java.net.HttpURLConnection
+import java.net.URL
 import kokonut.Policy
 import kokonut.core.Block
 import kokonut.core.BlockChain
@@ -17,12 +23,6 @@ import kokonut.util.Utility.Companion.writePart
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
-import java.io.BufferedReader
-import java.io.File
-import java.io.IOException
-import java.io.InputStreamReader
-import java.net.HttpURLConnection
-import java.net.URL
 
 class API {
     companion object {
@@ -56,7 +56,6 @@ class API {
                     val response = reader.use { it.readText() }
 
                     Json.decodeFromString(response)
-
                 } else {
                     throw RuntimeException("GET request failed with response code $responseCode")
                 }
@@ -82,7 +81,6 @@ class API {
                     val response = reader.use { it.readText() }
 
                     Json.decodeFromString(response)
-
                 } else {
                     throw RuntimeException("GET request failed with response code $responseCode")
                 }
@@ -108,7 +106,6 @@ class API {
                     val response = reader.use { it.readText() }
 
                     Json.decodeFromString(response)
-
                 } else {
                     throw RuntimeException("GET request failed with response code $responseCode")
                 }
@@ -162,7 +159,6 @@ class API {
                     val response = reader.use { it.readText() }
 
                     Json.decodeFromString(response)
-
                 } else {
                     throw RuntimeException("GET request failed with response code $responseCode")
                 }
@@ -185,16 +181,16 @@ class API {
             try {
                 connection.outputStream.use { os ->
                     // Write JSON part
-                    writePart(
-                        os,
-                        boundary,
-                        "json",
-                        "application/json; charset=UTF-8",
-                        byteArray
-                    )
+                    writePart(os, boundary, "json", "application/json; charset=UTF-8", byteArray)
 
                     // Write file part
-                    writeFilePart(os, boundary, "public_key", "application/x-pem-file", publicKeyFile)
+                    writeFilePart(
+                            os,
+                            boundary,
+                            "public_key",
+                            "application/x-pem-file",
+                            publicKeyFile
+                    )
 
                     // End of multipart
                     os.write("--$boundary--\r\n".toByteArray(Charsets.UTF_8))
@@ -221,7 +217,7 @@ class API {
             }
         }
 
-        fun URL.startMining(publicKeyFile: File) : Boolean {
+        fun URL.startMining(publicKeyFile: File): Boolean {
             val connection = URL("${this}/startMining").openConnection() as HttpURLConnection
             connection.requestMethod = "POST"
             connection.doOutput = true
@@ -230,9 +226,7 @@ class API {
 
             try {
                 publicKeyFile.inputStream().use { fis ->
-                    connection.outputStream.use { os ->
-                        fis.copyTo(os)
-                    }
+                    connection.outputStream.use { os -> fis.copyTo(os) }
                 }
 
                 // Check response
@@ -258,17 +252,20 @@ class API {
             return true
         }
 
-        fun URL.propagate() : HttpResponse {
-            val client = HttpClient(CIO) {
-                install(ContentNegotiation) {
-                    json(Json { prettyPrint = true })
-                }
-            }
+        fun URL.propagate(): HttpResponse {
+            val client =
+                    HttpClient(CIO) {
+                        install(ContentNegotiation) { json(Json { prettyPrint = true }) }
+                    }
 
-            val response : HttpResponse
+            val response: HttpResponse
 
             runBlocking {
-               response = client.post(this@propagate.path + "/propagate?size=${BlockChain.getChainSize()}&id=${fullNode.id}&address=${fullNode.address}")
+                response =
+                        client.post(
+                                this@propagate.path +
+                                        "/propagate?size=${BlockChain.getChainSize()}&id=${fullNode.id}&address=${fullNode.address}"
+                        )
             }
 
             return response
@@ -286,15 +283,21 @@ class API {
                 connection.outputStream.use { os ->
                     // Write JSON part
                     writePart(
-                        os,
-                        boundary,
-                        "json",
-                        "application/json; charset=UTF-8",
-                        jsonElement.toString().toByteArray(Charsets.UTF_8)
+                            os,
+                            boundary,
+                            "json",
+                            "application/json; charset=UTF-8",
+                            jsonElement.toString().toByteArray(Charsets.UTF_8)
                     )
 
                     // Write file part
-                    writeFilePart(os, boundary, "public_key", "application/x-pem-file", publicKeyFile)
+                    writeFilePart(
+                            os,
+                            boundary,
+                            "public_key",
+                            "application/x-pem-file",
+                            publicKeyFile
+                    )
 
                     // End of multipart
                     os.write("--$boundary--\r\n".toByteArray(Charsets.UTF_8))
@@ -330,9 +333,7 @@ class API {
 
             try {
                 publicKeyFile.inputStream().use { fis ->
-                    connection.outputStream.use { os ->
-                        fis.copyTo(os)
-                    }
+                    connection.outputStream.use { os -> fis.copyTo(os) }
                 }
 
                 // Check response
@@ -353,6 +354,35 @@ class API {
                 e.printStackTrace()
             } finally {
                 connection.disconnect()
+            }
+        }
+
+        /**
+         * Send heartbeat to Fuel Node for automatic registration and health monitoring
+         * @param address The address of this Full Node
+         * @return true if heartbeat was successful, false otherwise
+         */
+        fun URL.sendHeartbeat(address: String): Boolean {
+            return try {
+                val connection = URL("${this}/heartbeat").openConnection() as HttpURLConnection
+                connection.requestMethod = "POST"
+                connection.doOutput = true
+                connection.connectTimeout = 5000
+                connection.readTimeout = 5000
+                connection.setRequestProperty("Content-Type", "application/json")
+
+                val jsonPayload = """{"address":"$address"}"""
+                connection.outputStream.use { os ->
+                    os.write(jsonPayload.toByteArray(Charsets.UTF_8))
+                }
+
+                val responseCode = connection.responseCode
+                connection.disconnect()
+
+                responseCode in 200..299
+            } catch (e: Exception) {
+                println("⚠️ Heartbeat failed: ${e.message}")
+                false
             }
         }
     }
