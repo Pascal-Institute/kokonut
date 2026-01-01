@@ -342,8 +342,11 @@ class BlockChain {
             // Calculate reward (transaction fees in PoS, not block rewards)
             data.reward = Utility.setReward(index) * ValidatorPool.VALIDATOR_REWARD_PERCENTAGE
 
+            // Set validator address in data (critical for validator tracking)
+            val validatedData = data.copy(validator = validatorAddress)
+
             // Create validator signature to prove block authenticity
-            val blockData = "$version$index$previousHash$timestamp$data"
+            val blockData = "$version$index$previousHash$timestamp$validatedData"
             val signature = Wallet.signData(blockData.toByteArray(), wallet.privateKey)
             val validatorSignature = signature.fold("") { str, it -> str + "%02x".format(it) }
 
@@ -353,7 +356,7 @@ class BlockChain {
                             index = index,
                             previousHash = previousHash,
                             timestamp = timestamp,
-                            data = data,
+                            data = validatedData,  // Use validatedData with validator set
                             validatorSignature = validatorSignature,
                             hash = ""
                     )
@@ -371,6 +374,7 @@ class BlockChain {
 
             return validationBlock
         }
+
 
         fun getChain(): MutableList<Block> {
             return database.fetch()
