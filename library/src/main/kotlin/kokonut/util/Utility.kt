@@ -234,6 +234,15 @@ class Utility {
             }
         }
 
+        fun calculateHash(publicKeyString: String): String {
+            val input = publicKeyString
+            return MessageDigest.getInstance("SHA-256").digest(input.toByteArray()).fold("") {
+                    str,
+                    it ->
+                str + "%02x".format(it)
+            }
+        }
+
         fun createFile(filePath: String, content: String) {
             val file = File(filePath)
             file.writeText(content)

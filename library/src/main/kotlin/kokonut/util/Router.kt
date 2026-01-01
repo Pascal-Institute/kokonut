@@ -526,6 +526,117 @@ class Router {
                     val networkRules = BlockChain.getNetworkRules()
                     val fuelNodes = BlockChain.getFuelNodes()
 
+                        var handshakeMessage =
+                            "Handshake successful. Welcome to ${networkRules.networkId}!"
+
+                        // 1-time validator onboarding reward on first successful LIGHT connect
+                        if (request.nodeType.uppercase() == "LIGHT") {
+                        val validatorAddress = Utility.calculateHash(request.publicKey)
+                        synchronized(onboardingLock) {
+                            val alreadyOnboarded =
+                                BlockChain.getChain().any { block ->
+                                block.data.type == BlockDataType.VALIDATOR_ONBOARDING &&
+                                    block.data.validatorOnboardingInfo
+                                        ?.validatorAddress == validatorAddress
+                                }
+
+                            if (!alreadyOnboarded) {
+                            val treasuryAddress = BlockChain.getTreasuryAddress()
+                            val treasuryBalance = BlockChain.getTreasuryBalance()
+
+                            if (treasuryBalance >= 2.0) {
+                                val fuelNodeAddress =
+                                    try {
+                                    BlockChain.getPrimaryFuelNode().toString()
+                                    } catch (e: Exception) {
+                                    "FUELNODE"
+                                    }
+
+                                val fullNodeAddress =
+                                    (System.getenv("KOKONUT_FULLNODE_REWARD_RECEIVER")
+                                            ?.takeIf { it.isNotBlank() }
+                                            ?: run {
+                                            val scheme =
+                                                call.request.origin
+                                                    .scheme
+                                            val host =
+                                                call.request.host()
+                                            val port =
+                                                call.request.port()
+                                            "$scheme://$host:$port"
+                                            })
+
+                                val onboardingInfo =
+                                    ValidatorOnboardingInfo(
+                                        validatorAddress = validatorAddress,
+                                        fullNodeAddress = fullNodeAddress,
+                                        fuelNodeAddress = fuelNodeAddress,
+                                        amountToFullNode = 1.0,
+                                        amountToValidator = 1.0,
+                                        totalWithdrawn = 2.0
+                                    )
+
+                                val transactions =
+                                    listOf(
+                                        Transaction(
+                                            transaction =
+                                                "VALIDATOR_ONBOARDING_FULLNODE",
+                                            sender = treasuryAddress,
+                                            receiver = fullNodeAddress,
+                                            remittance = 1.0,
+                                            commission = 0.0
+                                        ),
+                                        Transaction(
+                                            transaction =
+                                                "VALIDATOR_ONBOARDING_VALIDATOR",
+                                            sender = treasuryAddress,
+                                            receiver = validatorAddress,
+                                            remittance = 1.0,
+                                            commission = 0.0
+                                        )
+                                    )
+
+                                val lastBlock = BlockChain.getLastBlock()
+                                val onboardingData =
+                                    Data(
+                                        reward = 0.0,
+                                        ticker = "KNT",
+                                        validator = "ONBOARDING",
+                                        transactions = transactions,
+                                        comment =
+                                            "Validator onboarding: $validatorAddress",
+                                        type =
+                                            BlockDataType.VALIDATOR_ONBOARDING,
+                                        validatorOnboardingInfo =
+                                            onboardingInfo
+                                    )
+
+                                val onboardingBlock =
+                                    Block(
+                                        version = protocolVersion,
+                                        index = lastBlock.index + 1,
+                                        previousHash = lastBlock.hash,
+                                        timestamp = System.currentTimeMillis(),
+                                        data = onboardingData,
+                                        validatorSignature = "",
+                                        hash = ""
+                                    )
+
+                                onboardingBlock.hash =
+                                    onboardingBlock.calculateHash()
+                                BlockChain.database.insert(onboardingBlock)
+                                BlockChain.refreshFromDatabase()
+
+                                handshakeMessage =
+                                    "Handshake successful. Onboarding reward granted."
+                            } else {
+                                handshakeMessage =
+                                    "Handshake successful. Onboarding skipped (insufficient treasury balance)."
+                            }
+                            }
+                        }
+                        }
+
                     val networkInfo =
                             kokonut.core.NetworkInfo(
                                     nodeType = "FULL",
@@ -546,8 +657,7 @@ class Router {
                             HttpStatusCode.OK,
                             kokonut.core.HandshakeResponse(
                                     success = true,
-                                    message =
-                                            "Handshake successful. Welcome to ${networkRules.networkId}!",
+                                message = handshakeMessage,
                                     networkInfo = networkInfo
                             )
                     )
@@ -577,98 +687,6 @@ class Router {
 
                 val validatorAddress =
                         Utility.calculateHash(Wallet.loadPublicKey(publicKeyFile.path))
-
-                // 1-time validator onboarding reward (connectivity incentive)
-                // - Withdraw 2 KNT from Fuel Node treasury
-                // - Reward 1 KNT to this Full Node
-                // - Reward 1 KNT to this Validator (Light Node wallet address)
-                synchronized(onboardingLock) {
-                    val alreadyOnboarded =
-                        BlockChain.getChain().any { block ->
-                        block.data.type == BlockDataType.VALIDATOR_ONBOARDING &&
-                            block.data.validatorOnboardingInfo?.validatorAddress ==
-                                validatorAddress
-                        }
-
-                    if (!alreadyOnboarded) {
-                    val fuelNodeAddress =
-                        try {
-                            BlockChain.getPrimaryFuelNode().toString()
-                        } catch (e: Exception) {
-                            "FUELNODE"
-                        }
-
-                    val fullNodeAddress =
-                        (System.getenv("KOKONUT_FULLNODE_REWARD_RECEIVER")
-                                ?.takeIf { it.isNotBlank() }
-                                ?: run {
-                                    val scheme = call.request.origin.scheme
-                                    val host = call.request.host()
-                                    val port = call.request.port()
-                                    "$scheme://$host:$port"
-                                })
-
-                    val onboardingInfo =
-                        ValidatorOnboardingInfo(
-                            validatorAddress = validatorAddress,
-                            fullNodeAddress = fullNodeAddress,
-                            fuelNodeAddress = fuelNodeAddress,
-                            amountToFullNode = 1.0,
-                            amountToValidator = 1.0,
-                            totalWithdrawn = 2.0
-                        )
-
-                    val transactions =
-                        listOf(
-                            Transaction(
-                                transaction = "VALIDATOR_ONBOARDING_FULLNODE",
-                                sender = fuelNodeAddress,
-                                receiver = fullNodeAddress,
-                                remittance = 1.0,
-                                commission = 0.0
-                            ),
-                            Transaction(
-                                transaction = "VALIDATOR_ONBOARDING_VALIDATOR",
-                                sender = fuelNodeAddress,
-                                receiver = validatorAddress,
-                                remittance = 1.0,
-                                commission = 0.0
-                            )
-                        )
-
-                    val lastBlock = BlockChain.getLastBlock()
-                    val onboardingData =
-                        Data(
-                            reward = 0.0,
-                            ticker = "KNT",
-                            validator = "ONBOARDING",
-                            transactions = transactions,
-                            comment = "Validator onboarding: $validatorAddress",
-                            type = BlockDataType.VALIDATOR_ONBOARDING,
-                            validatorOnboardingInfo = onboardingInfo
-                        )
-
-                    val onboardingBlock =
-                        Block(
-                            version = protocolVersion,
-                            index = lastBlock.index + 1,
-                            previousHash = lastBlock.hash,
-                            timestamp = System.currentTimeMillis(),
-                            data = onboardingData,
-                            validatorSignature = "",
-                            hash = ""
-                        )
-
-                    onboardingBlock.hash = onboardingBlock.calculateHash()
-                    BlockChain.database.insert(onboardingBlock)
-                    BlockChain.refreshFromDatabase()
-
-                    println(
-                        "🎁 Validator onboarding completed: withdrew 2 KNT from $fuelNodeAddress, " +
-                            "paid 1 KNT to Full Node ($fullNodeAddress) and 1 KNT to Validator ($validatorAddress)"
-                    )
-                    }
-                }
 
                 validatorSessions.add(
                         ValidatorSession(

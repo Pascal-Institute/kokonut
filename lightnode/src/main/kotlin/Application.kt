@@ -164,6 +164,11 @@ fun App() {
                                 // Initialize blockchain
                                 BlockChain.initialize(NodeType.LIGHT, peerAddress)
 
+                                // Force sync from the connected Full Node so the local DB sees
+                                // any new blocks (e.g., onboarding) created during handshake.
+                                BlockChain.loadChainFromFullNode(url)
+                                networkInfo = networkInfo?.copy(chainSize = BlockChain.getChainSize())
+
                                 // Auto-load validator address
                                 validatorAddress = wallet.validatorAddress
                                 validationState = wallet.validationState

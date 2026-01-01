@@ -367,8 +367,43 @@ class BlockChain {
                 cachedChain?.lastOrNull() ?: throw IllegalStateException("Chain is Empty")
 
         fun getTotalCurrencyVolume(): Double {
-            val totalCurrencyVolume = cachedChain?.sumOf { it.data.reward } ?: 0.0
-            return truncate(totalCurrencyVolume)
+            val chain = cachedChain ?: emptyList()
+            val rewards = chain.sumOf { it.data.reward }
+            val genesisMinted =
+                    chain.sumOf { block ->
+                        block.data.transactions
+                                .filter { it.transaction == "GENESIS_MINT" }
+                                .sumOf { it.remittance }
+                    }
+            return truncate(rewards + genesisMinted)
+        }
+
+        /**
+         * Compute account-like balance from on-chain transactions.
+         *
+         * Rules:
+         * - Receiver gains `remittance`
+         * - Sender loses `remittance + commission`
+         * - Commission is not credited elsewhere (commission is 0.0 in current flows)
+         */
+        fun getBalance(address: String): Double {
+            val chain = cachedChain ?: emptyList()
+            var balance = 0.0
+            chain.forEach { block ->
+                block.data.transactions.forEach { tx ->
+                    if (tx.receiver == address) {
+                        balance += tx.remittance
+                    }
+                    if (tx.sender == address) {
+                        balance -= (tx.remittance + tx.commission)
+                    }
+                }
+            }
+            return truncate(balance)
+        }
+
+        fun getTreasuryBalance(): Double {
+            return getBalance(getTreasuryAddress())
         }
 
         /**
