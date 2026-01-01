@@ -31,7 +31,7 @@ fun main() {
     val port = 80
 
     // Start automatic heartbeat to Fuel Node
-    val myAddress = "http://$host:$port"
+    val myAddress = Utility.getAdvertiseAddress(host, port)
     val fuelNodeAddress = BlockChain.knownPeer
 
     if (fuelNodeAddress != null) {

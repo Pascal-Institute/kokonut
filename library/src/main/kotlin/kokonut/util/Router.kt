@@ -603,17 +603,22 @@ class Router {
                     data class HeartbeatRequest(val address: String)
 
                     val request = call.receive<HeartbeatRequest>()
-                    val address = request.address
+                    val normalizedAddress =
+                            Utility.normalizeNodeAddress(
+                                    address = request.address,
+                                    remoteHost = call.request.origin.remoteHost,
+                                    forwardedForHeader = call.request.headers["X-Forwarded-For"]
+                            )
                     val now = System.currentTimeMillis()
 
                     // Update or add node with current timestamp
-                    val isNewNode = !fullNodes.containsKey(address)
-                    fullNodes[address] = now
+                    val isNewNode = !fullNodes.containsKey(normalizedAddress)
+                    fullNodes[normalizedAddress] = now
 
                     if (isNewNode) {
-                        println("✅ New Full Node registered: $address")
+                        println("✅ New Full Node registered: $normalizedAddress")
                     } else {
-                        println("💓 Heartbeat received from: $address")
+                        println("💓 Heartbeat received from: $normalizedAddress")
                     }
 
                     call.respond(
