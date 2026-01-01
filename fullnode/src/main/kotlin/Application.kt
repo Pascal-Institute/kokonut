@@ -21,9 +21,9 @@ import kokonut.util.Utility
 
 
 fun main() {
-    val blockchain = BlockChain()
     BlockChain.initialize(NodeType.FULL)
     isValid()
+
 
     val host = System.getenv("SERVER_HOST") ?: "0.0.0.0"
     val port = 80
