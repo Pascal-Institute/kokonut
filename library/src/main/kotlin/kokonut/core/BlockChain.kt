@@ -14,6 +14,8 @@ import kotlinx.coroutines.runBlocking
 class BlockChain {
     companion object {
         const val TICKER = "KNT"
+        private const val TREASURY_ADDRESS_ENV = "KOKONUT_TREASURY_ADDRESS"
+        private const val DEFAULT_TREASURY_ADDRESS = "KOKONUT_TREASURY"
         val database by lazy { SQLite() }
 
         // Known peer for bootstrapping
@@ -51,6 +53,12 @@ class BlockChain {
             if (getChainSize() > 0) {
                 println("✅ Blockchain loaded from local database. Size: ${getChainSize()}")
                 scanFuelNodes()
+
+                // Safe upgrade path: if this is a Fuel node with only Genesis, ensure the
+                // one-time treasury mint block exists.
+                if (nodeType == NodeType.FUEL) {
+                    ensureGenesisTreasuryMintIfNeeded()
+                }
                 return
             }
 
@@ -83,8 +91,17 @@ class BlockChain {
                 val genesis = GenesisGenerator.createGenesisBlock()
                 database.insert(genesis)
 
-                syncChain()
-                scanFuelNodes()
+                // Record initial treasury funding (external supply injection)
+                val mintBlock =
+                    GenesisGenerator.createGenesisTreasuryMintBlock(
+                        treasuryAddress = getTreasuryAddress(),
+                        previousHash = genesis.hash,
+                        index = 1,
+                        amount = GenesisGenerator.GENESIS_TREASURY_MINT_AMOUNT
+                    )
+                database.insert(mintBlock)
+
+                refreshFromDatabase()
             } else {
                 throw IllegalStateException(
                         "❌ ${nodeType} Node CANNOT create Genesis Block.\n" +
@@ -93,6 +110,55 @@ class BlockChain {
                 )
             }
         }
+
+            fun getTreasuryAddress(): String {
+                return System.getenv(TREASURY_ADDRESS_ENV)?.takeIf { it.isNotBlank() }
+                    ?: DEFAULT_TREASURY_ADDRESS
+            }
+
+            private fun hasGenesisTreasuryMint(chain: List<Block>): Boolean {
+                return chain.any { block ->
+                block.data.transactions.any { tx ->
+                    tx.transaction == "GENESIS_MINT" && tx.receiver == getTreasuryAddress()
+                }
+                }
+            }
+
+            /**
+             * Ensures the Genesis treasury mint block exists exactly once.
+             *
+             * Guardrails:
+             * - Never inserts if already present.
+             * - Only auto-inserts when the chain is effectively fresh (Genesis-only).
+             */
+            private fun ensureGenesisTreasuryMintIfNeeded() {
+                val chain = cachedChain ?: emptyList()
+                if (chain.isEmpty()) return
+                if (hasGenesisTreasuryMint(chain)) return
+
+                // Only safe to auto-mutate a brand-new chain.
+                if (chain.size != 1L.toInt() || chain.first().index != 0L) {
+                println(
+                    "⚠️ Genesis treasury mint is missing but chain is not fresh; skipping auto-insert to avoid rewriting history."
+                )
+                return
+                }
+
+                val genesis = chain.first()
+                val mintBlock =
+                    GenesisGenerator.createGenesisTreasuryMintBlock(
+                        treasuryAddress = getTreasuryAddress(),
+                        previousHash = genesis.hash,
+                        index = 1,
+                        amount = GenesisGenerator.GENESIS_TREASURY_MINT_AMOUNT
+                    )
+
+                database.insert(mintBlock)
+                refreshFromDatabase()
+                println(
+                    "🏦 Inserted one-time Genesis treasury mint: ${GenesisGenerator.GENESIS_TREASURY_MINT_AMOUNT} KNT -> ${getTreasuryAddress()}"
+                )
+            }
 
         /**
          * Bootstrap from a known peer (Peer Discovery) Downloads Genesis and blockchain, then scans
