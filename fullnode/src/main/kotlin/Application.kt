@@ -12,12 +12,14 @@ import kokonut.util.Router.Companion.getChain
 import kokonut.util.Router.Companion.getLastBlock
 import kokonut.util.Router.Companion.getReward
 import kokonut.util.Router.Companion.getTotalCurrencyVolume
+import kokonut.util.Router.Companion.getValidators
 import kokonut.util.Router.Companion.handshake
 import kokonut.util.Router.Companion.isValid
 import kokonut.util.Router.Companion.root
 import kokonut.util.Router.Companion.startValidating
 import kokonut.util.Router.Companion.stopValidating
 import kokonut.util.Utility
+
 
 
 fun main() {
@@ -51,6 +53,7 @@ fun main() {
                     getTotalCurrencyVolume()
                     getReward()
                     getChain()
+                    getValidators()
                     startValidating()
                     addBlock()
                     stopValidating()

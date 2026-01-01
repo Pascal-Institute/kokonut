@@ -90,6 +90,7 @@ class Router {
                             h1 { +"Timestamp : ${System.currentTimeMillis()}" }
                             h1 { +"Get Chain : /getChain" }
                             h1 { +"Get Connected Validators : /getConnectedValidators" }
+                            h1 { +"Get Active Validators : /getValidators" }
                             h1 { +"Get Last Block : /getLastBlock" }
                             h1 { +"Chain Validation : /isValid" }
                             h1 { +"Get Total Currency Volume : /getTotalCurrencyVolume" }
@@ -215,6 +216,126 @@ class Router {
             get("/getPolicy") {
                 // Default minimum stake is 100.0 KNT
                 call.respond(Policy(protocolVersion, 100.0))
+            }
+        }
+
+        fun Route.getValidators() {
+            get("/getValidators") {
+                val validators = BlockChain.validatorPool.getActiveValidators()
+                
+                call.respondHtml(HttpStatusCode.OK) {
+                    head {
+                        title("Active Validators")
+                        style {
+                            unsafe {
+                                raw("""
+                                    body {
+                                        font-family: Arial, sans-serif;
+                                        max-width: 1000px;
+                                        margin: 50px auto;
+                                        padding: 20px;
+                                        background-color: #f5f5f5;
+                                    }
+                                    h1 {
+                                        color: #333;
+                                        border-bottom: 3px solid #007bff;
+                                        padding-bottom: 10px;
+                                    }
+                                    .summary {
+                                        background-color: #e7f3ff;
+                                        border-left: 4px solid #007bff;
+                                        padding: 15px;
+                                        margin: 20px 0;
+                                        border-radius: 5px;
+                                    }
+                                    table {
+                                        width: 100%;
+                                        border-collapse: collapse;
+                                        background-color: white;
+                                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                                        margin-top: 20px;
+                                    }
+                                    th {
+                                        background-color: #007bff;
+                                        color: white;
+                                        padding: 12px;
+                                        text-align: left;
+                                        font-weight: bold;
+                                    }
+                                    td {
+                                        padding: 10px;
+                                        border-bottom: 1px solid #ddd;
+                                    }
+                                    tr:hover {
+                                        background-color: #f5f5f5;
+                                    }
+                                    .validator-id {
+                                        font-family: monospace;
+                                        font-size: 12px;
+                                        color: #555;
+                                    }
+                                    .no-validators {
+                                        text-align: center;
+                                        padding: 40px;
+                                        color: #999;
+                                        font-style: italic;
+                                    }
+                                """)
+                            }
+                        }
+                    }
+                    body {
+                        h1 { +"🥥 Active Validators" }
+                        
+                        div(classes = "summary") {
+                            h2 { +"Summary" }
+                            p { +"Total Active Validators: ${validators.size}" }
+                            p { +"Total Staked: ${BlockChain.validatorPool.getTotalStaked()} KNT" }
+                            p { +"Minimum Stake Required: ${ValidatorPool.MINIMUM_STAKE} KNT" }
+                        }
+                        
+                        if (validators.isEmpty()) {
+                            div(classes = "no-validators") {
+                                +"No active validators found. Stake KNT to become a validator!"
+                            }
+                        } else {
+                            table {
+                                thead {
+                                    tr {
+                                        th { +"#" }
+                                        th { +"Validator ID (Address)" }
+                                        th { +"Staked Amount" }
+                                        th { +"Blocks Validated" }
+                                        th { +"Total Rewards" }
+                                        th { +"Status" }
+                                    }
+                                }
+                                tbody {
+                                    validators.sortedByDescending { it.stakedAmount }.forEachIndexed { index, validator ->
+                                        tr {
+                                            td { +"${index + 1}" }
+                                            td {
+                                                span(classes = "validator-id") {
+                                                    +validator.address
+                                                }
+                                            }
+                                            td { +"${validator.stakedAmount} KNT" }
+                                            td { +"${validator.blocksValidated}" }
+                                            td { +"${validator.rewardsEarned} KNT" }
+                                            td { 
+                                                if (validator.isActive) {
+                                                    +"✅ Active"
+                                                } else {
+                                                    +"❌ Inactive"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
