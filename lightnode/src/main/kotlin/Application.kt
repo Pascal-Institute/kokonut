@@ -37,6 +37,7 @@ fun App() {
     var miningState by remember { mutableStateOf(MiningState.READY) }
 
     var showSuccessDialog by remember { mutableStateOf(false) }
+    var showKeyGenDialog by remember { mutableStateOf(false) }
 
     MaterialTheme {
         Column {
@@ -85,22 +86,50 @@ fun App() {
                 ) { Text("Load...") }
             }
 
-            Button(
-                    onClick = {
-                        // BlockChain.initialize(NodeType.LIGHT)
-                        val wallet =
-                                Wallet(
-                                        privateKeyFile = File(selectedPrivateKeyFilePath),
-                                        publicKeyFile = File(selectedPublicKeyFilePath)
+            Row {
+                Button(
+                        onClick = {
+                            // BlockChain.initialize(NodeType.LIGHT)
+                            val wallet =
+                                    Wallet(
+                                            privateKeyFile = File(selectedPrivateKeyFilePath),
+                                            publicKeyFile = File(selectedPublicKeyFilePath)
+                                    )
+
+                            if (wallet.isValid()) {
+                                showSuccessDialog = true
+                                minerID = wallet.miner
+                                miningState = wallet.miningState
+                            }
+                        }
+                ) { Text("Login") }
+
+                Button(
+                        onClick = {
+                            val fileDialog =
+                                    FileDialog(Frame(), "Save New Private Key", FileDialog.SAVE)
+                            fileDialog.file = "private.pem"
+                            fileDialog.isVisible = true
+                            val selectedFile = fileDialog.file
+                            if (selectedFile != null) {
+                                val dir = fileDialog.directory
+                                val privateKeyFile = File(dir, selectedFile)
+                                val publicKeyFile = File(dir, "public.pem")
+
+                                val keyPair = Wallet.generateKey()
+                                Wallet.saveKeyPairToFile(
+                                        keyPair,
+                                        privateKeyFile.absolutePath,
+                                        publicKeyFile.absolutePath
                                 )
 
-                        if (wallet.isValid()) {
-                            showSuccessDialog = true
-                            minerID = wallet.miner
-                            miningState = wallet.miningState
+                                selectedPrivateKeyFilePath = privateKeyFile.absolutePath
+                                selectedPublicKeyFilePath = publicKeyFile.absolutePath
+                                showKeyGenDialog = true
+                            }
                         }
-                    }
-            ) { Text("Login") }
+                ) { Text("Generate Keys") }
+            }
 
             if (showSuccessDialog) {
                 AlertDialog(
@@ -109,6 +138,21 @@ fun App() {
                         text = { Text("You have successfully logged in!") },
                         confirmButton = {
                             Button(onClick = { showSuccessDialog = false }) { Text("OK") }
+                        }
+                )
+            }
+
+            if (showKeyGenDialog) {
+                AlertDialog(
+                        onDismissRequest = { showKeyGenDialog = false },
+                        title = { Text("Keys Generated") },
+                        text = {
+                            Text(
+                                    "New keys have been saved successfully!\nPrivate: $selectedPrivateKeyFilePath\nPublic: $selectedPublicKeyFilePath"
+                            )
+                        },
+                        confirmButton = {
+                            Button(onClick = { showKeyGenDialog = false }) { Text("OK") }
                         }
                 )
             }
