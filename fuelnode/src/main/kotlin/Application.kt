@@ -16,6 +16,7 @@ import kokonut.util.Router.Companion.getGenesisBlock
 import kokonut.util.Router.Companion.getPolicy
 import kokonut.util.Router.Companion.heartbeat
 import kokonut.util.Router.Companion.root
+import kokonut.util.Router.Companion.transactionsDashboard
 
 fun main() {
     BlockChain.initialize(NodeType.FUEL)
@@ -57,6 +58,7 @@ fun main() {
                     getGenesisBlock()
                     getPolicy()
                     getChain()
+                    transactionsDashboard()
                 }
             }
             .start(true)

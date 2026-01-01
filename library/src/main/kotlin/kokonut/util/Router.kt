@@ -13,6 +13,8 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.file.Paths
 import java.security.PublicKey
+import java.text.SimpleDateFormat
+import java.util.Date
 import kokonut.Policy
 import kokonut.core.Block
 import kokonut.core.BlockChain
@@ -163,6 +165,162 @@ class Router {
                             h1 { +"Get policy : /getPolicy" }
                             h1 { +"Get genesis block : /getGenesisBlock" }
                             h1 { +"Get full nodes : /getFullNodes" }
+                            h1 { +"Transactions dashboard : /transactions" }
+                        }
+                    }
+                }
+            }
+        }
+
+        fun Route.transactionsDashboard() {
+            get("/transactions") {
+                val limit =
+                        call.request.queryParameters["limit"]
+                                ?.toIntOrNull()
+                                ?.coerceIn(1, 2000)
+                                ?: 200
+
+                if (!BlockChain.isValid()) {
+                    call.respond(
+                            HttpStatusCode.ServiceUnavailable,
+                            "Transactions dashboard unavailable: local chain is invalid"
+                    )
+                    return@get
+                }
+
+                val chain = BlockChain.getChain().sortedByDescending { it.index }
+                val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+
+                data class TxRow(
+                        val blockIndex: Long,
+                        val timestamp: Long,
+                        val transaction: String,
+                        val sender: String,
+                        val receiver: String,
+                        val remittance: Double,
+                        val commission: Double
+                )
+
+                val rows =
+                        chain.flatMap { block ->
+                                    val txs = block.data.transactions
+                                    txs.map { tx ->
+                                        TxRow(
+                                                blockIndex = block.index,
+                                                timestamp = block.timestamp,
+                                                transaction = tx.transaction,
+                                                sender = tx.sender,
+                                                receiver = tx.receiver,
+                                                remittance = tx.remittance,
+                                                commission = tx.commission
+                                        )
+                                    }
+                                }
+                                .take(limit)
+
+                val totalTx = BlockChain.getChain().sumOf { it.data.transactions.size }
+
+                call.respondHtml(HttpStatusCode.OK) {
+                    head {
+                        title("Kokonut Fuel Node - Transactions")
+                        style {
+                            unsafe {
+                                raw(
+                                        """
+                                    body {
+                                        font-family: Arial, sans-serif;
+                                        max-width: 1200px;
+                                        margin: 50px auto;
+                                        padding: 20px;
+                                        background-color: #f5f5f5;
+                                    }
+                                    h1 {
+                                        color: #333;
+                                        border-bottom: 3px solid #28a745;
+                                        padding-bottom: 10px;
+                                    }
+                                    .summary {
+                                        background-color: #d4edda;
+                                        border-left: 4px solid #28a745;
+                                        padding: 15px;
+                                        margin: 20px 0;
+                                        border-radius: 5px;
+                                    }
+                                    table {
+                                        width: 100%;
+                                        border-collapse: collapse;
+                                        background-color: white;
+                                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                                        margin-top: 20px;
+                                    }
+                                    th {
+                                        background-color: #28a745;
+                                        color: white;
+                                        padding: 12px;
+                                        text-align: left;
+                                        font-weight: bold;
+                                        font-size: 13px;
+                                    }
+                                    td {
+                                        padding: 10px;
+                                        border-bottom: 1px solid #ddd;
+                                        font-size: 13px;
+                                    }
+                                    tr:hover {
+                                        background-color: #f5f5f5;
+                                    }
+                                    .mono {
+                                        font-family: monospace;
+                                        font-size: 12px;
+                                        color: #555;
+                                        word-break: break-all;
+                                    }
+                                """
+                                )
+                            }
+                        }
+                    }
+                    body {
+                        h1 { +"🥥 Fuel Node Transactions" }
+
+                        div(classes = "summary") {
+                            h2 { +"Summary" }
+                            p { +"Chain size: ${BlockChain.getChainSize()} blocks" }
+                            p { +"Total transactions (all blocks): $totalTx" }
+                            p { +"Showing most recent: ${rows.size} (limit=$limit)" }
+                        }
+
+                        if (rows.isEmpty()) {
+                            p { +"No transactions found." }
+                        } else {
+                            table {
+                                thead {
+                                    tr {
+                                        th { +"Block" }
+                                        th { +"Time" }
+                                        th { +"Type" }
+                                        th { +"Sender" }
+                                        th { +"Receiver" }
+                                        th { +"Amount" }
+                                        th { +"Fee" }
+                                    }
+                                }
+                                tbody {
+                                    rows.forEach { row ->
+                                        tr {
+                                            td { +row.blockIndex.toString() }
+                                            td {
+                                                +dateFormat.format(Date(row.timestamp))
+                                            }
+                                            td { +row.transaction }
+                                            td { span(classes = "mono") { +row.sender } }
+                                            td { span(classes = "mono") { +row.receiver } }
+                                            td { +row.remittance.toString() }
+                                            td { +row.commission.toString() }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
