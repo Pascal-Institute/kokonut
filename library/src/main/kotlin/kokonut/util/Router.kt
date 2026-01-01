@@ -583,12 +583,6 @@ class Router {
                         )
                 )
 
-                // [Antigravity Fix] Give free stake for demo purposes so they can start validating
-                // immediately
-                // In a real network, this would require a transaction with actual fees
-                BlockChain.validatorPool.stake(validatorAddress, 1000.0)
-                println("🎁 Granted 1000 KNT stake to new validator: $validatorAddress")
-
                 println("Validator : $validatorAddress start validating...")
                 call.respond("Validating Approved...")
 
