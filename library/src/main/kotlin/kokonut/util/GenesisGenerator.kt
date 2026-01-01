@@ -16,7 +16,7 @@ object GenesisGenerator {
                 NetworkRules(
                         networkId = networkId,
                         minFuelStake = 1_000_000.0,
-                        minFullStake = 100.0,
+                                minFullStake = 1.0,
                         fuelConsensusThreshold = 0.67,
                         maxFuelNodes = 100,
                         faucetAmount = 100.0,
