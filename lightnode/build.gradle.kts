@@ -3,6 +3,7 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 plugins {
     //develop
     kotlin("jvm")
+    kotlin("plugin.serialization") version "1.9.22"
     //production
     //kotlin("jvm") version "1.9.22"
     id("org.jetbrains.compose") version "1.6.0"
@@ -29,6 +30,7 @@ dependencies {
     // With compose.desktop.common you will also lose @Preview functionality
     implementation(project(":library"))
     implementation(compose.desktop.currentOs)
+    implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:2.3.4")
     testImplementation(kotlin("test"))
 }
 
