@@ -17,7 +17,6 @@ import kokonut.util.Router.Companion.getPolicy
 import kokonut.util.Router.Companion.heartbeat
 import kokonut.util.Router.Companion.propagate
 import kokonut.util.Router.Companion.root
-import kokonut.util.Router.Companion.transactionsDashboard
 
 fun main() {
     BlockChain.initialize(NodeType.FUEL)
@@ -60,7 +59,6 @@ fun main() {
                     getPolicy()
                     getChain()
                     propagate()
-                    transactionsDashboard()
                 }
             }
             .start(true)

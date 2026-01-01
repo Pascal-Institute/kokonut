@@ -5,7 +5,6 @@ import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.routing.*
 import kokonut.core.BlockChain
-import kokonut.core.BlockChain.Companion.isValid
 import kokonut.util.NodeType
 import kokonut.util.Router.Companion.addBlock
 import kokonut.util.Router.Companion.getChain
@@ -19,13 +18,14 @@ import kokonut.util.Router.Companion.isValid
 import kokonut.util.Router.Companion.root
 import kokonut.util.Router.Companion.startValidating
 import kokonut.util.Router.Companion.stopValidating
+import kokonut.util.Router.Companion.transactionsDashboard
 import kokonut.util.Utility
 
 
 
 fun main() {
     BlockChain.initialize(NodeType.FULL)
-    isValid()
+    BlockChain.isValid()
 
 
     val host = System.getenv("SERVER_HOST") ?: "0.0.0.0"
@@ -55,6 +55,7 @@ fun main() {
                     getTotalCurrencyVolume()
                     getReward()
                     getChain()
+                    transactionsDashboard()
                     getValidators()
                     startValidating()
                     addBlock()
