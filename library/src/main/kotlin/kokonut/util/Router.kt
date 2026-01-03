@@ -8,6 +8,7 @@ import io.ktor.server.plugins.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.utils.io.*
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
@@ -970,7 +971,7 @@ class Router {
                             }
                             is PartData.FileItem -> {
                                 if (part.name == "public_key") {
-                                    val fileBytes = part.streamProvider().use { it.readBytes() }
+                                    val fileBytes = part.provider().toByteArray()
                                     val fileName = part.originalFileName ?: "temp_key.pem"
                                     publicKeyFile = File(keyPath, fileName)
                                     publicKeyFile!!.writeBytes(fileBytes)
@@ -1230,7 +1231,7 @@ class Router {
                             }
                             is PartData.FileItem -> {
                                 if (part.name == "public_key") {
-                                    val fileBytes = part.streamProvider().use { it.readBytes() }
+                                    val fileBytes = part.provider().toByteArray()
                                     val fileName = part.originalFileName ?: "temp_block_key.pem"
                                     publicKeyFile = File(keyPath, fileName)
                                     publicKeyFile!!.writeBytes(fileBytes)

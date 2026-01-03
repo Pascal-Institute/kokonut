@@ -11,8 +11,8 @@ if (propertiesFile.exists()) {
 
 plugins {
     java
-    kotlin("jvm") version "1.9.22"
-    kotlin("plugin.serialization") version "1.9.22"
+    kotlin("jvm") version "2.1.0"
+    kotlin("plugin.serialization") version "2.1.0"
     `maven-publish`
 }
 
@@ -26,17 +26,17 @@ repositories {
 
 dependencies {
     testImplementation(kotlin("test"))
-    implementation("org.jetbrains.kotlinx:kotlinx-html-jvm:0.8.0")
-    implementation("io.ktor:ktor-server-core-jvm:2.3.4")
-    implementation("io.ktor:ktor-server-html-builder:2.3.4")
-    implementation("io.ktor:ktor-server-netty-jvm:2.3.4")
-    implementation("io.ktor:ktor-server-content-negotiation-jvm:2.3.4")
-    implementation("io.ktor:ktor-client-core:2.3.4")
-    implementation("io.ktor:ktor-client-cio:2.3.4")
-    implementation("io.ktor:ktor-client-content-negotiation:2.3.4")
-    implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:2.3.4")
-    implementation("ch.qos.logback:logback-classic:1.4.12")
-    implementation("org.xerial:sqlite-jdbc:3.41.2.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-html-jvm:0.11.0")
+    implementation("io.ktor:ktor-server-core-jvm:3.0.2")
+    implementation("io.ktor:ktor-server-html-builder:3.0.2")
+    implementation("io.ktor:ktor-server-netty-jvm:3.0.2")
+    implementation("io.ktor:ktor-server-content-negotiation-jvm:3.0.2")
+    implementation("io.ktor:ktor-client-core:3.0.2")
+    implementation("io.ktor:ktor-client-cio:3.0.2")
+    implementation("io.ktor:ktor-client-content-negotiation:3.0.2")
+    implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:3.0.2")
+    implementation("ch.qos.logback:logback-classic:1.5.12")
+    implementation("org.xerial:sqlite-jdbc:3.47.1.0")
 }
 
 tasks.withType<ProcessResources> {

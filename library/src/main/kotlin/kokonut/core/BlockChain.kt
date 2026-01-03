@@ -17,7 +17,7 @@ class BlockChain {
         private const val DEFAULT_TREASURY_ADDRESS = "KOKONUT_TREASURY"
         private const val STAKE_VAULT_ADDRESS_ENV = "KOKONUT_STAKE_VAULT_ADDRESS"
         private const val DEFAULT_STAKE_VAULT_ADDRESS = "KOKONUT_STAKE_VAULT"
-        val database by lazy { SQLite() }
+        var database = SQLite()
 
         // Known peer for bootstrapping
         // Set via environment variable: KOKONUT_PEER=http://known-node-address

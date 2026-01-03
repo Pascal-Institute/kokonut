@@ -7,16 +7,14 @@ import kokonut.util.Utility.Companion.getJarDirectory
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-class SQLite {
+class SQLite(private val customPath: String? = null) {
 
     val tableName = "kovault"
-    val dbPath = getDatabasePath()
+    val dbPath = customPath ?: getDatabasePath()
 
     private fun openConnection(): Connection {
         val conn = DriverManager.getConnection("jdbc:sqlite:$dbPath")
-        conn.createStatement().use { stmt ->
-            stmt.execute("PRAGMA busy_timeout = 5000;")
-        }
+        conn.createStatement().use { stmt -> stmt.execute("PRAGMA busy_timeout = 5000;") }
         return conn
     }
 
@@ -31,9 +29,7 @@ class SQLite {
                         block TEXT NOT NULL
                     );
                     """
-                    conn.createStatement().use { statement ->
-                        statement.execute(createTableSQL)
-                    }
+                    conn.createStatement().use { statement -> statement.execute(createTableSQL) }
                     println("Table '$tableName' created.")
                 } else {
                     println("Table '$tableName' already exists.")
