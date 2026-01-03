@@ -15,11 +15,11 @@ import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Base64
-import kokonut.Policy
 import kokonut.core.Block
 import kokonut.core.BlockChain
 import kokonut.core.BlockChain.Companion.fullNode
 import kokonut.core.HandshakeRequest
+import kokonut.core.Policy
 import kokonut.util.Utility.Companion.writeFilePart
 import kokonut.util.Utility.Companion.writePart
 import kotlinx.coroutines.runBlocking

@@ -15,13 +15,13 @@ import java.nio.file.Paths
 import java.security.PublicKey
 import java.text.SimpleDateFormat
 import java.util.Date
-import kokonut.Policy
 import kokonut.core.Block
 import kokonut.core.BlockChain
 import kokonut.core.BlockChain.Companion.loadFullNodes
 import kokonut.core.BlockDataType
 import kokonut.core.Data
 import kokonut.core.FuelNodeInfo
+import kokonut.core.Policy
 import kokonut.core.Transaction
 import kokonut.core.ValidatorOnboardingInfo
 import kokonut.state.ValidatorState

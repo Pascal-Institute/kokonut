@@ -19,31 +19,42 @@ This project is organized as a Gradle multi-module project, where each module pl
 
 ### 1. `:library` (Core Framework)
 
-Contains the core blockchain framework with a **modern, layered architecture**:
+Contains the core blockchain framework with a clean, minimal architecture:
 
-#### Architecture Layers:
+```
+library/src/main/kotlin/kokonut/
+├── core/           # Core blockchain data structures
+│   ├── Block.kt
+│   ├── BlockChain.kt
+│   ├── Data.kt
+│   ├── FuelNodeInfo.kt
+│   ├── NetworkRules.kt
+│   ├── NodeHandshake.kt
+│   ├── Policy.kt
+│   ├── Transaction.kt
+│   ├── Validator.kt
+│   └── ValidatorOnboardingInfo.kt
+├── state/          # State management
+│   ├── NodeState.kt
+│   └── ValidatorState.kt
+└── util/           # Utilities and API
+    ├── API.kt
+    ├── FullNode.kt
+    ├── GenesisGenerator.kt
+    ├── NodeType.kt
+    ├── Router.kt
+    ├── SQLite.kt
+    ├── Utility.kt
+    ├── ValidatorPool.kt
+    ├── ValidatorSession.kt
+    └── Wallet.kt
+```
 
-- **`config/`**: Network configuration and constants
-- **`crypto/`**: Cryptographic utilities (HashCalculator, KeyManager, SignatureUtil, Wallet)
-- **`service/`**: Business logic layer (BlockchainService, BalanceService, StakingService)
-- **`persistence/`**: Data access layer with Repository pattern
-  - `database/`: Database interface abstraction
-  - `repository/`: Repository implementations (BlockRepository, SQLiteBlockRepository)
-- **`node/`**: Node management (NodeInitializer for blockchain initialization)
-- **`core/`**: Core data structures (Block, Transaction, Data, Validator)
-- **`util/`**: Pure utility functions
-- **`consensus/`**: PoS consensus mechanism (ValidatorPool)
-- **`network/`**: Network communication protocols
-- **`api/`**: HTTP API layer (Router)
+#### Key Components:
 
-#### Key Design Patterns:
-
-- ✅ **Service Layer**: Separation of business logic from data access
-- ✅ **Repository Pattern**: Abstraction of data storage
-- ✅ **Dependency Injection Ready**: Clean interfaces for testing and flexibility
-- ✅ **Single Responsibility**: Each package has a clear purpose
-
-See [REFACTORING_GUIDE.md](REFACTORING_GUIDE.md) for detailed architecture documentation.
+- **`core/`**: Core blockchain entities (Block, BlockChain, Transaction, Validator)
+- **`state/`**: Node and validator state enums
+- **`util/`**: HTTP API, routing, utilities, and wallet management
 
 ### 2. `:fuelnode` (Bootstrap Node)
 
@@ -51,7 +62,7 @@ Acts as the network entry point and provides Node Discovery services.
 
 - **Genesis Block**: Distributes the initial block (Genesis Block) to Full Nodes.
 - **Node Discovery**: Manages and propagates the list of Full Nodes participating in the network.
-- **Policy**: Manages protocol versions and network policies.
+- **Policy**: Manages network policies.
 
 ### 3. `:fullnode` (Main Node)
 
@@ -200,25 +211,22 @@ To become an active validator, you must lock at least the network minimum stake 
 - **Serialization**: Kotlinx Serialization (JSON)
 - **Database**: SQLite (via JDBC)
 - **Build Tool**: Gradle Kotlin DSL
-- **Architecture**: Layered architecture with service layer, repository pattern, and dependency injection
 
 ## 🤝 Contributing
 
 1. Fork this repository.
 2. Create a new branch (`git checkout -b feature/amazing-feature`).
-3. Commit your changes
+3. Commit your changes (`git commit -m 'Add some amazing feature'`).
+4. Push to the branch (`git push origin feature/amazing-feature`).
+5. Open a Pull Request.
 
 ### Development Guidelines
 
-- **Services**: Put business logic in `service/` package
-- **Data Access**: Use repository pattern in `persistence/`
-- **Network Code**: Add to `network/` package
-- **Configuration**: Add to `config/` package
-- **Crypto Operations**: Add to `crypto/` package
+- **Core entities**: Add to `core/` package
+- **Utilities and API**: Add to `util/` package
+- **State management**: Add to `state/` package
 - **Follow Kotlin conventions** and maintain backward compatibility
 - **Write tests** for new features
-
-For detailed architecture information, see [REFACTORING_GUIDE.md](REFACTORING_GUIDE.md).(`git commit -m 'Add some amazing feature'`). 4. Push to the branch (`git push origin feature/amazing-feature`). 5. Open a Pull Request.
 
 ---
 

@@ -38,7 +38,6 @@ import kokonut.util.API.Companion.stakeLock
 import kokonut.util.API.Companion.startValidating
 import kokonut.util.NodeType
 import kokonut.util.Wallet
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.serializer
@@ -412,10 +411,16 @@ fun App() {
                                                                 BlockChain.validate(wallet, data)
 
                                                         // 3. If successful, send to Full Node
-                                                        @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+                                                        @OptIn(
+                                                                kotlinx.serialization
+                                                                        .ExperimentalSerializationApi::class
+                                                        )
                                                         url.addBlock(
-                                                            Json.encodeToJsonElement(serializer<Block>(), block),
-                                                            File(selectedPublicKeyFilePath)
+                                                                Json.encodeToJsonElement(
+                                                                        serializer<Block>(),
+                                                                        block
+                                                                ),
+                                                                File(selectedPublicKeyFilePath)
                                                         )
 
                                                         // Update UI
