@@ -192,7 +192,9 @@ fun App() {
                                 validationState = wallet.validationState
 
                                 // Fetch wallet balance from Full Node
+                                println("🔍 Querying balance for address: $validatorAddress")
                                 walletBalance = url.getBalance(validatorAddress)
+                                println("💰 Retrieved balance: $walletBalance KNT")
                             } else {
                                 isConnected = false
                                 networkInfo = null
@@ -407,12 +409,12 @@ fun App() {
 
                                                         // 3. If successful, send to Full Node
                                                         url.addBlock(
-                                                                kotlinx.serialization.json.Json
-                                                                        .encodeToJsonElement(
-                                                                                Block.serializer(),
-                                                                                block
-                                                                        ),
-                                                                File(selectedPublicKeyFilePath)
+                                                            kotlinx.serialization.json.Json
+                                                                .encodeToJsonElement(
+                                                                    Block.serializer(),
+                                                                    block
+                                                                ),
+                                                            File(selectedPublicKeyFilePath)
                                                         )
 
                                                         // Update UI

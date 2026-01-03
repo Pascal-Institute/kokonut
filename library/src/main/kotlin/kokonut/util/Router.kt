@@ -581,7 +581,12 @@ class Router {
                     return@get
                 }
 
+                // Ensure chain is up-to-date
+                BlockChain.refreshFromDatabase()
+
                 val balance = BlockChain.getBalance(address)
+                println("💰 API /getBalance request for: $address -> Balance: $balance KNT")
+
                 call.respond(mapOf("address" to address, "balance" to balance, "ticker" to "KNT"))
             }
         }

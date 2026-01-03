@@ -7,6 +7,7 @@ import io.ktor.server.routing.*
 import kokonut.core.BlockChain
 import kokonut.util.NodeType
 import kokonut.util.Router.Companion.addBlock
+import kokonut.util.Router.Companion.getBalance
 import kokonut.util.Router.Companion.getChain
 import kokonut.util.Router.Companion.getGenesisBlock
 import kokonut.util.Router.Companion.getLastBlock
@@ -16,18 +17,15 @@ import kokonut.util.Router.Companion.getValidators
 import kokonut.util.Router.Companion.handshake
 import kokonut.util.Router.Companion.isValid
 import kokonut.util.Router.Companion.root
-import kokonut.util.Router.Companion.startValidating
 import kokonut.util.Router.Companion.stakeLock
+import kokonut.util.Router.Companion.startValidating
 import kokonut.util.Router.Companion.stopValidating
 import kokonut.util.Router.Companion.transactionsDashboard
 import kokonut.util.Utility
 
-
-
 fun main() {
     BlockChain.initialize(NodeType.FULL)
     BlockChain.isValid()
-
 
     val host = System.getenv("SERVER_HOST") ?: "0.0.0.0"
     val port = 80
@@ -53,6 +51,7 @@ fun main() {
                     isValid()
                     getGenesisBlock()
                     getLastBlock()
+                    getBalance()
                     getTotalCurrencyVolume()
                     getReward()
                     getChain()
@@ -63,7 +62,6 @@ fun main() {
                     addBlock()
                     stopValidating()
                 }
-
             }
             .start(true)
 }
