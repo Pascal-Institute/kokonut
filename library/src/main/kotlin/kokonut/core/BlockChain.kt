@@ -519,7 +519,7 @@ class BlockChain {
         }
 
         fun getChainSize(): Long {
-            return (cachedChain!!.size).toLong()
+            return (cachedChain?.size ?: 0).toLong()
         }
 
         fun isValid(): Boolean {
