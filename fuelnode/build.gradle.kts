@@ -2,9 +2,9 @@ plugins {
     //develop
     //kotlin("jvm")
     //production
-    kotlin("jvm") version "1.9.22"
+    kotlin("jvm") version "2.1.0"
 
-    id("io.ktor.plugin") version "2.3.4"
+    id("io.ktor.plugin") version "3.0.2"
     application
 }
 
@@ -30,12 +30,12 @@ dependencies {
     //production
     //implementation("com.github.Pascal-Institute:kokonut:4.1.7")
 
-    implementation("io.ktor:ktor-server-html-builder:2.3.4")
-    implementation("io.ktor:ktor-server-core-jvm:2.3.4")
-    implementation("io.ktor:ktor-server-netty-jvm:2.3.4")
-    implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:2.3.4")
-    implementation("io.ktor:ktor-server-content-negotiation-jvm:2.3.4")
-    implementation("ch.qos.logback:logback-classic:1.4.12")
+    implementation("io.ktor:ktor-server-html-builder:3.0.2")
+    implementation("io.ktor:ktor-server-core-jvm:3.0.2")
+    implementation("io.ktor:ktor-server-netty-jvm:3.0.2")
+    implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:3.0.2")
+    implementation("io.ktor:ktor-server-content-negotiation-jvm:3.0.2")
+    implementation("ch.qos.logback:logback-classic:1.5.12")
     testImplementation(kotlin("test"))
 }
 

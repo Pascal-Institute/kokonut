@@ -3,10 +3,11 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 plugins {
     //develop
     kotlin("jvm")
-    kotlin("plugin.serialization") version "1.9.22"
+    kotlin("plugin.serialization") version "2.1.0"
     //production
-    //kotlin("jvm") version "1.9.22"
-    id("org.jetbrains.compose") version "1.6.0"
+    //kotlin("jvm") version "2.1.0"
+    id("org.jetbrains.compose") version "1.7.1"
+    id("org.jetbrains.kotlin.plugin.compose") version "2.1.0"
 }
 
 group = "io.github.pascal-institute"
@@ -30,7 +31,7 @@ dependencies {
     // With compose.desktop.common you will also lose @Preview functionality
     implementation(project(":library"))
     implementation(compose.desktop.currentOs)
-    implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:2.3.4")
+    implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:3.0.2")
     testImplementation(kotlin("test"))
 }
 
