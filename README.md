@@ -17,15 +17,33 @@ Kokonut is a lightweight and scalable blockchain framework written in Kotlin. De
 
 This project is organized as a Gradle multi-module project, where each module plays a distinct role in the blockchain network.
 
-### 1. `:library` (Core)
+### 1. `:library` (Core Framework)
 
-Contains the core logic and data structures of the blockchain.
+Contains the core blockchain framework with a **modern, layered architecture**:
 
-- **Block & Blockchain**: Block creation, hash calculation (SHA-256), chain linking, and validation logic.
-- **Validator & ValidatorPool**: Proof of Stake validator management and stake-weighted selection.
-- **Wallet**: Public/Private key generation and verification (Digital Signatures).
-- **Router**: API definitions for node-to-node communication.
-- **PoS (Proof of Stake)**: Energy-efficient stake-based consensus algorithm.
+#### Architecture Layers:
+
+- **`config/`**: Network configuration and constants
+- **`crypto/`**: Cryptographic utilities (HashCalculator, KeyManager, SignatureUtil, Wallet)
+- **`service/`**: Business logic layer (BlockchainService, BalanceService, StakingService)
+- **`persistence/`**: Data access layer with Repository pattern
+  - `database/`: Database interface abstraction
+  - `repository/`: Repository implementations (BlockRepository, SQLiteBlockRepository)
+- **`node/`**: Node management (NodeInitializer for blockchain initialization)
+- **`core/`**: Core data structures (Block, Transaction, Data, Validator)
+- **`util/`**: Pure utility functions
+- **`consensus/`**: PoS consensus mechanism (ValidatorPool)
+- **`network/`**: Network communication protocols
+- **`api/`**: HTTP API layer (Router)
+
+#### Key Design Patterns:
+
+- ✅ **Service Layer**: Separation of business logic from data access
+- ✅ **Repository Pattern**: Abstraction of data storage
+- ✅ **Dependency Injection Ready**: Clean interfaces for testing and flexibility
+- ✅ **Single Responsibility**: Each package has a clear purpose
+
+See [REFACTORING_GUIDE.md](REFACTORING_GUIDE.md) for detailed architecture documentation.
 
 ### 2. `:fuelnode` (Bootstrap Node)
 
@@ -180,15 +198,27 @@ To become an active validator, you must lock at least the network minimum stake 
 - **Server Framework**: [Ktor](https://ktor.io/) (Netty Engine)
 - **UI Framework**: [Compose Multiplatform](https://www.jetbrains.com/lp/compose-multiplatform/) (Desktop)
 - **Serialization**: Kotlinx Serialization (JSON)
+- **Database**: SQLite (via JDBC)
 - **Build Tool**: Gradle Kotlin DSL
+- **Architecture**: Layered architecture with service layer, repository pattern, and dependency injection
 
 ## 🤝 Contributing
 
 1. Fork this repository.
 2. Create a new branch (`git checkout -b feature/amazing-feature`).
-3. Commit your changes (`git commit -m 'Add some amazing feature'`).
-4. Push to the branch (`git push origin feature/amazing-feature`).
-5. Open a Pull Request.
+3. Commit your changes
+
+### Development Guidelines
+
+- **Services**: Put business logic in `service/` package
+- **Data Access**: Use repository pattern in `persistence/`
+- **Network Code**: Add to `network/` package
+- **Configuration**: Add to `config/` package
+- **Crypto Operations**: Add to `crypto/` package
+- **Follow Kotlin conventions** and maintain backward compatibility
+- **Write tests** for new features
+
+For detailed architecture information, see [REFACTORING_GUIDE.md](REFACTORING_GUIDE.md).(`git commit -m 'Add some amazing feature'`). 4. Push to the branch (`git push origin feature/amazing-feature`). 5. Open a Pull Request.
 
 ---
 
