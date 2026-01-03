@@ -434,7 +434,20 @@ fun App() {
                                                     } catch (e: Exception) {
                                                         // Expected: Not selected, chain not ready,
                                                         // etc.
-                                                        println("Staking: ${e.message}")
+                                                        println("Staking info: ${e.message}")
+                                                    } finally {
+                                                        // Always update UI with latest chain info
+                                                        val lastBlock = BlockChain.getLastBlock()
+                                                        if (networkInfo != null &&
+                                                                        networkInfo!!.chainSize !=
+                                                                                lastBlock.index
+                                                        ) {
+                                                            networkInfo =
+                                                                    networkInfo!!.copy(
+                                                                            chainSize =
+                                                                                    lastBlock.index
+                                                                    )
+                                                        }
                                                     }
                                                 }
                                             }

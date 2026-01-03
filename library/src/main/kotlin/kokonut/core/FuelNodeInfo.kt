@@ -21,5 +21,6 @@ enum class BlockDataType {
     FUEL_REGISTRATION, // Fuel Node registration
     FUEL_REMOVAL, // Fuel Node removal
     FULL_REGISTRATION, // Full Node registration
-    FULL_REMOVAL // Full Node removal
+    FULL_REMOVAL, // Full Node removal
+    UNSTAKE // Retrieve locked stake (stop validating)
 }
