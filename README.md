@@ -262,6 +262,16 @@ To become an active validator, you must lock at least the network minimum stake 
 - **Post-Validation Updates**: Chain sync and balance updates after successful block validation
 - **Transaction Logging**: Accurate recording of all reward transactions
 
+### Governance & Security (New)
+
+- **⚖️ Deterministic Consensus**: Validator selection is now fully deterministic.
+  - Resolves network forks by ensuring all nodes select the exact same validator for every block height using a consensus seed (`previousHash + index`).
+  - Eliminates "lucky" or "loud" block production; only the legitimately selected validator's block is accepted.
+- **🛡️ Fuel Node Slashing Authority**:
+  - Implemented a **Fuel Node-exclusive Slashing mechanism**.
+  - Only the Fuel Node ("Judiciary") has the authority to issue `SLASH` transactions to penalize malicious validators.
+  - Protects the network integrity by centralizing the "punishment" power to the bootstrap node.
+
 ---
 
 **License**

@@ -450,7 +450,16 @@ class BlockChain {
             }
 
             // Select validator for this block (probabilistic based on stake)
-            val selectedValidator = validatorPool.selectValidator()
+            val lastBlock = getLastBlock()
+            val index = lastBlock.index + 1
+            val previousHash = lastBlock.hash
+
+            // Deterministic Seed: previousHash (as Long) + index
+            // Using hashCode() of string for simplicity, in production should use byte conversion
+            // of hash
+            val seed = previousHash.hashCode().toLong() + index
+
+            val selectedValidator = validatorPool.selectValidator(seed)
             if (selectedValidator == null || selectedValidator.address != validatorAddress) {
                 wallet.validationState = ValidatorState.FAILED
                 throw IllegalStateException(
@@ -458,10 +467,6 @@ class BlockChain {
                 )
             }
 
-            val lastBlock = getLastBlock()
-
-            val index = lastBlock.index + 1
-            val previousHash = lastBlock.hash
             val timestamp = System.currentTimeMillis()
 
             // Calculate validator reward (paid from treasury as an on-chain tx)
@@ -543,6 +548,30 @@ class BlockChain {
                 }
 
                 if (currentBlock.previousHash != previousBlock.hash) {
+                    return false
+                }
+
+                // PoS Validator verification: Ensure the block was created by the selected
+                // validator
+                val seed = previousBlock.hash.hashCode().toLong() + currentBlock.index
+                // Lookup stake history at the time of previous block (limitIndex = i-1)
+                val expectedValidator =
+                        validatorPool.selectValidator(seed, limitIndex = previousBlock.index)
+
+                if (expectedValidator == null ||
+                                currentBlock.data.validator != expectedValidator.address
+                ) {
+                    // Start of chain (e.g. Genesis/Bootstrap) exceptions
+                    if (currentBlock.data.validator == "GENESIS" ||
+                                    currentBlock.data.validator == "BOOTSTRAP" ||
+                                    currentBlock.data.validator == "ONBOARDING"
+                    ) {
+                        continue
+                    }
+
+                    println("❌ Invalid Validator for Block #${currentBlock.index}")
+                    println("   Expected: ${expectedValidator?.address}")
+                    println("   Actual:   ${currentBlock.data.validator}")
                     return false
                 }
             }

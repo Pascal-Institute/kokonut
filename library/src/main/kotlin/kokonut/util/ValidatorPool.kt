@@ -39,12 +39,15 @@ class ValidatorPool {
         return false
     }
 
-    private fun computeStakeByAddress(): Map<String, Double> {
+    private fun computeStakeByAddress(limitIndex: Long? = null): Map<String, Double> {
         val stakeVault = BlockChain.getStakeVaultAddress()
         val chain = BlockChain.getChain()
+        // Filter chain by limitIndex if provided
+        val effectiveChain =
+                if (limitIndex != null) chain.filter { it.index <= limitIndex } else chain
 
         val stakeByAddress = mutableMapOf<String, Double>()
-        chain.forEach { block ->
+        effectiveChain.forEach { block ->
             block.data.transactions.forEach { tx ->
                 if (tx.receiver == stakeVault && tx.remittance > 0.0) {
                     // Staking: Add to sender's stake
@@ -72,10 +75,13 @@ class ValidatorPool {
         return stakeByAddress.filterValues { it > 0.0001 }
     }
 
-    private fun computeBlocksValidatedByAddress(): Map<String, Long> {
+    private fun computeBlocksValidatedByAddress(limitIndex: Long? = null): Map<String, Long> {
         val chain = BlockChain.getChain()
+        val effectiveChain =
+                if (limitIndex != null) chain.filter { it.index <= limitIndex } else chain
+
         val countByAddress = mutableMapOf<String, Long>()
-        chain.forEach { block ->
+        effectiveChain.forEach { block ->
             val address = block.data.validator
             if (address.isNotBlank() && address != "ONBOARDING" && address != "FUEL_REGISTRY") {
                 countByAddress[address] = (countByAddress[address] ?: 0L) + 1L
@@ -84,11 +90,14 @@ class ValidatorPool {
         return countByAddress
     }
 
-    private fun computeRewardsEarnedByAddress(): Map<String, Double> {
+    private fun computeRewardsEarnedByAddress(limitIndex: Long? = null): Map<String, Double> {
         val treasury = BlockChain.getTreasuryAddress()
         val chain = BlockChain.getChain()
+        val effectiveChain =
+                if (limitIndex != null) chain.filter { it.index <= limitIndex } else chain
+
         val rewardsByAddress = mutableMapOf<String, Double>()
-        chain.forEach { block ->
+        effectiveChain.forEach { block ->
             block.data.transactions.forEach { tx ->
                 if (tx.transaction == VALIDATOR_REWARD_TX && tx.sender == treasury) {
                     rewardsByAddress[tx.receiver] =
@@ -100,11 +109,13 @@ class ValidatorPool {
     }
 
     /**
-     * Select a validator based on stake-weighted probability Higher stake = higher chance of being
-     * selected
+     * Select a validator based on stake-weighted probability. Uses a DETERMINISTIC seed to ensure
+     * consensus (all nodes pick the same validator).
+     * @param seed Random seed (usually previousBlockHash + index)
+     * @param limitIndex Calculate stake based on history up to this index
      */
-    fun selectValidator(): Validator? {
-        val activeValidators = getActiveValidators()
+    fun selectValidator(seed: Long, limitIndex: Long? = null): Validator? {
+        val activeValidators = getActiveValidators(limitIndex)
 
         if (activeValidators.isEmpty()) {
             println("No active validators available")
@@ -112,15 +123,16 @@ class ValidatorPool {
         }
 
         val totalStake = activeValidators.sumOf { it.stakedAmount }
-        val randomValue = Random.nextDouble(totalStake)
+        // Use deterministic Random based on seed
+        val random = Random(seed)
+        val randomValue = random.nextDouble(totalStake)
 
         var cumulativeStake = 0.0
         for (validator in activeValidators) {
             cumulativeStake += validator.stakedAmount
             if (randomValue <= cumulativeStake) {
-                println(
-                        "Selected validator: ${validator.address} (Stake: ${validator.stakedAmount})"
-                )
+                // println("Selected validator: ${validator.address} (Stake:
+                // ${validator.stakedAmount})")
                 return validator
             }
         }
@@ -137,10 +149,10 @@ class ValidatorPool {
     }
 
     /** Get all active validators */
-    fun getActiveValidators(): List<Validator> {
-        val stakeByAddress = computeStakeByAddress()
-        val blocksByAddress = computeBlocksValidatedByAddress()
-        val rewardsByAddress = computeRewardsEarnedByAddress()
+    fun getActiveValidators(limitIndex: Long? = null): List<Validator> {
+        val stakeByAddress = computeStakeByAddress(limitIndex)
+        val blocksByAddress = computeBlocksValidatedByAddress(limitIndex)
+        val rewardsByAddress = computeRewardsEarnedByAddress(limitIndex)
 
         return stakeByAddress.entries
                 .map { (address, stake) ->
@@ -156,12 +168,12 @@ class ValidatorPool {
     }
 
     /** Get validator by address */
-    fun getValidator(address: String): Validator? {
-        val stake = computeStakeByAddress()[address] ?: 0.0
+    fun getValidator(address: String, limitIndex: Long? = null): Validator? {
+        val stake = computeStakeByAddress(limitIndex)[address] ?: 0.0
         if (stake <= 0.0) return null
 
-        val blocksValidated = computeBlocksValidatedByAddress()[address] ?: 0L
-        val rewardsEarned = computeRewardsEarnedByAddress()[address] ?: 0.0
+        val blocksValidated = computeBlocksValidatedByAddress(limitIndex)[address] ?: 0L
+        val rewardsEarned = computeRewardsEarnedByAddress(limitIndex)[address] ?: 0.0
 
         return Validator(
                 address = address,
