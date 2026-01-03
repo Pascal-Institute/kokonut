@@ -96,7 +96,7 @@ class FullNodeTest {
                         Data(
                                 reward = 10.0,
                                 ticker = "KNT",
-                                validator = "validator1",
+                                validator = "BOOTSTRAP",
                                 transactions = emptyList()
                         )
                 val block1 =
@@ -128,7 +128,7 @@ class FullNodeTest {
                 val genesisBlock = createBlock(0, "0", "GENESIS")
 
                 // 2. Create Second Block with WRONG previous hash
-                val block1 = createBlock(1, "WRONG_HASH", "validator1")
+                val block1 = createBlock(1, "WRONG_HASH", "BOOTSTRAP")
 
                 // 3. Insert
                 BlockChain.database.insert(genesisBlock)
@@ -150,7 +150,7 @@ class FullNodeTest {
                 val genesisBlock = createBlock(0, "0", "GENESIS")
 
                 // 2. Create Second Block
-                val block1 = createBlock(1, genesisBlock.hash, "validator1")
+                val block1 = createBlock(1, genesisBlock.hash, "BOOTSTRAP")
 
                 // 3. Tamper with block1 AFTER hashing
                 val badBlock = block1.copy(hash = "bad_hash_value")
