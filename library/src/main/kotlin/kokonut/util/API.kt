@@ -501,14 +501,15 @@ class API {
             }
         }
 
-        fun URL.stopValidating(publicKeyFile: File) {
-            val connection = this.openConnection() as HttpURLConnection
+        fun URL.stopValidating(publicKeyFile: File): Boolean {
+            val connection = URL("${this}/stopValidating").openConnection() as HttpURLConnection
             connection.requestMethod = "POST"
             connection.doOutput = true
             connection.setRequestProperty("Content-Type", "application/x-pem-file")
             connection.setRequestProperty("Accept", "application/json")
+            connection.setRequestProperty("fileName", publicKeyFile.name)
 
-            try {
+            return try {
                 publicKeyFile.inputStream().use { fis ->
                     connection.outputStream.use { os -> fis.copyTo(os) }
                 }
@@ -520,15 +521,18 @@ class API {
                         val response = reader.readText()
                         println("Response: $response, Stop Validating")
                     }
+                    true
                 } else {
                     println("Failed with HTTP error code: $responseCode")
                     connection.errorStream?.bufferedReader()?.use { reader ->
                         val errorResponse = reader.readText()
                         println("Error Response: $errorResponse")
                     }
+                    false
                 }
             } catch (e: IOException) {
                 e.printStackTrace()
+                false
             } finally {
                 connection.disconnect()
             }

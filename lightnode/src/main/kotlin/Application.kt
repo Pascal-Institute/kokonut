@@ -36,6 +36,7 @@ import kokonut.util.API.Companion.getBalance
 import kokonut.util.API.Companion.performHandshake
 import kokonut.util.API.Companion.stakeLock
 import kokonut.util.API.Companion.startValidating
+import kokonut.util.API.Companion.stopValidating
 import kokonut.util.NodeType
 import kokonut.util.Wallet
 import kotlinx.serialization.json.Json
@@ -423,14 +424,29 @@ fun App() {
                                                                 File(selectedPublicKeyFilePath)
                                                         )
 
-                                                        // Update UI
+                                                        // 4. Sync chain after block addition
+                                                        BlockChain.loadChainFromFullNode(url)
+
+                                                        // 5. Update wallet balance after block reward
+                                                        val newBalance = url.getBalance(validatorAddress)
+                                                        walletBalance = newBalance
+
+                                                        // 6. Log transaction details
+                                                        val rewardTx = block.data.transactions.find { 
+                                                            it.transaction == "VALIDATOR_REWARD" 
+                                                        }
+                                                        if (rewardTx != null) {
+                                                            println("💰 Block #${block.index} validated! Reward: ${rewardTx.remittance} KNT")
+                                                            println("📊 New Balance: $newBalance KNT")
+                                                        }
+
+                                                        // 7. Update UI
                                                         networkInfo =
                                                                 networkInfo?.copy(
                                                                         chainSize =
-                                                                                networkInfo!!
-                                                                                        .chainSize +
-                                                                                        1
+                                                                                BlockChain.getChainSize()
                                                                 )
+                                                        connectionMessage = "✅ Block #${block.index} validated! Reward: ${rewardTx?.remittance ?: 0.0} KNT"
                                                     } catch (e: Exception) {
                                                         // Expected: Not selected, chain not ready,
                                                         // etc.
@@ -452,16 +468,20 @@ fun App() {
                                                         }
                                                     } finally {
                                                         // Always update UI with latest chain info
-                                                        val lastBlock = BlockChain.getLastBlock()
-                                                        if (networkInfo != null &&
-                                                                        networkInfo!!.chainSize !=
-                                                                                lastBlock.index
-                                                        ) {
-                                                            networkInfo =
-                                                                    networkInfo!!.copy(
-                                                                            chainSize =
+                                                        try {
+                                                            val lastBlock = BlockChain.getLastBlock()
+                                                            if (networkInfo != null &&
+                                                                            networkInfo!!.chainSize !=
                                                                                     lastBlock.index
-                                                                    )
+                                                            ) {
+                                                                networkInfo =
+                                                                        networkInfo!!.copy(
+                                                                                chainSize =
+                                                                                        lastBlock.index
+                                                                        )
+                                                            }
+                                                        } catch (ignored: Exception) {
+                                                            // Chain may be empty during startup
                                                         }
                                                     }
                                                 }
@@ -484,8 +504,32 @@ fun App() {
 
                 Button(
                         onClick = {
-                            validationState = ValidatorState.READY
-                            connectionMessage = "🛑 Staking Stopped by User"
+                            try {
+                                // 1. Stop the validation loop
+                                validationState = ValidatorState.READY
+                                
+                                // 2. Call stopValidating API to return stake
+                                val url = URL(peerAddress)
+                                val publicKeyFile = File(selectedPublicKeyFilePath)
+                                
+                                if (url.stopValidating(publicKeyFile)) {
+                                    // 3. Sync chain to get UNSTAKE block
+                                    BlockChain.loadChainFromFullNode(url)
+                                    
+                                    // 4. Update balance after unstaking
+                                    walletBalance = url.getBalance(validatorAddress)
+                                    
+                                    // 5. Update network info
+                                    networkInfo = networkInfo?.copy(chainSize = BlockChain.getChainSize())
+                                    
+                                    connectionMessage = "🛑 Staking Stopped. Stake returned to wallet."
+                                } else {
+                                    connectionMessage = "🛑 Staking Stopped by User (stake return failed)"
+                                }
+                            } catch (e: Exception) {
+                                validationState = ValidatorState.READY
+                                connectionMessage = "🛑 Staking Stopped by User: ${e.message}"
+                            }
                         },
                         enabled = validationState == ValidatorState.VALIDATING
                 ) { Text("🛑 Stop Staking") }

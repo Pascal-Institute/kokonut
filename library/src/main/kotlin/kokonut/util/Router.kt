@@ -1070,6 +1070,14 @@ class Router {
                     BlockChain.database.insert(stakeBlock)
                     BlockChain.refreshFromDatabase()
 
+                    // Verify chain integrity after insertion
+                    if (!BlockChain.isValid()) {
+                        println("⚠️ Chain integrity check failed after stake lock insertion!")
+                    }
+
+                    // Log the transaction
+                    println("📝 STAKE_LOCK recorded: $validatorAddress -> $stakeVault: ${amount!!} KNT")
+
                     // Try to propagate, logging error if fails but not failing the request
                     try {
                         notifyFullNodesToSyncFrom(advertisedSelfAddress(call))
@@ -1240,6 +1248,8 @@ class Router {
                         val publicKey: PublicKey = Wallet.loadPublicKey(publicKeyFile!!.path)
                         val validatorString: String = Utility.calculateHash(publicKey)
 
+                        // Refresh to get latest chain state
+                        BlockChain.refreshFromDatabase()
                         val lastBlock = BlockChain.getLastBlock()
 
                         // Check Validator
@@ -1264,17 +1274,45 @@ class Router {
                             return@post
                         }
 
+                        // Check previousHash for blockchain integrity
+                        if (block!!.previousHash != lastBlock.hash) {
+                            call.respond(
+                                    HttpStatusCode.Created,
+                                    "Block Add Failed: previousHash mismatch. Expected: ${lastBlock.hash}, Got: ${block!!.previousHash}"
+                            )
+                            return@post
+                        }
+
+                        // Check index is exactly lastBlock.index + 1
+                        if (block!!.index != lastBlock.index + 1) {
+                            call.respond(
+                                    HttpStatusCode.Created,
+                                    "Block Add Failed: Invalid block index. Expected: ${lastBlock.index + 1}, Got: ${block!!.index}"
+                            )
+                            return@post
+                        }
+
                         // Check Hash
                         val calculatedHash = block!!.calculateHash()
                         if (block!!.hash == calculatedHash) {
                             BlockChain.database.insert(block!!)
                             BlockChain.refreshFromDatabase()
 
+                            // Verify chain integrity after insertion
+                            if (!BlockChain.isValid()) {
+                                println("⚠️ Chain integrity check failed after block insertion!")
+                            }
+
                             // Best-effort: help other FullNodes converge quickly.
                             try {
                                 notifyFullNodesToSyncFrom(advertisedSelfAddress(call))
                             } catch (e: Exception) {
                                 println("⚠️ Failed to trigger propagation: ${e.message}")
+                            }
+
+                            // Log transaction details
+                            block!!.data.transactions.forEach { tx ->
+                                println("📝 Transaction recorded: ${tx.transaction} - ${tx.sender} -> ${tx.receiver}: ${tx.remittance} KNT")
                             }
 
                             call.respond(
@@ -1382,6 +1420,14 @@ class Router {
                         // Insert and Refresh
                         BlockChain.database.insert(unstakeBlock)
                         BlockChain.refreshFromDatabase()
+
+                        // Verify chain integrity after insertion
+                        if (!BlockChain.isValid()) {
+                            println("⚠️ Chain integrity check failed after unstake insertion!")
+                        }
+
+                        // Log the transaction
+                        println("📝 UNSTAKE recorded: $stakeVault -> $validatorAddress: $stakedAmount KNT")
 
                         // Propagate
                         try {
