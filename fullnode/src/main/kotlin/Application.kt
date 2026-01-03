@@ -10,6 +10,7 @@ import kokonut.util.Router.Companion.addBlock
 import kokonut.util.Router.Companion.getBalance
 import kokonut.util.Router.Companion.getChain
 import kokonut.util.Router.Companion.getGenesisBlock
+import kokonut.util.Router.Companion.getKnownFullNodes
 import kokonut.util.Router.Companion.getLastBlock
 import kokonut.util.Router.Companion.getReward
 import kokonut.util.Router.Companion.getTotalCurrencyVolume
@@ -61,6 +62,7 @@ fun main() {
                     startValidating()
                     addBlock()
                     stopValidating()
+                    getKnownFullNodes()
                 }
             }
             .start(true)

@@ -64,11 +64,12 @@ fun App() {
     var networkInfo by remember { mutableStateOf<NetworkInfo?>(null) }
     var connectionMessage by remember { mutableStateOf<String?>(null) }
 
-    var showSuccessDialog by remember { mutableStateOf(false) }
     var showKeyGenDialog by remember { mutableStateOf(false) }
 
-    // Wallet balance state
+    // Wallet balance & Stake state
     var walletBalance by remember { mutableStateOf(0.0) }
+    var stakedAmount by remember { mutableStateOf(0.0) }
+    var depositAmountInput by remember { mutableStateOf("10.0") }
 
     MaterialTheme {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -93,26 +94,47 @@ fun App() {
             // Validator State
             Row {
                 if (validatorAddress.isNotEmpty()) {
-                    Text(text = "Validator State: ", fontWeight = FontWeight.Bold)
-                    Text(text = validationState.toString())
+                    Text(text = "Node State: ", fontWeight = FontWeight.Bold)
+                    Text(
+                            text =
+                                    if (validationState == ValidatorState.VALIDATING) "🟢 Running"
+                                    else "⚪ Stopped",
+                            color =
+                                    if (validationState == ValidatorState.VALIDATING) Color.Green
+                                    else Color.Gray
+                    )
                 }
             }
 
-            // Validator Address
-            if (validatorAddress.isNotEmpty()) {
-                Row {
-                    Text(text = "Validator Address: ", fontWeight = FontWeight.Bold)
-                    Text(text = validatorAddress)
-                }
-            }
-
-            // Wallet Balance (shown when connected and logged in)
+            // Wallet Info (shown when connected)
             if (isConnected && validatorAddress.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Divider()
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                        text = "💰 Wallet & Stake",
+                        style = MaterialTheme.typography.h6,
+                        fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+
                 Row {
-                    Text(text = "💰 Balance: ", fontWeight = FontWeight.Bold)
+                    Text(text = "Address: ", fontWeight = FontWeight.Bold)
+                    Text(text = validatorAddress.take(20) + "...")
+                }
+                Row {
+                    Text(text = "Wallet Balance: ", fontWeight = FontWeight.Bold)
                     Text(
                             text = "$walletBalance KNT",
                             color = if (walletBalance > 0) Color(0xFF4CAF50) else Color.Gray
+                    )
+                }
+                Row {
+                    Text(text = "Staked Amount: ", fontWeight = FontWeight.Bold)
+                    Text(
+                            text = "$stakedAmount KNT",
+                            color = if (stakedAmount > 0) Color(0xFF2196F3) else Color.Gray
                     )
                 }
             }
@@ -146,15 +168,12 @@ fun App() {
                 )
             }
 
-            // Connect Button
+            // Connect Button (Acts as Login)
             Button(
                     onClick = {
                         try {
                             // Validate keys are loaded
-                            if (selectedPublicKeyFilePath == "Please load a public key..." ||
-                                            selectedPrivateKeyFilePath ==
-                                                    "Please load a private key..."
-                            ) {
+                            if (keysNotLoaded) {
                                 connectionMessage =
                                         "❌ Please load your public and private keys first"
                                 isConnected = false
@@ -174,7 +193,7 @@ fun App() {
 
                             val publicKeyString = wallet.publicKey.toString()
 
-                            // Perform handshake with public key (REQUIRED)
+                            // Perform handshake
                             val response = url.performHandshake(publicKeyString)
 
                             if (response.success && response.networkInfo != null) {
@@ -182,41 +201,37 @@ fun App() {
                                 networkInfo = response.networkInfo
                                 connectionMessage = "✅ ${response.message}"
 
-                                // Initialize blockchain
+                                // Initialize & Sync
                                 BlockChain.initialize(NodeType.LIGHT, peerAddress)
-
-                                // Force sync from the connected Full Node so the local DB sees
-                                // any new blocks (e.g., onboarding) created during handshake.
                                 BlockChain.loadChainFromFullNode(url)
                                 networkInfo =
                                         networkInfo?.copy(chainSize = BlockChain.getChainSize())
 
-                                // Auto-load validator address
+                                // Auto-load validator info
                                 validatorAddress = wallet.validatorAddress
                                 validationState = wallet.validationState
 
-                                // Fetch wallet balance from Full Node
-                                println("🔍 Querying balance for address: $validatorAddress")
+                                // Fetch Balance
                                 walletBalance = url.getBalance(validatorAddress)
-                                println("💰 Retrieved balance: $walletBalance KNT")
+
+                                // Fetch Staked Amount
+                                val validator =
+                                        BlockChain.validatorPool.getValidator(validatorAddress)
+                                stakedAmount = validator?.stakedAmount ?: 0.0
                             } else {
                                 isConnected = false
                                 networkInfo = null
                                 connectionMessage = "❌ ${response.message}"
                             }
-                        } catch (e: IllegalArgumentException) {
-                            isConnected = false
-                            networkInfo = null
-                            connectionMessage = "❌ ${e.message}"
                         } catch (e: Exception) {
                             isConnected = false
                             networkInfo = null
                             connectionMessage = "❌ Connection failed: ${e.message}"
                         }
                     },
-                    enabled = !keysNotLoaded, // Disable button if keys not loaded
+                    enabled = !keysNotLoaded,
                     modifier = Modifier.fillMaxWidth()
-            ) { Text("🤝 Connect to Full Node") }
+            ) { Text(if (isConnected) "🔄 Refresh Connection" else "🤝 Connect & Login") }
 
             // Connection Message
             if (connectionMessage != null) {
@@ -228,362 +243,308 @@ fun App() {
                 )
             }
 
-            // Network Info Display
-            if (networkInfo != null) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Divider()
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                        text = "📊 Network Information",
-                        style = MaterialTheme.typography.h6,
-                        fontWeight = FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Column(modifier = Modifier.padding(start = 8.dp)) {
-                    InfoRow("Network ID", networkInfo!!.networkId)
-                    InfoRow("Genesis Hash", networkInfo!!.genesisHash.take(16) + "...")
-                    InfoRow("Chain Size", "${networkInfo!!.chainSize} blocks")
-                    InfoRow("Total Validators", "${networkInfo!!.totalValidators}")
-                    InfoRow("Total KNT", "${networkInfo!!.totalCurrencyVolume}")
-                    InfoRow("Fuel Nodes", "${networkInfo!!.connectedFuelNodes}")
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-            Divider()
-            Spacer(modifier = Modifier.height(16.dp))
-
             // Key Management Section
+            Spacer(modifier = Modifier.height(16.dp))
             Text(
                     text = "🔐 Key Management",
                     style = MaterialTheme.typography.h6,
                     fontWeight = FontWeight.Bold
             )
-
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Public Key
+            // Keys UI
             Row {
-                Text(
-                        modifier = Modifier.width(250.dp).height(25.dp),
-                        text = selectedPublicKeyFilePath.toString()
-                )
-
-                Button(
-                        onClick = {
-                            val fileDialog = FileDialog(Frame(), "Select a File", FileDialog.LOAD)
-                            fileDialog.isVisible = true
-                            val selectedFile = fileDialog.file
-                            if (selectedFile != null) {
-                                selectedPublicKeyFilePath =
-                                        File(fileDialog.directory, selectedFile).absolutePath
-                            }
-                        }
-                ) { Text("Load Public Key") }
-            }
-
-            // Private Key
-            Row {
-                Text(
-                        modifier = Modifier.width(250.dp).height(25.dp),
-                        text = selectedPrivateKeyFilePath.toString()
-                )
-
-                Button(
-                        onClick = {
-                            val fileDialog = FileDialog(Frame(), "Select a File", FileDialog.LOAD)
-                            fileDialog.isVisible = true
-                            val selectedFile = fileDialog.file
-                            if (selectedFile != null) {
-                                selectedPrivateKeyFilePath =
-                                        File(fileDialog.directory, selectedFile).absolutePath
-                            }
-                        }
-                ) { Text("Load Private Key") }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Action Buttons
-            Row {
-                Button(
-                        onClick = {
-                            try {
-                                if (!isConnected) {
-                                    errorMessage = "⚠️ Please connect to a Full Node first"
-                                    return@Button
-                                }
-
-                                val wallet =
-                                        Wallet(
-                                                privateKeyFile = File(selectedPrivateKeyFilePath),
-                                                publicKeyFile = File(selectedPublicKeyFilePath)
-                                        )
-
-                                if (wallet.isValid()) {
-                                    showSuccessDialog = true
-                                    validatorAddress = wallet.validatorAddress
-                                    validationState = wallet.validationState
-
-                                    // Fetch wallet balance from Full Node
-                                    val url = URL(peerAddress)
-                                    walletBalance = url.getBalance(validatorAddress)
-                                }
-                            } catch (e: Exception) {
-                                errorMessage = "❌ Login failed: ${e.message}"
-                            }
-                        }
-                ) { Text("Login") }
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                Button(
-                        onClick = {
-                            try {
-                                if (!isConnected) {
-                                    errorMessage = "⚠️ Please connect to a Full Node first"
-                                    return@Button
-                                }
-
-                                if (selectedPublicKeyFilePath == "Please load a public key..." ||
-                                                selectedPrivateKeyFilePath ==
-                                                        "Please load a private key..."
-                                ) {
-                                    errorMessage = "⚠️ Please load your keys first"
-                                    return@Button
-                                }
-
-                                val wallet =
-                                        Wallet(
-                                                privateKeyFile = File(selectedPrivateKeyFilePath),
-                                                publicKeyFile = File(selectedPublicKeyFilePath)
-                                        )
-
-                                val url = URL(peerAddress)
-                                val requiredStake = BlockChain.getNetworkRules().minFullStake
-                                val currentStake =
-                                        BlockChain.validatorPool.getValidator(
-                                                        wallet.validatorAddress
-                                                )
-                                                ?.stakedAmount
-                                                ?: 0.0
-
-                                if (currentStake < requiredStake) {
-                                    val toLock = requiredStake - currentStake
-                                    if (!url.stakeLock(
-                                                    wallet,
-                                                    File(selectedPublicKeyFilePath),
-                                                    toLock
-                                            )
-                                    ) {
-                                        errorMessage = "❌ Stake lock failed"
-                                        return@Button
-                                    }
-
-                                    // Sync to observe the newly appended stake lock block.
-                                    BlockChain.loadChainFromFullNode(url)
-                                }
-
-                                if (url.startValidating(File(selectedPublicKeyFilePath))) {
-                                    validationState = ValidatorState.VALIDATING
-                                    connectionMessage = "✅ Staking Started! Validating blocks..."
-
-                                    // Launch Staking Loop in a separate thread
-                                    Thread {
-                                                while (validationState ==
-                                                        ValidatorState.VALIDATING) {
-                                                    try {
-                                                        Thread.sleep(5000) // 5 seconds block time
-
-                                                        // 1. Create Data
-                                                        val data =
-                                                                kokonut.core.Data(
-                                                                        comment =
-                                                                                "Validated by LightNode"
-                                                                )
-
-                                                        // 2. Try to validate (create block)
-                                                        // This calls API to sync chain and checks
-                                                        // if we are selected
-                                                        val block =
-                                                                BlockChain.validate(wallet, data)
-
-                                                        // 3. If successful, send to Full Node
-                                                        @OptIn(
-                                                                kotlinx.serialization
-                                                                        .ExperimentalSerializationApi::class
-                                                        )
-                                                        url.addBlock(
-                                                                Json.encodeToJsonElement(
-                                                                        serializer<Block>(),
-                                                                        block
-                                                                ),
-                                                                File(selectedPublicKeyFilePath)
-                                                        )
-
-                                                        // 4. Sync chain after block addition
-                                                        BlockChain.loadChainFromFullNode(url)
-
-                                                        // 5. Update wallet balance after block reward
-                                                        val newBalance = url.getBalance(validatorAddress)
-                                                        walletBalance = newBalance
-
-                                                        // 6. Log transaction details
-                                                        val rewardTx = block.data.transactions.find { 
-                                                            it.transaction == "VALIDATOR_REWARD" 
-                                                        }
-                                                        if (rewardTx != null) {
-                                                            println("💰 Block #${block.index} validated! Reward: ${rewardTx.remittance} KNT")
-                                                            println("📊 New Balance: $newBalance KNT")
-                                                        }
-
-                                                        // 7. Update UI
-                                                        networkInfo =
-                                                                networkInfo?.copy(
-                                                                        chainSize =
-                                                                                BlockChain.getChainSize()
-                                                                )
-                                                        connectionMessage = "✅ Block #${block.index} validated! Reward: ${rewardTx?.remittance ?: 0.0} KNT"
-                                                    } catch (e: Exception) {
-                                                        // Expected: Not selected, chain not ready,
-                                                        // etc.
-                                                        println("Staking info: ${e.message}")
-                                                        if (e.message?.contains(
-                                                                        "Chain is Invalid"
-                                                                ) == true
-                                                        ) {
-                                                            validationState = ValidatorState.FAILED
-                                                            connectionMessage =
-                                                                    "❌ Staking Stopped: Chain is Invalid"
-                                                        } else if (e.message?.contains(
-                                                                        "No Fuel Nodes found"
-                                                                ) == true
-                                                        ) {
-                                                            validationState = ValidatorState.FAILED
-                                                            connectionMessage =
-                                                                    "❌ Staking Stopped: No Fuel Nodes found"
-                                                        }
-                                                    } finally {
-                                                        // Always update UI with latest chain info
-                                                        try {
-                                                            val lastBlock = BlockChain.getLastBlock()
-                                                            if (networkInfo != null &&
-                                                                            networkInfo!!.chainSize !=
-                                                                                    lastBlock.index
-                                                            ) {
-                                                                networkInfo =
-                                                                        networkInfo!!.copy(
-                                                                                chainSize =
-                                                                                        lastBlock.index
-                                                                        )
-                                                            }
-                                                        } catch (ignored: Exception) {
-                                                            // Chain may be empty during startup
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                            .start()
-                                }
-                            } catch (e: Exception) {
-                                errorMessage = "❌ Staking failed: ${e.message}"
-                            }
-                        },
-                        // Enable if connected and wallet valid, but not already validating
-                        enabled =
-                                isConnected &&
-                                        selectedPublicKeyFilePath !=
-                                                "Please load a public key..." &&
-                                        validationState != ValidatorState.VALIDATING
-                ) { Text("🔨 Start Staking") }
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                Button(
-                        onClick = {
-                            try {
-                                // 1. Stop the validation loop
-                                validationState = ValidatorState.READY
-                                
-                                // 2. Call stopValidating API to return stake
-                                val url = URL(peerAddress)
-                                val publicKeyFile = File(selectedPublicKeyFilePath)
-                                
-                                if (url.stopValidating(publicKeyFile)) {
-                                    // 3. Sync chain to get UNSTAKE block
-                                    BlockChain.loadChainFromFullNode(url)
-                                    
-                                    // 4. Update balance after unstaking
-                                    walletBalance = url.getBalance(validatorAddress)
-                                    
-                                    // 5. Update network info
-                                    networkInfo = networkInfo?.copy(chainSize = BlockChain.getChainSize())
-                                    
-                                    connectionMessage = "🛑 Staking Stopped. Stake returned to wallet."
-                                } else {
-                                    connectionMessage = "🛑 Staking Stopped by User (stake return failed)"
-                                }
-                            } catch (e: Exception) {
-                                validationState = ValidatorState.READY
-                                connectionMessage = "🛑 Staking Stopped by User: ${e.message}"
-                            }
-                        },
-                        enabled = validationState == ValidatorState.VALIDATING
-                ) { Text("🛑 Stop Staking") }
-
-                Spacer(modifier = Modifier.width(8.dp))
-
                 Button(
                         onClick = {
                             val fileDialog =
-                                    FileDialog(Frame(), "Save New Private Key", FileDialog.SAVE)
-                            fileDialog.file = "private.pem"
+                                    FileDialog(Frame(), "Select Public Key", FileDialog.LOAD)
                             fileDialog.isVisible = true
-                            val selectedFile = fileDialog.file
-                            if (selectedFile != null) {
-                                val dir = fileDialog.directory
-                                val privateKeyFile = File(dir, selectedFile)
-                                val publicKeyFile = File(dir, "public.pem")
-
-                                val keyPair = Wallet.generateKey()
-                                Wallet.saveKeyPairToFile(
-                                        keyPair,
-                                        privateKeyFile.absolutePath,
-                                        publicKeyFile.absolutePath
-                                )
-
-                                selectedPrivateKeyFilePath = privateKeyFile.absolutePath
-                                selectedPublicKeyFilePath = publicKeyFile.absolutePath
-                                showKeyGenDialog = true
+                            fileDialog.file?.let {
+                                selectedPublicKeyFilePath =
+                                        File(fileDialog.directory, it).absolutePath
                             }
                         }
-                ) { Text("Generate Keys") }
+                ) { Text("Load Public Key") }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                        text =
+                                if (selectedPublicKeyFilePath!!.length > 30)
+                                        "..." + selectedPublicKeyFilePath!!.takeLast(30)
+                                else selectedPublicKeyFilePath!!
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Row {
+                Button(
+                        onClick = {
+                            val fileDialog =
+                                    FileDialog(Frame(), "Select Private Key", FileDialog.LOAD)
+                            fileDialog.isVisible = true
+                            fileDialog.file?.let {
+                                selectedPrivateKeyFilePath =
+                                        File(fileDialog.directory, it).absolutePath
+                            }
+                        }
+                ) { Text("Load Private Key") }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                        text =
+                                if (selectedPrivateKeyFilePath!!.length > 30)
+                                        "..." + selectedPrivateKeyFilePath!!.takeLast(30)
+                                else selectedPrivateKeyFilePath!!
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Button(
+                    onClick = {
+                        val fileDialog =
+                                FileDialog(Frame(), "Save New Private Key", FileDialog.SAVE)
+                        fileDialog.file = "private.pem"
+                        fileDialog.isVisible = true
+                        fileDialog.file?.let {
+                            val dir = fileDialog.directory
+                            val privateKeyFile = File(dir, it)
+                            val publicKeyFile = File(dir, "public.pem")
+                            val keyPair = Wallet.generateKey()
+                            Wallet.saveKeyPairToFile(
+                                    keyPair,
+                                    privateKeyFile.absolutePath,
+                                    publicKeyFile.absolutePath
+                            )
+                            selectedPrivateKeyFilePath = privateKeyFile.absolutePath
+                            selectedPublicKeyFilePath = publicKeyFile.absolutePath
+                            showKeyGenDialog = true
+                        }
+                    }
+            ) { Text("Generate New Keys") }
+
+            if (isConnected) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Divider()
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 1. Staking Management (Deposit/Withdraw)
+                Text(
+                        text = "🏦 Staking Management",
+                        style = MaterialTheme.typography.h6,
+                        fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row {
+                    TextField(
+                            value = depositAmountInput,
+                            onValueChange = { depositAmountInput = it },
+                            label = { Text("Amount (KNT)") },
+                            modifier = Modifier.width(150.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Button(
+                            onClick = {
+                                try {
+                                    val url = URL(peerAddress)
+                                    val wallet =
+                                            Wallet(
+                                                    File(selectedPrivateKeyFilePath),
+                                                    File(selectedPublicKeyFilePath)
+                                            )
+                                    val amount = depositAmountInput.toDoubleOrNull() ?: 0.0
+
+                                    if (amount <= 0) {
+                                        errorMessage = "Please enter a valid amount"
+                                        return@Button
+                                    }
+
+                                    if (url.stakeLock(
+                                                    wallet,
+                                                    File(selectedPublicKeyFilePath),
+                                                    amount
+                                            )
+                                    ) {
+                                        connectionMessage =
+                                                "✅ Successfully Deposited (Locked) $amount KNT"
+                                        // Refresh balance/stake
+                                        BlockChain.loadChainFromFullNode(
+                                                url
+                                        ) // Sync STAKE_LOCK block
+                                        walletBalance = url.getBalance(wallet.validatorAddress)
+                                        val validator =
+                                                BlockChain.validatorPool.getValidator(
+                                                        wallet.validatorAddress
+                                                )
+                                        stakedAmount = validator?.stakedAmount ?: 0.0
+                                    } else {
+                                        errorMessage =
+                                                "Deposit failed. Check balance or server logs."
+                                    }
+                                } catch (e: Exception) {
+                                    errorMessage = "Error: ${e.message}"
+                                }
+                            }
+                    ) { Text("Deposit (Lock)") }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Button(
+                            onClick = {
+                                try {
+                                    // Stop validation first if running
+                                    validationState = ValidatorState.READY
+
+                                    val url = URL(peerAddress)
+                                    val publicKeyFile = File(selectedPublicKeyFilePath)
+
+                                    if (url.stopValidating(publicKeyFile)
+                                    ) { // Calls /stopValidating which triggers UNSTAKE
+                                        BlockChain.loadChainFromFullNode(url)
+                                        walletBalance = url.getBalance(validatorAddress)
+                                        val validator =
+                                                BlockChain.validatorPool.getValidator(
+                                                        validatorAddress
+                                                )
+                                        stakedAmount = validator?.stakedAmount ?: 0.0
+                                        connectionMessage = "✅ Successfully Withdrawn (Unstaked)"
+                                    } else {
+                                        errorMessage = "Withdraw failed"
+                                    }
+                                } catch (e: Exception) {
+                                    errorMessage = "Error: ${e.message}"
+                                }
+                            },
+                            enabled = stakedAmount > 0
+                    ) { Text("Withdraw (Unstake)") }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Divider()
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 2. Node Operation (Start/Stop)
+                Text(
+                        text = "⚙️ Node Operation",
+                        style = MaterialTheme.typography.h6,
+                        fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row {
+                    Button(
+                            onClick = {
+                                try {
+                                    val url = URL(peerAddress)
+                                    val publicKeyFile = File(selectedPublicKeyFilePath)
+                                    val requiredStake = BlockChain.getNetworkRules().minFullStake
+
+                                    if (stakedAmount < requiredStake) {
+                                        errorMessage =
+                                                "Insufficient stake. Need at least $requiredStake KNT. Please Deposit first."
+                                        return@Button
+                                    }
+
+                                    if (url.startValidating(publicKeyFile)) {
+                                        validationState = ValidatorState.VALIDATING
+                                        connectionMessage = "🚀 Node Started! Validating blocks..."
+
+                                        // Start Validation Loop
+                                        Thread {
+                                                    val wallet =
+                                                            Wallet(
+                                                                    File(
+                                                                            selectedPrivateKeyFilePath
+                                                                    ),
+                                                                    File(selectedPublicKeyFilePath)
+                                                            )
+                                                    while (validationState ==
+                                                            ValidatorState.VALIDATING) {
+                                                        try {
+                                                            Thread.sleep(5000)
+                                                            val data =
+                                                                    kokonut.core.Data(
+                                                                            comment =
+                                                                                    "Validated by LightNode"
+                                                                    )
+                                                            val block =
+                                                                    BlockChain.validate(
+                                                                            wallet,
+                                                                            data
+                                                                    )
+
+                                                            @OptIn(
+                                                                    kotlinx.serialization
+                                                                            .ExperimentalSerializationApi::class
+                                                            )
+                                                            url.addBlock(
+                                                                    Json.encodeToJsonElement(
+                                                                            serializer<Block>(),
+                                                                            block
+                                                                    ),
+                                                                    File(selectedPublicKeyFilePath)
+                                                            )
+
+                                                            BlockChain.loadChainFromFullNode(url)
+                                                            val newBalance =
+                                                                    url.getBalance(validatorAddress)
+                                                            walletBalance = newBalance
+
+                                                            // Refresh UI Info
+                                                            val rewardTx =
+                                                                    block.data.transactions.find {
+                                                                        it.transaction ==
+                                                                                "VALIDATOR_REWARD"
+                                                                    }
+                                                            connectionMessage =
+                                                                    "✅ Block #${block.index} validated! Reward: ${rewardTx?.remittance ?: 0.0} KNT"
+                                                        } catch (e: Exception) {
+                                                            if (e.message?.contains(
+                                                                            "Chain is Invalid"
+                                                                    ) == true ||
+                                                                            e.message?.contains(
+                                                                                    "No Fuel Nodes found"
+                                                                            ) == true
+                                                            ) {
+                                                                validationState =
+                                                                        ValidatorState.FAILED
+                                                                connectionMessage =
+                                                                        "❌ Stopped: ${e.message}"
+                                                            }
+                                                            // Else: just failed to get selected,
+                                                            // wait for next turn.
+                                                        }
+                                                    }
+                                                }
+                                                .start()
+                                    } else {
+                                        errorMessage = "Failed to start node session on server."
+                                    }
+                                } catch (e: Exception) {
+                                    errorMessage = "Error: ${e.message}"
+                                }
+                            },
+                            enabled =
+                                    validationState != ValidatorState.VALIDATING &&
+                                            stakedAmount >=
+                                                    BlockChain.getNetworkRules().minFullStake
+                    ) { Text("▶ Start Node") }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Button(
+                            onClick = {
+                                validationState = ValidatorState.READY
+                                connectionMessage = "⏸ Node Stopped (Stake remains locked)"
+                            },
+                            enabled = validationState == ValidatorState.VALIDATING
+                    ) { Text("⏹ Stop Node") }
+                }
             }
 
             // Dialogs
-            if (showSuccessDialog) {
-                AlertDialog(
-                        onDismissRequest = { showSuccessDialog = false },
-                        title = { Text("Login Succeed") },
-                        text = { Text("You have successfully logged in!") },
-                        confirmButton = {
-                            Button(onClick = { showSuccessDialog = false }) { Text("OK") }
-                        }
-                )
-            }
-
             if (showKeyGenDialog) {
                 AlertDialog(
                         onDismissRequest = { showKeyGenDialog = false },
                         title = { Text("Keys Generated") },
-                        text = {
-                            Text(
-                                    "New keys have been saved successfully!\nPrivate: $selectedPrivateKeyFilePath\nPublic: $selectedPublicKeyFilePath"
-                            )
-                        },
+                        text = { Text("Keys saved to:\n$selectedPrivateKeyFilePath") },
                         confirmButton = {
                             Button(onClick = { showKeyGenDialog = false }) { Text("OK") }
                         }

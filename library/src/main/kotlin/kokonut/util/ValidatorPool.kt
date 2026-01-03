@@ -13,8 +13,8 @@ class ValidatorPool {
     }
 
     /**
-     * Deprecated: staking is chain-derived via stakeVault transfers.
-     * Use the Full Node stake-lock route to append a STAKE_LOCK block.
+     * Deprecated: staking is chain-derived via stakeVault transfers. Use the Full Node stake-lock
+     * route to append a STAKE_LOCK block.
      */
     fun stake(address: String, amount: Double): Boolean {
         println("stake() is deprecated. Use on-chain stakeVault transfers.")
@@ -35,11 +35,18 @@ class ValidatorPool {
         chain.forEach { block ->
             block.data.transactions.forEach { tx ->
                 if (tx.receiver == stakeVault && tx.remittance > 0.0) {
+                    // Staking: Add to sender's stake
                     stakeByAddress[tx.sender] = (stakeByAddress[tx.sender] ?: 0.0) + tx.remittance
+                }
+                if (tx.sender == stakeVault && tx.remittance > 0.0) {
+                    // Unstaking: Subtract from receiver's stake
+                    stakeByAddress[tx.receiver] =
+                            (stakeByAddress[tx.receiver] ?: 0.0) - tx.remittance
                 }
             }
         }
-        return stakeByAddress
+        // Filter out negative or zero stakes (floating point safety)
+        return stakeByAddress.filterValues { it > 0.0001 }
     }
 
     private fun computeBlocksValidatedByAddress(): Map<String, Long> {
@@ -99,8 +106,8 @@ class ValidatorPool {
     }
 
     /**
-     * Deprecated: rewards are recorded on-chain as a treasury-paid transaction
-     * in the validated block.
+     * Deprecated: rewards are recorded on-chain as a treasury-paid transaction in the validated
+     * block.
      */
     fun rewardValidator(address: String, reward: Double) {
         return

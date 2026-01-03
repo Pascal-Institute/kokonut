@@ -69,6 +69,7 @@ class BlockChain {
             if (peer != null) {
                 try {
                     bootstrapFromPeer(peer)
+                    knownPeer = peer // Update knownPeer on successful bootstrap
                     return
                 } catch (e: Exception) {
                     println("❌ Bootstrap failed from peer: $peer")
@@ -282,8 +283,14 @@ class BlockChain {
                         try {
                             getRandomFuelNode()
                         } catch (e: Exception) {
-                            println("⚠️ Cannot load Full Nodes: ${e.message}")
-                            return
+                            // Fallback: If we have a known peer (e.g., LightNode connected to
+                            // FullNode), use it.
+                            if (!knownPeer.isNullOrBlank()) {
+                                URL(knownPeer)
+                            } else {
+                                println("⚠️ Cannot load Full Nodes: ${e.message}")
+                                return
+                            }
                         }
 
                 runBlocking { fullNodes = fuelNodeUrl.getFullNodes() }

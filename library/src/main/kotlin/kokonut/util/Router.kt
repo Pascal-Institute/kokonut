@@ -1077,7 +1077,9 @@ class Router {
                     }
 
                     // Log the transaction
-                    println("📝 STAKE_LOCK recorded: $validatorAddress -> $stakeVault: ${amount!!} KNT")
+                    println(
+                            "📝 STAKE_LOCK recorded: $validatorAddress -> $stakeVault: ${amount!!} KNT"
+                    )
 
                     // Try to propagate, logging error if fails but not failing the request
                     try {
@@ -1168,12 +1170,23 @@ class Router {
             get("/getFullNodes") {
                 val activeNodes =
                         fullNodes.map { (address, _) ->
-                            FullNode(
+                            kokonut.util.FullNode(
                                     id = Utility.calculateHash(address.hashCode().toLong()),
                                     address = address
                             )
                         }
                 call.respond(activeNodes)
+            }
+        }
+
+        /**
+         * Get known Full Nodes (from local BlockChain cache) Useful for Full Nodes to relay peer
+         * information to Light Nodes.
+         */
+        fun Route.getKnownFullNodes() {
+            get("/getFullNodes") {
+                // Return BlockChain.fullNodes (List<FullNode>)
+                call.respond(BlockChain.fullNodes)
             }
         }
 
@@ -1313,7 +1326,9 @@ class Router {
 
                             // Log transaction details
                             block!!.data.transactions.forEach { tx ->
-                                println("📝 Transaction recorded: ${tx.transaction} - ${tx.sender} -> ${tx.receiver}: ${tx.remittance} KNT")
+                                println(
+                                        "📝 Transaction recorded: ${tx.transaction} - ${tx.sender} -> ${tx.receiver}: ${tx.remittance} KNT"
+                                )
                             }
 
                             call.respond(
@@ -1428,7 +1443,9 @@ class Router {
                         }
 
                         // Log the transaction
-                        println("📝 UNSTAKE recorded: $stakeVault -> $validatorAddress: $stakedAmount KNT")
+                        println(
+                                "📝 UNSTAKE recorded: $stakeVault -> $validatorAddress: $stakedAmount KNT"
+                        )
 
                         // Propagate
                         try {
