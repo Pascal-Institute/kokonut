@@ -12,6 +12,8 @@ Kokonut is a lightweight and scalable blockchain framework written in Kotlin. De
 - **🌐 IPv6 P2P**: Direct peer-to-peer connectivity without NAT/port forwarding
 - **🎯 Treasury-Paid Rewards (B-model)**: Validator rewards are recorded as treasury-paid on-chain transactions
 - **🎁 Validator Onboarding Reward**: On first successful Light Node connect, the network records a 2 KNT onboarding payout (1 KNT to the Full Node reward receiver, 1 KNT to the validator)
+- **🔐 Enhanced Chain Integrity**: Strict previousHash validation and timestamp consistency for blockchain security
+- **💰 Smart Deposit Management**: Automatic deposit returns after staking completion with transaction logging
 
 ## 📚 Project Structure
 
@@ -79,7 +81,12 @@ The core node that maintains and operates the actual blockchain network.
 A desktop wallet application for users (built with Compose Desktop).
 
 - **Wallet Management**: Login via `.pem` key files.
-- **Monitoring**: Check validating status and wallet address (Validator ID).
+- **Staking Operations**: Seamless staking workflow with automatic deposit management
+  - Start Staking: Automatically calls `/stakeLock` if needed before validation
+  - Stop Staking: Gracefully stops validation, syncs chain, and updates balance
+- **Balance Updates**: Real-time balance updates after block validation and rewards
+- **Transaction Recording**: Accurate transaction logging for all staking operations
+- **Monitoring**: Check validating status and wallet address (Validator ID)
 
 ---
 
@@ -90,7 +97,7 @@ A desktop wallet application for users (built with Compose Desktop).
 > **Requirement**: Kokonut requires **Java 17** or higher.
 
 - **Java JDK 17** or higher
-- **Kotlin 1.9.22** (Included in Gradle settings)
+- **Kotlin 2.1.0** (Included in Gradle settings)
 
 ### Build
 
@@ -198,6 +205,9 @@ To become an active validator, you must lock at least the network minimum stake 
 
 - Full Nodes expose `POST /stakeLock`, which appends a `STAKE_LOCK` block containing an on-chain transfer from your validator address to the stakeVault.
 - Light Node "Start Staking" will automatically call `POST /stakeLock` (if needed) before starting validation.
+- **Stop Staking**: When you stop validation, a `POST /stopValidating` call creates an `UNSTAKE` block that returns your deposit from stakeVault to your validator address.
+
+**Chain Integrity**: All blocks maintain strict timestamp consistency between blocks and their embedded transactions, ensuring hash validation integrity across the network.
 
 **Note**: In the current model, validator stake and rewards are derived from the blockchain history (the chain is the source of truth).
 
@@ -205,11 +215,12 @@ To become an active validator, you must lock at least the network minimum stake 
 
 ## 🛠 Tech Stack
 
-- **Language**: [Kotlin](https://kotlinlang.org/)
-- **Server Framework**: [Ktor](https://ktor.io/) (Netty Engine)
-- **UI Framework**: [Compose Multiplatform](https://www.jetbrains.com/lp/compose-multiplatform/) (Desktop)
+- **Language**: [Kotlin](https://kotlinlang.org/) 2.1.0
+- **Server Framework**: [Ktor](https://ktor.io/) 3.0.2 (Netty Engine)
+- **UI Framework**: [Compose Multiplatform](https://www.jetbrains.com/lp/compose-multiplatform/) 1.7.1 (Desktop)
 - **Serialization**: Kotlinx Serialization (JSON)
-- **Database**: SQLite (via JDBC)
+- **Database**: SQLite 3.47.1.0 (via JDBC)
+- **Logging**: Logback 1.5.12
 - **Build Tool**: Gradle Kotlin DSL
 
 ## 🤝 Contributing
@@ -227,6 +238,29 @@ To become an active validator, you must lock at least the network minimum stake 
 - **State management**: Add to `state/` package
 - **Follow Kotlin conventions** and maintain backward compatibility
 - **Write tests** for new features
+- **Timestamp Consistency**: When creating transactions within blocks, always use the block's timestamp to ensure hash integrity
+
+## 🔧 Recent Updates (January 2026)
+
+### Version Upgrades
+
+- **Kotlin**: Upgraded to 2.1.0 from 1.9.22
+- **Ktor**: Upgraded to 3.0.2 from 2.3.4 with API compatibility fixes
+- **Compose Desktop**: Upgraded to 1.7.1 from 1.6.0
+- **SQLite JDBC**: Updated to 3.47.1.0
+- **Logback**: Updated to 1.5.12
+
+### Blockchain Improvements
+
+- **Enhanced Chain Integrity**: Implemented strict `previousHash` validation and exact index verification in block addition
+- **Timestamp Consistency Fix**: All transactions now use their containing block's timestamp, ensuring hash recalculation consistency
+- **Improved Validation Logging**: Enhanced error reporting shows specific invalid blocks with hash comparisons
+
+### Light Node Enhancements
+
+- **Stop Staking Workflow**: Properly calls `/stopValidating` API, syncs chain, and updates balance
+- **Post-Validation Updates**: Chain sync and balance updates after successful block validation
+- **Transaction Logging**: Accurate recording of all reward transactions
 
 ---
 
