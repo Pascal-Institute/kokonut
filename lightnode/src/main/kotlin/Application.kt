@@ -27,6 +27,7 @@ import java.awt.FileDialog
 import java.awt.Frame
 import java.io.File
 import java.net.URL
+import kokonut.core.Block
 import kokonut.core.BlockChain
 import kokonut.core.NetworkInfo
 import kokonut.state.ValidatorState
@@ -386,8 +387,7 @@ fun App() {
                                                         url.addBlock(
                                                                 kotlinx.serialization.json.Json
                                                                         .encodeToJsonElement(
-                                                                                kokonut.core.Block
-                                                                                        .serializer(),
+                                                                                Block.serializer(),
                                                                                 block
                                                                         ),
                                                                 File(selectedPublicKeyFilePath)
