@@ -1,6 +1,7 @@
 package kokonut.util
 
 import kokonut.core.BlockChain
+import kokonut.core.Transaction
 import kokonut.core.Validator
 import kotlin.random.Random
 
@@ -10,6 +11,17 @@ class ValidatorPool {
         const val MINIMUM_STAKE = 1.0 // Minimum KNT to become validator
         const val VALIDATOR_REWARD_PERCENTAGE = 0.01 // Reward ratio (paid from treasury)
         const val VALIDATOR_REWARD_TX = "VALIDATOR_REWARD"
+        const val SLASH_TX_PREFIX = "SLASH:"
+
+        fun createSlashTransaction(victimAddress: String, amount: Double): Transaction {
+            return Transaction(
+                    transaction = SLASH_TX_PREFIX + victimAddress,
+                    sender = BlockChain.getStakeVaultAddress(),
+                    receiver = BlockChain.getTreasuryAddress(),
+                    remittance = amount,
+                    commission = 0.0
+            )
+        }
     }
 
     /**
@@ -38,10 +50,21 @@ class ValidatorPool {
                     // Staking: Add to sender's stake
                     stakeByAddress[tx.sender] = (stakeByAddress[tx.sender] ?: 0.0) + tx.remittance
                 }
-                if (tx.sender == stakeVault && tx.remittance > 0.0) {
+
+                // Handle standard unstaking (if supported)
+                if (tx.sender == stakeVault &&
+                                tx.remittance > 0.0 &&
+                                !tx.transaction.startsWith(SLASH_TX_PREFIX)
+                ) {
                     // Unstaking: Subtract from receiver's stake
                     stakeByAddress[tx.receiver] =
                             (stakeByAddress[tx.receiver] ?: 0.0) - tx.remittance
+                }
+
+                // Handle Slashing
+                if (tx.sender == stakeVault && tx.transaction.startsWith(SLASH_TX_PREFIX)) {
+                    val victim = tx.transaction.removePrefix(SLASH_TX_PREFIX)
+                    stakeByAddress[victim] = (stakeByAddress[victim] ?: 0.0) - tx.remittance
                 }
             }
         }
