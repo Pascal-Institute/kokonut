@@ -435,6 +435,21 @@ fun App() {
                                                         // Expected: Not selected, chain not ready,
                                                         // etc.
                                                         println("Staking info: ${e.message}")
+                                                        if (e.message?.contains(
+                                                                        "Chain is Invalid"
+                                                                ) == true
+                                                        ) {
+                                                            validationState = ValidatorState.FAILED
+                                                            connectionMessage =
+                                                                    "❌ Staking Stopped: Chain is Invalid"
+                                                        } else if (e.message?.contains(
+                                                                        "No Fuel Nodes found"
+                                                                ) == true
+                                                        ) {
+                                                            validationState = ValidatorState.FAILED
+                                                            connectionMessage =
+                                                                    "❌ Staking Stopped: No Fuel Nodes found"
+                                                        }
                                                     } finally {
                                                         // Always update UI with latest chain info
                                                         val lastBlock = BlockChain.getLastBlock()
@@ -464,6 +479,16 @@ fun App() {
                                                 "Please load a public key..." &&
                                         validationState != ValidatorState.VALIDATING
                 ) { Text("🔨 Start Staking") }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Button(
+                        onClick = {
+                            validationState = ValidatorState.READY
+                            connectionMessage = "🛑 Staking Stopped by User"
+                        },
+                        enabled = validationState == ValidatorState.VALIDATING
+                ) { Text("🛑 Stop Staking") }
 
                 Spacer(modifier = Modifier.width(8.dp))
 

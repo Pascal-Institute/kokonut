@@ -546,16 +546,7 @@ class Router {
         }
 
         fun Route.getChain() {
-            get("/getChain") {
-                // Check chain
-                if (!BlockChain.isValid()) {
-                    call.respond(
-                            HttpStatusCode.Created,
-                            "Get Chain Failed : Server block chain is invalid"
-                    )
-                }
-                call.respond(BlockChain.getChain())
-            }
+            get("/getChain") { call.respond(BlockChain.getChain()) }
         }
 
         fun Route.getPolicy() {
