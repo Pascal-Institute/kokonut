@@ -103,13 +103,15 @@ object GenesisGenerator {
                 amount: Double = GENESIS_TREASURY_MINT_AMOUNT,
                 timestamp: Long = System.currentTimeMillis()
         ): Block {
+                // IMPORTANT: Use block timestamp for transaction to ensure hash consistency
                 val mintTransaction =
                         Transaction(
                                 transaction = "GENESIS_MINT",
                                 sender = "GENESIS",
                                 receiver = treasuryAddress,
                                 remittance = amount,
-                                commission = 0.0
+                                commission = 0.0,
+                                timestamp = timestamp
                         )
 
                 val data =

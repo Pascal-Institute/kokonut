@@ -182,9 +182,42 @@ class Router {
                                 ?: 200
 
                 if (!BlockChain.isValid()) {
+                    // Find which blocks are invalid for debugging
+                    val chain = BlockChain.getChain()
+                    val invalidBlocks = mutableListOf<String>()
+                    
+                    for (i in chain.indices) {
+                        val block = chain[i]
+                        val recalcHash = block.calculateHash()
+                        
+                        if (recalcHash != block.hash) {
+                            invalidBlocks.add(
+                                "Block ${block.index}: hash mismatch (stored=${block.hash.take(16)}..., calculated=${recalcHash.take(16)}...)"
+                            )
+                            // Log detailed debug info
+                            println("❌ Block ${block.index} INVALID:")
+                            println("   Stored Hash: ${block.hash}")
+                            println("   Calculated Hash: $recalcHash")
+                            println("   Timestamp: ${block.timestamp}")
+                            println("   Data: ${block.data}")
+                        }
+                        
+                        if (i > 0 && block.previousHash != chain[i - 1].hash) {
+                            invalidBlocks.add(
+                                "Block ${block.index}: previousHash mismatch"
+                            )
+                        }
+                    }
+                    
+                    val errorDetail = if (invalidBlocks.isNotEmpty()) {
+                        "Invalid blocks: ${invalidBlocks.joinToString("; ")}"
+                    } else {
+                        "Chain validation failed but no specific block error found"
+                    }
+                    
                     call.respond(
                             HttpStatusCode.ServiceUnavailable,
-                            "Transactions dashboard unavailable: local chain is invalid"
+                            "Transactions dashboard unavailable: local chain is invalid. $errorDetail"
                     )
                     return@get
                 }
@@ -789,6 +822,10 @@ class Router {
                                                     totalWithdrawn = 2.0
                                             )
 
+                                    val lastBlock = BlockChain.getLastBlock()
+                                    val blockTimestamp = System.currentTimeMillis()
+
+                                    // IMPORTANT: Use block timestamp for transactions
                                     val transactions =
                                             listOf(
                                                     Transaction(
@@ -797,7 +834,8 @@ class Router {
                                                             sender = treasuryAddress,
                                                             receiver = fullNodeAddress,
                                                             remittance = 1.0,
-                                                            commission = 0.0
+                                                            commission = 0.0,
+                                                            timestamp = blockTimestamp
                                                     ),
                                                     Transaction(
                                                             transaction =
@@ -805,11 +843,11 @@ class Router {
                                                             sender = treasuryAddress,
                                                             receiver = validatorAddress,
                                                             remittance = 1.0,
-                                                            commission = 0.0
+                                                            commission = 0.0,
+                                                            timestamp = blockTimestamp
                                                     )
                                             )
 
-                                    val lastBlock = BlockChain.getLastBlock()
                                     val onboardingData =
                                             Data(
                                                     reward = 0.0,
@@ -826,7 +864,7 @@ class Router {
                                             Block(
                                                     index = lastBlock.index + 1,
                                                     previousHash = lastBlock.hash,
-                                                    timestamp = System.currentTimeMillis(),
+                                                    timestamp = blockTimestamp,
                                                     data = onboardingData,
                                                     validatorSignature = "",
                                                     hash = ""
@@ -1040,13 +1078,17 @@ class Router {
 
                     val stakeVault = BlockChain.getStakeVaultAddress()
                     val lastBlock = BlockChain.getLastBlock()
+                    val blockTimestamp = System.currentTimeMillis()
+                    
+                    // IMPORTANT: Use the same timestamp for transaction and block
                     val stakeTx =
                             Transaction(
                                     transaction = "STAKE_LOCK",
                                     sender = validatorAddress,
                                     receiver = stakeVault,
                                     remittance = amount!!,
-                                    commission = 0.0
+                                    commission = 0.0,
+                                    timestamp = blockTimestamp
                             )
                     val stakeData =
                             Data(
@@ -1061,12 +1103,20 @@ class Router {
                             Block(
                                     index = lastBlock.index + 1,
                                     previousHash = lastBlock.hash,
-                                    timestamp = System.currentTimeMillis(),
+                                    timestamp = blockTimestamp,
                                     data = stakeData,
                                     validatorSignature = "",
                                     hash = ""
                             )
                     stakeBlock.hash = stakeBlock.calculateHash()
+
+                    // Debug: Log hash calculation details
+                    println("📊 STAKE_LOCK Block Debug:")
+                    println("   Index: ${stakeBlock.index}")
+                    println("   Timestamp: ${stakeBlock.timestamp}")
+                    println("   Tx Timestamp: ${stakeTx.timestamp}")
+                    println("   Calculated Hash: ${stakeBlock.hash}")
+                    println("   IsValid: ${stakeBlock.isValid()}")
 
                     BlockChain.database.insert(stakeBlock)
                     BlockChain.refreshFromDatabase()
@@ -1074,6 +1124,18 @@ class Router {
                     // Verify chain integrity after insertion
                     if (!BlockChain.isValid()) {
                         println("⚠️ Chain integrity check failed after stake lock insertion!")
+                        // Debug: Find which block is invalid
+                        val chain = BlockChain.getChain()
+                        chain.forEachIndexed { idx, block ->
+                            val recalcHash = block.calculateHash()
+                            if (recalcHash != block.hash) {
+                                println("❌ Block $idx hash mismatch!")
+                                println("   Stored: ${block.hash}")
+                                println("   Calculated: $recalcHash")
+                            }
+                        }
+                    } else {
+                        println("✅ Chain integrity verified after stake lock insertion")
                     }
 
                     // Log the transaction
@@ -1396,18 +1458,18 @@ class Router {
                         // 3. Create UNSTAKE block to return funds
                         val lastBlock = BlockChain.getLastBlock()
                         val stakeVault = BlockChain.getStakeVaultAddress()
+                        val blockTimestamp = System.currentTimeMillis()
 
                         // Create a transaction from Vault to Validator
-                        // Note: Depending on verification logic, strictly speaking this needs
-                        // Vault's signature
-                        // But we treat UNSTAKE block type as special system event.
+                        // IMPORTANT: Use the same timestamp as the block to ensure hash consistency
                         val unstakeTx =
                                 Transaction(
                                         transaction = "UNSTAKE",
                                         sender = stakeVault,
                                         receiver = validatorAddress,
                                         remittance = stakedAmount,
-                                        commission = 0.0
+                                        commission = 0.0,
+                                        timestamp = blockTimestamp
                                 )
 
                         val data =
@@ -1424,7 +1486,7 @@ class Router {
                                 Block(
                                         index = lastBlock.index + 1,
                                         previousHash = lastBlock.hash,
-                                        timestamp = System.currentTimeMillis(),
+                                        timestamp = blockTimestamp,
                                         data = data,
                                         validatorSignature =
                                                 "", // System block, no validator signature needed
@@ -1433,6 +1495,15 @@ class Router {
                                 )
                         unstakeBlock.hash = unstakeBlock.calculateHash()
 
+                        // Debug: Log hash calculation details
+                        println("📊 UNSTAKE Block Debug:")
+                        println("   Index: ${unstakeBlock.index}")
+                        println("   PreviousHash: ${unstakeBlock.previousHash}")
+                        println("   Timestamp: ${unstakeBlock.timestamp}")
+                        println("   Tx Timestamp: ${unstakeTx.timestamp}")
+                        println("   Calculated Hash: ${unstakeBlock.hash}")
+                        println("   IsValid: ${unstakeBlock.isValid()}")
+
                         // Insert and Refresh
                         BlockChain.database.insert(unstakeBlock)
                         BlockChain.refreshFromDatabase()
@@ -1440,6 +1511,18 @@ class Router {
                         // Verify chain integrity after insertion
                         if (!BlockChain.isValid()) {
                             println("⚠️ Chain integrity check failed after unstake insertion!")
+                            // Debug: Find which block is invalid
+                            val chain = BlockChain.getChain()
+                            chain.forEachIndexed { idx, block ->
+                                val recalcHash = block.calculateHash()
+                                if (recalcHash != block.hash) {
+                                    println("❌ Block $idx hash mismatch!")
+                                    println("   Stored: ${block.hash}")
+                                    println("   Calculated: $recalcHash")
+                                }
+                            }
+                        } else {
+                            println("✅ Chain integrity verified after unstake insertion")
                         }
 
                         // Log the transaction

@@ -469,6 +469,7 @@ class BlockChain {
             val treasuryAddress = getTreasuryAddress()
             val treasuryBalance = getTreasuryBalance()
 
+            // IMPORTANT: Use block timestamp for transaction to ensure hash consistency
             val rewardTx =
                     if (treasuryBalance >= rewardAmount && rewardAmount > 0.0) {
                         Transaction(
@@ -476,7 +477,8 @@ class BlockChain {
                                 sender = treasuryAddress,
                                 receiver = validatorAddress,
                                 remittance = truncate(rewardAmount),
-                                commission = 0.0
+                                commission = 0.0,
+                                timestamp = timestamp
                         )
                     } else {
                         null
