@@ -27,6 +27,7 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.jsonObject
 
 class API {
     companion object {
@@ -169,6 +170,41 @@ class API {
             } catch (e: Exception) {
                 e.printStackTrace()
                 throw e
+            } finally {
+                conn.disconnect()
+            }
+        }
+
+        /**
+         * Get balance for a given address from Full Node
+         * @param address The wallet address (validator address) to query
+         * @return Balance as Double, or 0.0 if query fails
+         */
+        fun URL.getBalance(address: String): Double {
+            val url = URL("${this}/getBalance?address=$address")
+            val conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.connectTimeout = 5000
+            conn.readTimeout = 5000
+
+            return try {
+                val responseCode = conn.responseCode
+
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    val inputStream = conn.inputStream
+                    val reader = BufferedReader(InputStreamReader(inputStream))
+                    val response = reader.use { it.readText() }
+
+                    // Response is JSON: {"address": "...", "balance": 123.45, "ticker": "KNT"}
+                    val jsonElement = Json.parseToJsonElement(response)
+                    jsonElement.jsonObject["balance"]?.toString()?.toDoubleOrNull() ?: 0.0
+                } else {
+                    println("getBalance failed with response code $responseCode")
+                    0.0
+                }
+            } catch (e: Exception) {
+                println("getBalance error: ${e.message}")
+                0.0
             } finally {
                 conn.disconnect()
             }

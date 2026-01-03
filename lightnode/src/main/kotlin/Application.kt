@@ -32,6 +32,7 @@ import kokonut.core.BlockChain
 import kokonut.core.NetworkInfo
 import kokonut.state.ValidatorState
 import kokonut.util.API.Companion.addBlock
+import kokonut.util.API.Companion.getBalance
 import kokonut.util.API.Companion.performHandshake
 import kokonut.util.API.Companion.stakeLock
 import kokonut.util.API.Companion.startValidating
@@ -61,6 +62,9 @@ fun App() {
 
     var showSuccessDialog by remember { mutableStateOf(false) }
     var showKeyGenDialog by remember { mutableStateOf(false) }
+
+    // Wallet balance state
+    var walletBalance by remember { mutableStateOf(0.0) }
 
     MaterialTheme {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -95,6 +99,17 @@ fun App() {
                 Row {
                     Text(text = "Validator Address: ", fontWeight = FontWeight.Bold)
                     Text(text = validatorAddress)
+                }
+            }
+
+            // Wallet Balance (shown when connected and logged in)
+            if (isConnected && validatorAddress.isNotEmpty()) {
+                Row {
+                    Text(text = "💰 Balance: ", fontWeight = FontWeight.Bold)
+                    Text(
+                            text = "$walletBalance KNT",
+                            color = if (walletBalance > 0) Color(0xFF4CAF50) else Color.Gray
+                    )
                 }
             }
 
@@ -175,6 +190,9 @@ fun App() {
                                 // Auto-load validator address
                                 validatorAddress = wallet.validatorAddress
                                 validationState = wallet.validationState
+
+                                // Fetch wallet balance from Full Node
+                                walletBalance = url.getBalance(validatorAddress)
                             } else {
                                 isConnected = false
                                 networkInfo = null
@@ -303,6 +321,10 @@ fun App() {
                                     showSuccessDialog = true
                                     validatorAddress = wallet.validatorAddress
                                     validationState = wallet.validationState
+
+                                    // Fetch wallet balance from Full Node
+                                    val url = URL(peerAddress)
+                                    walletBalance = url.getBalance(validatorAddress)
                                 }
                             } catch (e: Exception) {
                                 errorMessage = "❌ Login failed: ${e.message}"

@@ -568,6 +568,24 @@ class Router {
             }
         }
 
+        /**
+         * Get balance for a given address Query parameter: address - the wallet address (validator
+         * address) Returns the balance as a Double
+         */
+        fun Route.getBalance() {
+            get("/getBalance") {
+                val address = call.request.queryParameters["address"]
+
+                if (address.isNullOrBlank()) {
+                    call.respond(HttpStatusCode.BadRequest, "Missing 'address' query parameter")
+                    return@get
+                }
+
+                val balance = BlockChain.getBalance(address)
+                call.respond(mapOf("address" to address, "balance" to balance, "ticker" to "KNT"))
+            }
+        }
+
         fun Route.getValidators() {
             get("/getValidators") {
                 val validators = BlockChain.validatorPool.getActiveValidators()

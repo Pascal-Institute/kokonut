@@ -128,6 +128,7 @@ Full Nodes and the Fuel Node interact via HTTP APIs.
 | `POST` | `/handshake`              | Client handshake (returns network info)                        |
 | `GET`  | `/getLastBlock`           | Get the last block of the current chain                        |
 | `GET`  | `/getChain`               | Get the entire blockchain data                                 |
+| `GET`  | `/getBalance?address=`    | Get wallet balance for a given address (returns JSON)          |
 | `GET`  | `/isValid`                | Check the integrity of the local blockchain                    |
 | `GET`  | `/getTotalCurrencyVolume` | Get the total supply of KNT                                    |
 | `GET`  | `/getReward`              | Get the current reward policy value                            |
