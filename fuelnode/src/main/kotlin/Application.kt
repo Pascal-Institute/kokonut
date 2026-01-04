@@ -18,37 +18,42 @@ import kokonut.util.Router.Companion.heartbeat
 import kokonut.util.Router.Companion.propagate
 import kokonut.util.Router.Companion.root
 
+/** Constants for node health management */
+private object NodeHealthConfig {
+    const val STALE_NODE_TIMEOUT_MS = 15 * 60 * 1000L // 15 minutes
+    const val CLEANUP_INTERVAL_MS = 60_000L // 1 minute
+    const val CLEANUP_INITIAL_DELAY_MS = 60_000L // 1 minute
+    const val DEFAULT_SERVER_HOST = "0.0.0.0"
+    const val DEFAULT_SERVER_PORT = 80
+}
+
 fun main() {
     BlockChain.initialize(NodeType.FUEL)
 
     // ConcurrentHashMap: address -> lastHeartbeatTimestamp
     val fullNodes = ConcurrentHashMap<String, Long>()
 
-    // Cleanup timer: Remove nodes that haven't sent heartbeat for 15 minutes
+    // Cleanup timer: Remove nodes that haven't sent heartbeat within timeout period
     Timer("FullNode-Cleanup", true)
             .scheduleAtFixedRate(
                     object : TimerTask() {
                         override fun run() {
                             val now = System.currentTimeMillis()
-                            val timeout = 15 * 60 * 1000 // 15 minutes
-
                             fullNodes.entries.removeIf { (address, lastSeen) ->
-                                val isStale = (now - lastSeen) > timeout
+                                val isStale = (now - lastSeen) > NodeHealthConfig.STALE_NODE_TIMEOUT_MS
                                 if (isStale) {
-                                    println(
-                                            "🗑️ Removing stale Full Node: $address (inactive for 15+ minutes)"
-                                    )
+                                    println("🗑️ Removing stale Full Node: $address (inactive)")
                                 }
                                 isStale
                             }
                         }
                     },
-                    60_000, // Initial delay: 1 minute
-                    60_000 // Period: 1 minute (check every minute)
+                    NodeHealthConfig.CLEANUP_INITIAL_DELAY_MS,
+                    NodeHealthConfig.CLEANUP_INTERVAL_MS
             )
 
-    val host = System.getenv("SERVER_HOST") ?: "0.0.0.0"
-    embeddedServer(Netty, host = host, port = 80) {
+    val host = System.getenv("SERVER_HOST") ?: NodeHealthConfig.DEFAULT_SERVER_HOST
+    embeddedServer(Netty, host = host, port = NodeHealthConfig.DEFAULT_SERVER_PORT) {
                 install(ContentNegotiation) { json() }
                 routing {
                     root(NodeType.FUEL)

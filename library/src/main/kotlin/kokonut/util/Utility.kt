@@ -15,6 +15,12 @@ import kotlin.math.*
 class Utility {
     companion object {
 
+        /** Heartbeat and health check timing configuration */
+        private object HeartbeatConfig {
+            const val INTERVAL_MS = 600_000L // 10 minutes
+            const val HEALTH_CHECK_INTERVAL_MS = 300_000L // 5 minutes
+        }
+
         const val majorIndex = 0
 
         private val properties: Properties =
@@ -41,7 +47,7 @@ class Utility {
                         }
                     },
                     0,
-                    300_000
+                    HeartbeatConfig.HEALTH_CHECK_INTERVAL_MS
             )
         }
 
@@ -66,7 +72,7 @@ class Utility {
                 println("⚠️ Initial registration error: ${e.message}")
             }
 
-            // Schedule periodic heartbeat every 10 minutes (600,000 ms)
+            // Schedule periodic heartbeat
             timer.scheduleAtFixedRate(
                     object : TimerTask() {
                         override fun run() {
@@ -75,18 +81,18 @@ class Utility {
                                 if (success) {
                                     println("💓 Heartbeat sent successfully")
                                 } else {
-                                    println("⚠️ Heartbeat failed, will retry in 10 minutes")
+                                    println("⚠️ Heartbeat failed, will retry")
                                 }
                             } catch (e: Exception) {
                                 println("⚠️ Heartbeat error: ${e.message}")
                             }
                         }
                     },
-                    600_000, // Initial delay: 10 minutes
-                    600_000 // Period: 10 minutes
+                    HeartbeatConfig.INTERVAL_MS,
+                    HeartbeatConfig.INTERVAL_MS
             )
 
-            println("🔄 Heartbeat service started (interval: 10 minutes)")
+            println("🔄 Heartbeat service started (interval: ${HeartbeatConfig.INTERVAL_MS / 60_000} minutes)")
         }
 
         fun normalizeNodeAddress(
@@ -200,9 +206,12 @@ class Utility {
                             .listFiles { _, name ->
                                 name.startsWith("kokonut-") && name.endsWith(".jar")
                             }
-                            ?.firstOrNull() // 첫 번째 파일을 선택
+                            ?.firstOrNull()
 
-            return kokonutJar!!.absolutePath
+            return requireNotNull(kokonutJar) {
+                "Kokonut JAR file not found in ${buildDir.absolutePath}. " +
+                        "Please ensure the project is built."
+            }.absolutePath
         }
 
         fun calculateHash(timestamp: Long): String {

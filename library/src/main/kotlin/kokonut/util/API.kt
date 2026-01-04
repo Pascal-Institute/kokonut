@@ -29,12 +29,51 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonObject
 
+/**
+ * API provides extension functions for network communication with Kokonut nodes.
+ * 
+ * All HTTP operations follow consistent error handling patterns and timeout configurations.
+ */
 class API {
     companion object {
+
+        /** Default timeout configuration for HTTP connections */
+        private object TimeoutConfig {
+            const val CONNECT_TIMEOUT_MS = 5000
+            const val READ_TIMEOUT_MS = 5000
+            const val HEALTH_CHECK_TIMEOUT_MS = 1500
+        }
+
+        /**
+         * Executes a GET request and returns the response body as a String.
+         * 
+         * @param path The API endpoint path (e.g., "/getChain")
+         * @return The response body as String
+         * @throws RuntimeException if the request fails
+         */
+        private fun URL.executeGetRequest(path: String): String {
+            val requestUrl = URL("${this}$path")
+            val conn = requestUrl.openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.connectTimeout = TimeoutConfig.CONNECT_TIMEOUT_MS
+            conn.readTimeout = TimeoutConfig.READ_TIMEOUT_MS
+
+            return try {
+                val responseCode = conn.responseCode
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    conn.inputStream.bufferedReader().use { it.readText() }
+                } else {
+                    throw RuntimeException("GET request to $path failed with response code $responseCode")
+                }
+            } finally {
+                conn.disconnect()
+            }
+        }
+
         fun URL.isHealthy(): Boolean {
             return try {
                 val connection = this.openConnection() as HttpURLConnection
-                connection.connectTimeout = 1500
+                connection.connectTimeout = TimeoutConfig.HEALTH_CHECK_TIMEOUT_MS
                 connection.requestMethod = "GET"
                 connection.connect()
 
