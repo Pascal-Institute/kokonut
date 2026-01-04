@@ -6,7 +6,7 @@ if (propertiesFile.exists()) {
     val properties = Properties()
     properties.load(propertiesFile.inputStream())
     val kokonutVersion = properties["kokonut_version"] as String?
-    version = kokonutVersion ?: "0.0.0" // 기본값을 설정할 수 있음
+    version = kokonutVersion ?: "0.0.0"
 }
 
 plugins {
@@ -39,12 +39,6 @@ dependencies {
     implementation("org.xerial:sqlite-jdbc:3.47.1.0")
 }
 
-tasks.withType<ProcessResources> {
-    from("src/main/resources/0000000000000000000000000000000000000000000000009fece4dc7e1d108d.json") {
-        into("resources")
-    }
-}
-
 kotlin {
     jvmToolchain(17)
 }
@@ -60,7 +54,7 @@ tasks.jar {
 publishing {
     publications {
         create<MavenPublication>("maven") {
-            groupId = "io.github.pascal-institute" //Navigate beyond computing oceans
+            groupId = "io.github.pascal-institute"
             artifactId = "kokonut"
 
             version = project.version.toString()
