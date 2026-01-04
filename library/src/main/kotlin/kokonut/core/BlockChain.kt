@@ -561,11 +561,10 @@ class BlockChain {
                 if (expectedValidator == null ||
                                 currentBlock.data.validator != expectedValidator.address
                 ) {
-                    // Start of chain (e.g. Genesis/Bootstrap) exceptions
-                    if (currentBlock.data.validator == "GENESIS" ||
-                                    currentBlock.data.validator == "BOOTSTRAP" ||
-                                    currentBlock.data.validator == "ONBOARDING"
-                    ) {
+                    // System blocks (e.g. Genesis/Bootstrap/Staking) exceptions
+                    val systemValidators =
+                            listOf("GENESIS", "BOOTSTRAP", "ONBOARDING", "STAKE_LOCK", "UNSTAKE")
+                    if (currentBlock.data.validator in systemValidators) {
                         continue
                     }
 
