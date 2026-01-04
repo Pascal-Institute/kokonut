@@ -136,6 +136,37 @@ class API {
             }
         }
 
+        /**
+         * Detect peer type by checking available endpoints.
+         * FuelNode has /getPolicy endpoint, FullNode does not.
+         * 
+         * @return "FUEL" if peer is a FuelNode, "FULL" if peer is a FullNode, null if unknown
+         */
+        fun URL.detectPeerType(): String? {
+            return try {
+                // Try to get policy - only FuelNode has this endpoint
+                val policyUrl = URL("${this}/getPolicy")
+                val conn = policyUrl.openConnection() as HttpURLConnection
+                conn.requestMethod = "GET"
+                conn.connectTimeout = TimeoutConfig.CONNECT_TIMEOUT_MS
+                conn.readTimeout = TimeoutConfig.READ_TIMEOUT_MS
+
+                try {
+                    val responseCode = conn.responseCode
+                    if (responseCode == HttpURLConnection.HTTP_OK) {
+                        "FUEL" // Has /getPolicy = FuelNode
+                    } else {
+                        "FULL" // No /getPolicy = FullNode
+                    }
+                } finally {
+                    conn.disconnect()
+                }
+            } catch (e: Exception) {
+                // If connection fails completely, try to determine by other means
+                null
+            }
+        }
+
         fun URL.getChain(): MutableList<Block> {
             val url = URL("${this}/getChain")
             val conn = url.openConnection() as HttpURLConnection
