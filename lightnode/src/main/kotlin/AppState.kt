@@ -25,6 +25,10 @@ class AppState {
     var isConnected by mutableStateOf(false)
     var networkInfo by mutableStateOf<NetworkInfo?>(null)
     var connectionMessage by mutableStateOf<String?>(null)
+    
+    // WebSocket connection state
+    var isWebSocketConnected by mutableStateOf(false)
+    var webSocketStatus by mutableStateOf("Not connected")
 
     // Dialog visibility
     var showKeyGenDialog by mutableStateOf(false)

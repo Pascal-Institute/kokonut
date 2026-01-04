@@ -32,6 +32,8 @@ dependencies {
     implementation(project(":library"))
     implementation(compose.desktop.currentOs)
     implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:3.0.2")
+    implementation("io.ktor:ktor-client-cio:3.0.2")
+    implementation("io.ktor:ktor-client-websockets:3.0.2")
     testImplementation(kotlin("test"))
 }
 

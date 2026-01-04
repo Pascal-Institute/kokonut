@@ -54,6 +54,14 @@ fun HeaderSection(state: AppState) {
                         color = if (state.isConnected) MaterialTheme.colors.primary else Color.Gray,
                         active = state.isConnected
                 )
+                if (state.isWebSocketConnected) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    StatusChip(
+                            label = "WebSocket ✅",
+                            color = MaterialTheme.colors.primary,
+                            active = true
+                    )
+                }
                 if (state.validatorAddress.isNotEmpty()) {
                     Spacer(modifier = Modifier.width(8.dp))
                     StatusChip(
@@ -717,6 +725,10 @@ private fun startNodeValidation(state: AppState) {
         if (url.startValidating(publicKeyFile)) {
             state.validationState = ValidatorState.VALIDATING
             state.connectionMessage = "🚀 Node Started! Validating blocks..."
+            
+            // Start WebSocket connection for real-time updates
+            val wsClient = LightNodeWebSocketClient(state, state.peerAddress)
+            wsClient.start()
 
             // Start Validation Loop
             Thread {
@@ -737,8 +749,11 @@ private fun startNodeValidation(state: AppState) {
                                         File(state.selectedPublicKeyFilePath)
                                 )
 
-                                BlockChain.loadChainFromFullNode(url)
-                                val newBalance = url.getBalance(state.validatorAddress)
+                                // WebSocket will automatically receive and update the chain
+                                // No need for manual polling!
+                                
+                                // Update balance locally from chain
+                                val newBalance = BlockChain.getBalance(state.validatorAddress)
                                 state.walletBalance = newBalance
 
                                 // Refresh UI Info
