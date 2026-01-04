@@ -1,16 +1,9 @@
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.material.AlertDialog
-import androidx.compose.material.Button
-import androidx.compose.material.Divider
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
-import androidx.compose.material.TextField
-import androidx.compose.runtime.Composable
+import androidx.compose.animation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -42,35 +35,66 @@ import kotlinx.serialization.serializer
 /** App Header Section - Displays title and connection/node state */
 @Composable
 fun HeaderSection(state: AppState) {
-    // Title
-    Text(
-            text = "🥥 Kokonut Light Node",
-            style = MaterialTheme.typography.h5,
-            fontWeight = FontWeight.Bold
-    )
-
-    Spacer(modifier = Modifier.height(8.dp))
-
-    // Connection Status
-    Row {
-        Text(text = "Status: ", fontWeight = FontWeight.Bold)
-        Text(
-                text = if (state.isConnected) "✅ Connected" else "⭕ Not Connected",
-                color = if (state.isConnected) Color.Green else Color.Gray
-        )
-    }
-
-    // Validator State
-    Row {
-        if (state.validatorAddress.isNotEmpty()) {
-            Text(text = "Node State: ", fontWeight = FontWeight.Bold)
+    Card(
+            elevation = 0.dp,
+            backgroundColor = Color.Transparent,
+            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+    ) {
+        Column {
             Text(
-                    text =
-                            if (state.validationState == ValidatorState.VALIDATING) "🟢 Running"
-                            else "⚪ Stopped",
-                    color =
-                            if (state.validationState == ValidatorState.VALIDATING) Color.Green
-                            else Color.Gray
+                    text = "🥥 Kokonut Light Node",
+                    style = MaterialTheme.typography.h4,
+                    color = MaterialTheme.colors.primary,
+                    fontWeight = FontWeight.ExtraBold
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                StatusChip(
+                        label = if (state.isConnected) "Connected" else "Not Connected",
+                        color = if (state.isConnected) MaterialTheme.colors.primary else Color.Gray,
+                        active = state.isConnected
+                )
+                if (state.validatorAddress.isNotEmpty()) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    StatusChip(
+                            label =
+                                    if (state.validationState == ValidatorState.VALIDATING)
+                                            "Validating"
+                                    else "Stopped",
+                            color =
+                                    if (state.validationState == ValidatorState.VALIDATING)
+                                            MaterialTheme.colors.primary
+                                    else Color.Gray,
+                            active = state.validationState == ValidatorState.VALIDATING
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun StatusChip(label: String, color: Color, active: Boolean) {
+    Surface(
+            color = color.copy(alpha = 0.1f),
+            shape = RoundedCornerShape(16.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, color.copy(alpha = 0.5f))
+    ) {
+        Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                    color = color,
+                    shape = androidx.compose.foundation.shape.CircleShape,
+                    modifier = Modifier.size(8.dp)
+            ) {}
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                    text = label,
+                    color = color,
+                    style = MaterialTheme.typography.subtitle2,
+                    fontWeight = FontWeight.Bold
             )
         }
     }
@@ -83,36 +107,66 @@ fun HeaderSection(state: AppState) {
 /** Wallet Info Section - Displays address, balance, and staked amount */
 @Composable
 fun WalletInfoSection(state: AppState) {
-    if (state.isConnected && state.validatorAddress.isNotEmpty()) {
-        Spacer(modifier = Modifier.height(8.dp))
-        Divider()
-        Spacer(modifier = Modifier.height(8.dp))
+    AnimatedVisibility(
+            visible = state.isConnected && state.validatorAddress.isNotEmpty(),
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+    ) {
+        Card(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                elevation = 2.dp,
+                shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Text(
+                        text = "💰 Wallet & Stake",
+                        style = MaterialTheme.typography.h6,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colors.onSurface
+                )
+                Spacer(modifier = Modifier.height(16.dp))
 
+                InfoRow("Address", state.validatorAddress)
+                Divider(modifier = Modifier.padding(vertical = 12.dp))
+
+                Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    BalanceItem(
+                            "Balance",
+                            "${state.walletBalance} KNT",
+                            MaterialTheme.colors.primary
+                    )
+                    BalanceItem(
+                            "Staked",
+                            "${state.stakedAmount} KNT",
+                            MaterialTheme.colors.secondary
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun InfoRow(label: String, value: String) {
+    Column {
+        Text(text = label, style = MaterialTheme.typography.caption, color = Color.Gray)
+        Text(text = value, style = MaterialTheme.typography.body2, fontWeight = FontWeight.Medium)
+    }
+}
+
+@Composable
+fun BalanceItem(label: String, value: String, color: Color) {
+    Column {
+        Text(text = label, style = MaterialTheme.typography.caption, color = Color.Gray)
         Text(
-                text = "💰 Wallet & Stake",
-                style = MaterialTheme.typography.h6,
-                fontWeight = FontWeight.Bold
+                text = value,
+                style = MaterialTheme.typography.h5,
+                fontWeight = FontWeight.Bold,
+                color = color
         )
-        Spacer(modifier = Modifier.height(4.dp))
-
-        Row {
-            Text(text = "Address: ", fontWeight = FontWeight.Bold)
-            Text(text = state.validatorAddress.take(20) + "...")
-        }
-        Row {
-            Text(text = "Wallet Balance: ", fontWeight = FontWeight.Bold)
-            Text(
-                    text = "${state.walletBalance} KNT",
-                    color = if (state.walletBalance > 0) Color(0xFF4CAF50) else Color.Gray
-            )
-        }
-        Row {
-            Text(text = "Staked Amount: ", fontWeight = FontWeight.Bold)
-            Text(
-                    text = "${state.stakedAmount} KNT",
-                    color = if (state.stakedAmount > 0) Color(0xFF2196F3) else Color.Gray
-            )
-        }
     }
 }
 
@@ -123,49 +177,70 @@ fun WalletInfoSection(state: AppState) {
 /** Connection Section - Node URL input and connect button */
 @Composable
 fun ConnectionSection(state: AppState) {
-    Spacer(modifier = Modifier.height(16.dp))
-    Divider()
-    Spacer(modifier = Modifier.height(16.dp))
+    Card(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            elevation = 2.dp,
+            shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Text(
+                    text = "🔌 Node Connection",
+                    style = MaterialTheme.typography.h6,
+                    fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(16.dp))
 
-    // Node URL Input
-    Row {
-        Text(modifier = Modifier.width(100.dp).height(50.dp), text = "Node URL: ")
-        TextField(
-                value = state.peerAddress,
-                onValueChange = { state.peerAddress = it },
-                modifier = Modifier.width(300.dp).height(50.dp)
-        )
-    }
+            // URL Input
+            OutlinedTextField(
+                    value = state.peerAddress,
+                    onValueChange = { state.peerAddress = it },
+                    label = { Text("Node URL") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    leadingIcon = { Text("🌐") },
+                    shape = RoundedCornerShape(12.dp)
+            )
 
-    Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-    // Warning if keys not loaded
-    if (state.keysNotLoaded) {
-        Text(
-                text = "⚠️ Please load your public and private keys before connecting",
-                color = Color(0xFFFF9800),
-                modifier = Modifier.padding(8.dp)
-        )
-    }
+            // Warnings
+            AnimatedVisibility(visible = state.keysNotLoaded) {
+                Text(
+                        text = "⚠️ Please load your public and private keys before connecting",
+                        color = MaterialTheme.colors.error,
+                        style = MaterialTheme.typography.caption,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
 
-    // Connect Button
-    Button(
-            onClick = { performConnection(state) },
-            enabled = !state.keysNotLoaded,
-            modifier = Modifier.fillMaxWidth()
-    ) { Text(if (state.isConnected) "🔄 Refresh Connection" else "🤝 Connect & Login") }
+            // Connect Button
+            Button(
+                    onClick = { performConnection(state) },
+                    enabled = !state.keysNotLoaded,
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                        if (state.isConnected) "🔄 Refresh Connection" else "🤝 Connect & Login",
+                        fontWeight = FontWeight.Bold
+                )
+            }
 
-    // Chain Sync Status Warning
-    ChainSyncStatusSection(state)
+            // Sync Status & Messages
+            ChainSyncStatusSection(state)
 
-    // Connection Message
-    if (state.connectionMessage != null) {
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-                text = state.connectionMessage!!,
-                color = if (state.isConnected) Color.Green else Color.Red,
-                modifier = Modifier.padding(8.dp)
-        )
+            AnimatedVisibility(visible = state.connectionMessage != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                        text = state.connectionMessage ?: "",
+                        color =
+                                if (state.isConnected) MaterialTheme.colors.primary
+                                else MaterialTheme.colors.error,
+                        style = MaterialTheme.typography.body2,
+                        fontWeight = FontWeight.Medium
+                )
+            }
+        }
     }
 }
 
@@ -338,82 +413,111 @@ private fun performChainSync(state: AppState) {
 /** Key Management Section - Load/Generate Public/Private Keys */
 @Composable
 fun KeyManagementSection(state: AppState) {
-    Spacer(modifier = Modifier.height(16.dp))
-    Text(
-            text = "🔐 Key Management",
-            style = MaterialTheme.typography.h6,
-            fontWeight = FontWeight.Bold
-    )
-    Spacer(modifier = Modifier.height(8.dp))
+    Card(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            elevation = 2.dp,
+            shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Text(
+                    text = "🔐 Key Management",
+                    style = MaterialTheme.typography.h6,
+                    fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(16.dp))
 
-    // Load Public Key
-    Row {
-        Button(
-                onClick = {
-                    val fileDialog = FileDialog(Frame(), "Select Public Key", FileDialog.LOAD)
-                    fileDialog.isVisible = true
-                    fileDialog.file?.let {
-                        state.selectedPublicKeyFilePath =
-                                File(fileDialog.directory, it).absolutePath
+            KeyFileRow(
+                    label = "Load Public Key",
+                    filePath = state.selectedPublicKeyFilePath,
+                    onSelect = {
+                        val fileDialog = FileDialog(Frame(), "Select Public Key", FileDialog.LOAD)
+                        fileDialog.isVisible = true
+                        fileDialog.file?.let {
+                            state.selectedPublicKeyFilePath =
+                                    File(fileDialog.directory, it).absolutePath
+                        }
                     }
-                }
-        ) { Text("Load Public Key") }
-        Spacer(modifier = Modifier.width(8.dp))
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            KeyFileRow(
+                    label = "Load Private Key",
+                    filePath = state.selectedPrivateKeyFilePath,
+                    onSelect = {
+                        val fileDialog = FileDialog(Frame(), "Select Private Key", FileDialog.LOAD)
+                        fileDialog.isVisible = true
+                        fileDialog.file?.let {
+                            state.selectedPrivateKeyFilePath =
+                                    File(fileDialog.directory, it).absolutePath
+                        }
+                    }
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+            Divider()
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                    onClick = {
+                        val fileDialog =
+                                FileDialog(Frame(), "Save New Private Key", FileDialog.SAVE)
+                        fileDialog.file = "private.pem"
+                        fileDialog.isVisible = true
+                        fileDialog.file?.let {
+                            val dir = fileDialog.directory
+                            val privateKeyFile = File(dir, it)
+                            val publicKeyFile = File(dir, "public.pem")
+                            val keyPair = Wallet.generateKey()
+                            Wallet.saveKeyPairToFile(
+                                    keyPair,
+                                    privateKeyFile.absolutePath,
+                                    publicKeyFile.absolutePath
+                            )
+                            state.selectedPrivateKeyFilePath = privateKeyFile.absolutePath
+                            state.selectedPublicKeyFilePath = publicKeyFile.absolutePath
+                            state.showKeyGenDialog = true
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors =
+                            ButtonDefaults.buttonColors(
+                                    backgroundColor = MaterialTheme.colors.secondary
+                            )
+            ) { Text("Generate New Keys", fontWeight = FontWeight.Bold, color = Color.White) }
+        }
+    }
+}
+
+@Composable
+fun KeyFileRow(label: String, filePath: String?, onSelect: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        Button(
+                onClick = onSelect,
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.height(36.dp),
+                colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.surface)
+        ) {
+            Text(
+                    label,
+                    style = MaterialTheme.typography.caption,
+                    color = MaterialTheme.colors.primary
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
         Text(
                 text =
-                        if (state.selectedPublicKeyFilePath!!.length > 30)
-                                "..." + state.selectedPublicKeyFilePath!!.takeLast(30)
-                        else state.selectedPublicKeyFilePath!!
+                        if (filePath != null) {
+                            val f = File(filePath)
+                            if (f.name.length > 25) "..." + f.name.takeLast(25) else f.name
+                        } else "Not selected",
+                style = MaterialTheme.typography.body2,
+                color = if (filePath != null) MaterialTheme.colors.onSurface else Color.Gray,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
         )
     }
-
-    Spacer(modifier = Modifier.height(4.dp))
-
-    // Load Private Key
-    Row {
-        Button(
-                onClick = {
-                    val fileDialog = FileDialog(Frame(), "Select Private Key", FileDialog.LOAD)
-                    fileDialog.isVisible = true
-                    fileDialog.file?.let {
-                        state.selectedPrivateKeyFilePath =
-                                File(fileDialog.directory, it).absolutePath
-                    }
-                }
-        ) { Text("Load Private Key") }
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-                text =
-                        if (state.selectedPrivateKeyFilePath!!.length > 30)
-                                "..." + state.selectedPrivateKeyFilePath!!.takeLast(30)
-                        else state.selectedPrivateKeyFilePath!!
-        )
-    }
-
-    Spacer(modifier = Modifier.height(4.dp))
-
-    // Generate New Keys
-    Button(
-            onClick = {
-                val fileDialog = FileDialog(Frame(), "Save New Private Key", FileDialog.SAVE)
-                fileDialog.file = "private.pem"
-                fileDialog.isVisible = true
-                fileDialog.file?.let {
-                    val dir = fileDialog.directory
-                    val privateKeyFile = File(dir, it)
-                    val publicKeyFile = File(dir, "public.pem")
-                    val keyPair = Wallet.generateKey()
-                    Wallet.saveKeyPairToFile(
-                            keyPair,
-                            privateKeyFile.absolutePath,
-                            publicKeyFile.absolutePath
-                    )
-                    state.selectedPrivateKeyFilePath = privateKeyFile.absolutePath
-                    state.selectedPublicKeyFilePath = publicKeyFile.absolutePath
-                    state.showKeyGenDialog = true
-                }
-            }
-    ) { Text("Generate New Keys") }
 }
 
 // ============================================================================
@@ -423,36 +527,61 @@ fun KeyManagementSection(state: AppState) {
 /** Staking Management Section - Deposit/Withdraw functionality */
 @Composable
 fun StakingManagementSection(state: AppState) {
-    if (!state.isConnected) return
+    AnimatedVisibility(
+            visible = state.isConnected,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+    ) {
+        Card(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                elevation = 2.dp,
+                shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Text(
+                        text = "🏦 Staking Management",
+                        style = MaterialTheme.typography.h6,
+                        fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(16.dp))
 
-    Spacer(modifier = Modifier.height(16.dp))
-    Divider()
-    Spacer(modifier = Modifier.height(16.dp))
+                Row(verticalAlignment = Alignment.Bottom) {
+                    OutlinedTextField(
+                            value = state.depositAmountInput,
+                            onValueChange = { state.depositAmountInput = it },
+                            label = { Text("Amount (KNT)") },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp)
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Button(
+                            onClick = { performDeposit(state) },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.height(56.dp)
+                    ) { Text("Deposit", fontWeight = FontWeight.Bold) }
+                }
 
-    Text(
-            text = "🏦 Staking Management",
-            style = MaterialTheme.typography.h6,
-            fontWeight = FontWeight.Bold
-    )
-    Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-    Row {
-        TextField(
-                value = state.depositAmountInput,
-                onValueChange = { state.depositAmountInput = it },
-                label = { Text("Amount (KNT)") },
-                modifier = Modifier.width(150.dp)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-
-        // Deposit Button
-        Button(onClick = { performDeposit(state) }) { Text("Deposit (Lock)") }
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        // Withdraw Button
-        Button(onClick = { performWithdraw(state) }, enabled = state.stakedAmount > 0) {
-            Text("Withdraw (Unstake)")
+                Button(
+                        onClick = { performWithdraw(state) },
+                        enabled = state.stakedAmount > 0,
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors =
+                                ButtonDefaults.buttonColors(
+                                        backgroundColor = Color.Transparent,
+                                        contentColor = MaterialTheme.colors.primary
+                                ),
+                        border =
+                                androidx.compose.foundation.BorderStroke(
+                                        1.dp,
+                                        MaterialTheme.colors.primary
+                                ),
+                        elevation = ButtonDefaults.elevation(0.dp)
+                ) { Text("Withdraw / Unstake") }
+            }
         }
     }
 }
@@ -518,38 +647,57 @@ private fun performWithdraw(state: AppState) {
 /** Node Operation Section - Start/Stop functionality */
 @Composable
 fun NodeOperationSection(state: AppState) {
-    if (!state.isConnected) return
+    AnimatedVisibility(
+            visible = state.isConnected,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+    ) {
+        Card(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                elevation = 2.dp,
+                shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Text(
+                        text = "⚙️ Node Operation",
+                        style = MaterialTheme.typography.h6,
+                        fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(16.dp))
 
-    Spacer(modifier = Modifier.height(16.dp))
-    Divider()
-    Spacer(modifier = Modifier.height(16.dp))
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    Button(
+                            onClick = { startNodeValidation(state) },
+                            enabled =
+                                    state.validationState != ValidatorState.VALIDATING &&
+                                            state.stakedAmount >=
+                                                    BlockChain.getNetworkRules().minFullStake,
+                            modifier = Modifier.weight(1f).height(50.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors =
+                                    ButtonDefaults.buttonColors(
+                                            backgroundColor = MaterialTheme.colors.primary
+                                    )
+                    ) { Text("▶ Start Node", color = Color.White, fontWeight = FontWeight.Bold) }
 
-    Text(
-            text = "⚙️ Node Operation",
-            style = MaterialTheme.typography.h6,
-            fontWeight = FontWeight.Bold
-    )
-    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.width(16.dp))
 
-    Row {
-        // Start Node Button
-        Button(
-                onClick = { startNodeValidation(state) },
-                enabled =
-                        state.validationState != ValidatorState.VALIDATING &&
-                                state.stakedAmount >= BlockChain.getNetworkRules().minFullStake
-        ) { Text("▶ Start Node") }
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        // Stop Node Button
-        Button(
-                onClick = {
-                    state.validationState = ValidatorState.READY
-                    state.connectionMessage = "⏸ Node Stopped (Stake remains locked)"
-                },
-                enabled = state.validationState == ValidatorState.VALIDATING
-        ) { Text("⏹ Stop Node") }
+                    Button(
+                            onClick = {
+                                state.validationState = ValidatorState.READY
+                                state.connectionMessage = "⏸ Node Stopped (Stake remains locked)"
+                            },
+                            enabled = state.validationState == ValidatorState.VALIDATING,
+                            modifier = Modifier.weight(1f).height(50.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors =
+                                    ButtonDefaults.buttonColors(
+                                            backgroundColor = MaterialTheme.colors.error
+                                    )
+                    ) { Text("⏹ Stop Node", color = Color.White, fontWeight = FontWeight.Bold) }
+                }
+            }
+        }
     }
 }
 
@@ -653,15 +801,6 @@ fun DialogsSection(state: AppState) {
 // ============================================================================
 // Utility Composables
 // ============================================================================
-
-/** Info Row - Utility Composable for displaying label and value */
-@Composable
-fun InfoRow(label: String, value: String) {
-    Row(modifier = Modifier.padding(vertical = 2.dp)) {
-        Text(text = "$label: ", fontWeight = FontWeight.Medium, modifier = Modifier.width(140.dp))
-        Text(text = value)
-    }
-}
 
 // ============================================================================
 // Cleanup Functions
