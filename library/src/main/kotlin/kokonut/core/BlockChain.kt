@@ -278,16 +278,14 @@ class BlockChain {
 
         internal fun loadFullNodes() {
             try {
-                // Determine Fuel Node to query
+                // If we have a known peer (e.g., LightNode connected to FullNode), use it directly
                 val fuelNodeUrl =
-                        try {
-                            getRandomFuelNode()
-                        } catch (e: Exception) {
-                            // Fallback: If we have a known peer (e.g., LightNode connected to
-                            // FullNode), use it.
-                            if (!knownPeer.isNullOrBlank()) {
-                                URL(knownPeer)
-                            } else {
+                        if (!knownPeer.isNullOrBlank()) {
+                            URL(knownPeer)
+                        } else {
+                            try {
+                                getRandomFuelNode()
+                            } catch (e: Exception) {
                                 println("⚠️ Cannot load Full Nodes: ${e.message}")
                                 return
                             }
@@ -311,9 +309,18 @@ class BlockChain {
                         }
                     }
                     fullNode = bestNode
+                } else {
+                    // If no Full Nodes returned, use knownPeer as fallback
+                    if (!knownPeer.isNullOrBlank()) {
+                        fullNode = FullNode("known-peer", knownPeer!!)
+                    }
                 }
             } catch (e: Exception) {
                 println("❌ Error loading Full Nodes: ${e.message}")
+                // Last resort: use knownPeer if available
+                if (!knownPeer.isNullOrBlank()) {
+                    fullNode = FullNode("known-peer", knownPeer!!)
+                }
             }
         }
 
