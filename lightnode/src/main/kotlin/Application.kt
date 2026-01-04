@@ -13,6 +13,7 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -77,6 +78,52 @@ fun App() {
         var isChainOutOfSync by remember { mutableStateOf(false) }
         var localChainSize by remember { mutableStateOf(0) }
         var remoteChainSize by remember { mutableStateOf(0) }
+
+        // Cleanup on app dispose (window close)
+        DisposableEffect(Unit) {
+                onDispose {
+                        println("🔄 App closing - performing cleanup...")
+
+                        try {
+                                // Withdraw stake if connected and has stake
+                                val pubKeyPath = selectedPublicKeyFilePath
+                                if (isConnected &&
+                                                stakedAmount > 0.0 &&
+                                                pubKeyPath != null &&
+                                                pubKeyPath != "Please load a public key..." &&
+                                                peerAddress.isNotBlank()
+                                ) {
+
+                                        println(
+                                                "⏹ Stopping node and withdrawing stake: $stakedAmount KNT..."
+                                        )
+
+                                        try {
+                                                val url = URL(peerAddress)
+                                                val publicKeyFile = File(pubKeyPath)
+
+                                                // Call stopValidating which will stop validation
+                                                // and unstake
+                                                if (url.stopValidating(publicKeyFile)) {
+                                                        println(
+                                                                "✅ Node stopped and stake withdrawn successfully"
+                                                        )
+                                                } else {
+                                                        println(
+                                                                "⚠️ Failed to stop node / withdraw stake"
+                                                        )
+                                                }
+                                        } catch (e: Exception) {
+                                                println("❌ Cleanup API error: ${e.message}")
+                                        }
+                                }
+
+                                println("✅ Cleanup completed")
+                        } catch (e: Exception) {
+                                println("❌ Cleanup error: ${e.message}")
+                        }
+                }
+        }
 
         MaterialTheme {
                 Column(modifier = Modifier.padding(16.dp)) {
