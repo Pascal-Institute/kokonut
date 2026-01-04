@@ -29,6 +29,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.launch
 import kotlinx.html.*
 import kotlinx.serialization.json.Json
+import kokonut.util.WebSocketBroadcasterRegistry
 
 class Router {
 
@@ -111,8 +112,20 @@ class Router {
             }
         }
 
-        private fun notifyFullNodesToSyncFrom(sourceAddress: String) {
+        private suspend fun notifyFullNodesToSyncFrom(sourceAddress: String, block: Block? = null) {
             try {
+                // Try WebSocket broadcast first if available and block is provided
+                if (block != null && WebSocketBroadcasterRegistry.isAvailable()) {
+                    try {
+                        WebSocketBroadcasterRegistry.broadcast(block, sourceAddress)
+                        println("✅ Block #${block.index} broadcasted via WebSocket")
+                        return // WebSocket broadcast successful, no need for HTTP
+                    } catch (e: Exception) {
+                        println("⚠️ WebSocket broadcast failed, falling back to HTTP: ${e.message}")
+                    }
+                }
+
+                // Fallback to HTTP propagation (legacy mode)
                 val fuelNode = BlockChain.getPrimaryFuelNode()
                 val fuelNodeAddress = fuelNode.toString().trimEnd('/')
 
@@ -915,8 +928,10 @@ class Router {
                                     BlockChain.database.insert(onboardingBlock)
                                     BlockChain.refreshFromDatabase()
 
-                                    // Best-effort: help other FullNodes converge quickly.
-                                    notifyFullNodesToSyncFrom(advertisedSelfAddress(call))
+                                    // Broadcast via WebSocket for real-time propagation
+                                    CoroutineScope(Dispatchers.IO).launch {
+                                        notifyFullNodesToSyncFrom(advertisedSelfAddress(call), onboardingBlock)
+                                    }
 
                                     handshakeMessage =
                                             "Handshake successful. Onboarding reward granted."
@@ -1184,9 +1199,11 @@ class Router {
                             "📝 STAKE_LOCK recorded: $validatorAddress -> $stakeVault: ${amount!!} KNT"
                     )
 
-                    // Try to propagate, logging error if fails but not failing the request
+                    // Try to propagate via WebSocket (real-time) or HTTP fallback
                     try {
-                        notifyFullNodesToSyncFrom(advertisedSelfAddress(call))
+                        CoroutineScope(Dispatchers.IO).launch {
+                            notifyFullNodesToSyncFrom(advertisedSelfAddress(call), stakeBlock)
+                        }
                     } catch (e: Exception) {
                         println("⚠️ Failed to trigger propagation: ${e.message}")
                     }
@@ -1420,9 +1437,11 @@ class Router {
                                 println("⚠️ Chain integrity check failed after block insertion!")
                             }
 
-                            // Best-effort: help other FullNodes converge quickly.
+                            // Broadcast to WebSocket clients (real-time propagation)
                             try {
-                                notifyFullNodesToSyncFrom(advertisedSelfAddress(call))
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    notifyFullNodesToSyncFrom(advertisedSelfAddress(call), block!!)
+                                }
                             } catch (e: Exception) {
                                 println("⚠️ Failed to trigger propagation: ${e.message}")
                             }
@@ -1571,9 +1590,11 @@ class Router {
                                 "📝 UNSTAKE recorded: $stakeVault -> $validatorAddress: $stakedAmount KNT"
                         )
 
-                        // Propagate
+                        // Propagate via WebSocket (real-time) or HTTP fallback
                         try {
-                            notifyFullNodesToSyncFrom(advertisedSelfAddress(call))
+                            CoroutineScope(Dispatchers.IO).launch {
+                                notifyFullNodesToSyncFrom(advertisedSelfAddress(call), unstakeBlock)
+                            }
                         } catch (e: Exception) {
                             println("⚠️ Failed to trigger propagation: ${e.message}")
                         }
@@ -1673,6 +1694,11 @@ class Router {
                 // Add to blockchain
                 BlockChain.database.insert(registrationBlock)
                 BlockChain.refreshFromDatabase() // Refresh cache
+
+                // Broadcast via WebSocket for real-time propagation
+                CoroutineScope(Dispatchers.IO).launch {
+                    notifyFullNodesToSyncFrom(advertisedSelfAddress(call), registrationBlock)
+                }
 
                 call.respond(
                         HttpStatusCode.OK,
