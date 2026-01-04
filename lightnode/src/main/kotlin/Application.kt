@@ -333,25 +333,76 @@ fun App() {
                                                                 connectionMessage =
                                                                         "🔄 Syncing chain from FullNode..."
 
-                                                                // Force sync: clear local and
-                                                                // reload
+                                                                // Get remote and local chains
+                                                                val remoteChain = url.getChain()
+                                                                val localChain =
+                                                                        BlockChain.getChain()
+
+                                                                // Compare Genesis blocks
+                                                                val remoteGenesis =
+                                                                        remoteChain.firstOrNull()
+                                                                val localGenesis =
+                                                                        localChain.firstOrNull()
+
+                                                                val genesisMatch =
+                                                                        if (localGenesis == null) {
+                                                                                true // Local chain
+                                                                                // is empty,
+                                                                                // proceed with
+                                                                                // sync
+                                                                        } else {
+                                                                                remoteGenesis
+                                                                                        ?.hash ==
+                                                                                        localGenesis
+                                                                                                .hash
+                                                                        }
+
+                                                                if (!genesisMatch &&
+                                                                                localGenesis != null
+                                                                ) {
+                                                                        // Genesis blocks differ -
+                                                                        // clear local chain
+                                                                        println(
+                                                                                "⚠️ Genesis block mismatch detected!"
+                                                                        )
+                                                                        println(
+                                                                                "   Local Genesis: ${localGenesis.hash.take(16)}"
+                                                                        )
+                                                                        println(
+                                                                                "   Remote Genesis: ${remoteGenesis?.hash?.take(16) ?: "none"}"
+                                                                        )
+                                                                        println(
+                                                                                "🗑️ Clearing local chain..."
+                                                                        )
+
+                                                                        BlockChain.database
+                                                                                .clearTable()
+                                                                        BlockChain
+                                                                                .refreshFromDatabase()
+
+                                                                        connectionMessage =
+                                                                                "🗑️ Cleared local chain due to Genesis mismatch. Resyncing..."
+                                                                }
+
+                                                                // Force sync from FullNode
                                                                 BlockChain.loadChainFromFullNode(
                                                                         url
                                                                 )
 
                                                                 // Re-check sync status
-                                                                val remoteChain = url.getChain()
-                                                                val localChain =
+                                                                val newRemoteChain = url.getChain()
+                                                                val newLocalChain =
                                                                         BlockChain.getChain()
-                                                                remoteChainSize = remoteChain.size
-                                                                localChainSize = localChain.size
+                                                                remoteChainSize =
+                                                                        newRemoteChain.size
+                                                                localChainSize = newLocalChain.size
 
                                                                 val remoteLastHash =
-                                                                        remoteChain.lastOrNull()
+                                                                        newRemoteChain.lastOrNull()
                                                                                 ?.hash
                                                                                 ?: ""
                                                                 val localLastHash =
-                                                                        localChain.lastOrNull()
+                                                                        newLocalChain.lastOrNull()
                                                                                 ?.hash
                                                                                 ?: ""
 

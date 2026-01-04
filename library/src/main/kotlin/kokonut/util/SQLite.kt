@@ -55,6 +55,32 @@ class SQLite(private val customPath: String? = null) {
         }
     }
 
+    /**
+     * Clear all records from the blockchain table Used when resyncing from a different genesis
+     * block
+     */
+    fun clearTable() {
+        openConnection().use { conn ->
+            val deleteSQL = "DELETE FROM $tableName"
+            conn.autoCommit = false
+
+            try {
+                conn.createStatement().use { statement ->
+                    val deletedRows = statement.executeUpdate(deleteSQL)
+                    println("🗑️ Cleared $deletedRows blocks from database")
+                }
+                conn.commit()
+            } catch (e: Exception) {
+                try {
+                    conn.rollback()
+                } catch (rollbackException: SQLException) {
+                    println("Failed to rollback transaction: ${rollbackException.message}")
+                }
+                println("An error occurred while clearing table: ${e.message}")
+            }
+        }
+    }
+
     // SQLlite
     fun getDatabasePath(): String {
         // Use environment variable for data directory if set (Docker friendly)
