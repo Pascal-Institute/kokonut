@@ -25,6 +25,8 @@ import kokonut.core.Transaction
 import kokonut.core.ValidatorOnboardingInfo
 import kokonut.state.ValidatorState
 import kokonut.util.API.Companion.getFullNodes
+import kotlinx.coroutines.*
+import kotlinx.coroutines.launch
 import kotlinx.html.*
 import kotlinx.serialization.json.Json
 
@@ -60,19 +62,52 @@ class Router {
                 id: String,
                 sourceAddress: String
         ) {
-            val url = URL("$peerAddress/propagate?size=$size&id=$id&address=$sourceAddress")
-            val conn = (url.openConnection() as HttpURLConnection)
-            try {
-                conn.requestMethod = "POST"
-                conn.connectTimeout = 2_000
-                conn.readTimeout = 3_000
-                conn.doOutput = true
-                conn.outputStream.use {}
-                conn.inputStream.use {}
-            } catch (_: Exception) {
-                // best-effort
-            } finally {
-                conn.disconnect()
+            // Encode the ID to ensure it's URL-safe
+            val encodedId = java.net.URLEncoder.encode(id, "UTF-8")
+            val urlStr = "$peerAddress/propagate?size=$size&id=$encodedId&address=$sourceAddress"
+
+            var attempt = 0
+            val maxRetries = 3
+            var success = false
+
+            while (attempt < maxRetries && !success) {
+                attempt++
+                var conn: HttpURLConnection? = null
+                try {
+                    val url = URL(urlStr)
+                    conn = (url.openConnection() as HttpURLConnection)
+                    conn.requestMethod = "POST"
+                    conn.connectTimeout = 3_000 // 3 seconds
+                    conn.readTimeout = 5_000 // 5 seconds
+                    conn.doOutput = true
+                    conn.outputStream.use {}
+
+                    val responseCode = conn.responseCode
+                    if (responseCode == HttpURLConnection.HTTP_OK) {
+                        success = true
+                        // success
+                    } else {
+                        println("⚠️ Propagation warning to $peerAddress: HTTP $responseCode")
+                    }
+                    conn.inputStream.use {}
+                } catch (e: Exception) {
+                    println(
+                            "⚠️ Propagation failed to $peerAddress (Attempt $attempt/$maxRetries): ${e.message}"
+                    )
+                    if (attempt < maxRetries) {
+                        try {
+                            Thread.sleep(1000L * attempt) // Linear backoff: 1s, 2s...
+                        } catch (ie: InterruptedException) {
+                            Thread.currentThread().interrupt()
+                        }
+                    }
+                } finally {
+                    conn?.disconnect()
+                }
+            }
+
+            if (!success) {
+                println("❌ Failed to propagate to $peerAddress after $maxRetries attempts.")
             }
         }
 
@@ -80,18 +115,25 @@ class Router {
             try {
                 val fuelNode = BlockChain.getPrimaryFuelNode()
                 val fuelNodeAddress = fuelNode.toString().trimEnd('/')
+
+                // Get peers including FuelNode and other FullNodes
                 val peers =
-                        (fuelNode.getFullNodes().map { it.address } + fuelNodeAddress).filter {
-                            it.isNotBlank()
-                        }
+                        (fuelNode.getFullNodes().map { it.address } + fuelNodeAddress)
+                                .filter { it.isNotBlank() && it != sourceAddress }
+                                .distinct()
+
                 val size = BlockChain.getChainSize()
                 val id = Utility.calculateHash(sourceAddress.hashCode().toLong())
 
-                peers.filter { it != sourceAddress }.distinct().forEach { peer ->
-                    propagateToPeer(peer, size, id, sourceAddress)
+                // Launch propagation in a coroutine scope to avoid blocking the main thread
+                // and to process peers in parallel (or at least asynchronously)
+                CoroutineScope(Dispatchers.IO).launch {
+                    peers.forEach { peer ->
+                        launch { propagateToPeer(peer, size, id, sourceAddress) }
+                    }
                 }
-            } catch (_: Exception) {
-                // best-effort
+            } catch (e: Exception) {
+                println("⚠️ Failed to initiate peer notification: ${e.message}")
             }
         }
 
@@ -185,14 +227,14 @@ class Router {
                     // Find which blocks are invalid for debugging
                     val chain = BlockChain.getChain()
                     val invalidBlocks = mutableListOf<String>()
-                    
+
                     for (i in chain.indices) {
                         val block = chain[i]
                         val recalcHash = block.calculateHash()
-                        
+
                         if (recalcHash != block.hash) {
                             invalidBlocks.add(
-                                "Block ${block.index}: hash mismatch (stored=${block.hash.take(16)}..., calculated=${recalcHash.take(16)}...)"
+                                    "Block ${block.index}: hash mismatch (stored=${block.hash.take(16)}..., calculated=${recalcHash.take(16)}...)"
                             )
                             // Log detailed debug info
                             println("❌ Block ${block.index} INVALID:")
@@ -201,20 +243,19 @@ class Router {
                             println("   Timestamp: ${block.timestamp}")
                             println("   Data: ${block.data}")
                         }
-                        
+
                         if (i > 0 && block.previousHash != chain[i - 1].hash) {
-                            invalidBlocks.add(
-                                "Block ${block.index}: previousHash mismatch"
-                            )
+                            invalidBlocks.add("Block ${block.index}: previousHash mismatch")
                         }
                     }
-                    
-                    val errorDetail = if (invalidBlocks.isNotEmpty()) {
-                        "Invalid blocks: ${invalidBlocks.joinToString("; ")}"
-                    } else {
-                        "Chain validation failed but no specific block error found"
-                    }
-                    
+
+                    val errorDetail =
+                            if (invalidBlocks.isNotEmpty()) {
+                                "Invalid blocks: ${invalidBlocks.joinToString("; ")}"
+                            } else {
+                                "Chain validation failed but no specific block error found"
+                            }
+
                     call.respond(
                             HttpStatusCode.ServiceUnavailable,
                             "Transactions dashboard unavailable: local chain is invalid. $errorDetail"
@@ -1079,7 +1120,7 @@ class Router {
                     val stakeVault = BlockChain.getStakeVaultAddress()
                     val lastBlock = BlockChain.getLastBlock()
                     val blockTimestamp = System.currentTimeMillis()
-                    
+
                     // IMPORTANT: Use the same timestamp for transaction and block
                     val stakeTx =
                             Transaction(

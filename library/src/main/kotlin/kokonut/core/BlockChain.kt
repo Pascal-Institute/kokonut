@@ -119,83 +119,95 @@ class BlockChain {
             }
         }
 
+        private val discoveryLock = Any()
+
         /**
          * Discovers peer type and sets up appropriate connections for FullNode.
-         * 
+         *
          * Scenarios:
          * 1. Peer is FuelNode -> Connect to FuelNode + discover and connect to other FullNodes
          * 2. Peer is FullNode -> Connect to that FullNode + discover FuelNode from it
-         * 
+         *
          * @param peerAddress The initial peer address to connect to
          */
         private fun discoverAndConnectPeers(peerAddress: String) {
-            println("🔍 Detecting peer type for: $peerAddress")
-            
-            val peerUrl = URL(peerAddress)
-            val peerType = peerUrl.detectPeerType()
-            
-            when (peerType) {
-                "FUEL" -> {
-                    println("✅ Detected FUEL Node: $peerAddress")
-                    // Bootstrap from FuelNode
-                    bootstrapFromPeer(peerAddress)
-                    knownPeer = peerAddress
-                    
-                    // Try to discover other FullNodes
-                    try {
-                        val otherFullNodes = peerUrl.getFullNodes()
-                        if (otherFullNodes.isNotEmpty()) {
-                            println("🔗 Found ${otherFullNodes.size} other Full Node(s):")
-                            otherFullNodes.take(3).forEach { node ->
-                                println("   - ${node.address}")
-                            }
-                            
-                            // Set the first available FullNode as preferred peer
-                            val preferredFullNode = otherFullNodes.firstOrNull()
-                            if (preferredFullNode != null) {
-                                fullNode = preferredFullNode
-                                println("✨ Set preferred Full Node peer: ${preferredFullNode.address}")
-                            }
-                        } else {
-                            println("ℹ️ No other Full Nodes found yet. You are the first!")
-                        }
-                    } catch (e: Exception) {
-                        println("⚠️ Could not fetch other Full Nodes: ${e.message}")
-                    }
-                }
-                "FULL" -> {
-                    println("✅ Detected FULL Node: $peerAddress")
-                    // Bootstrap from FullNode
-                    bootstrapFromPeer(peerAddress)
-                    
-                    // Try to discover FuelNode from the blockchain
-                    try {
-                        val fuelNodes = getFuelNodes()
-                        if (fuelNodes.isNotEmpty()) {
-                            val fuelNodeAddress = fuelNodes.first().address
-                            knownPeer = fuelNodeAddress
-                            println("✨ Auto-discovered Fuel Node: $fuelNodeAddress")
-                            
-                            // Also discover other FullNodes from FuelNode
-                            try {
-                                val otherFullNodes = URL(fuelNodeAddress).getFullNodes()
-                                if (otherFullNodes.isNotEmpty()) {
-                                    println("🔗 Found ${otherFullNodes.size} Full Node(s) via Fuel Node")
+            synchronized(discoveryLock) {
+                println("🔍 Detecting peer type for: $peerAddress")
+
+                val peerUrl = URL(peerAddress)
+                val peerType = peerUrl.detectPeerType()
+
+                when (peerType) {
+                    "FUEL" -> {
+                        println("✅ Detected FUEL Node: $peerAddress")
+                        // Bootstrap from FuelNode
+                        bootstrapFromPeer(peerAddress)
+                        knownPeer = peerAddress
+
+                        // Try to discover other FullNodes
+                        try {
+                            val otherFullNodes = peerUrl.getFullNodes()
+                            if (otherFullNodes.isNotEmpty()) {
+                                println("🔗 Found ${otherFullNodes.size} other Full Node(s):")
+                                otherFullNodes.take(3).forEach { node ->
+                                    println("   - ${node.address}")
                                 }
-                            } catch (e: Exception) {
-                                println("⚠️ Could not fetch Full Nodes from Fuel Node: ${e.message}")
+
+                                // Set the first available FullNode as preferred peer
+                                val preferredFullNode = otherFullNodes.firstOrNull()
+                                if (preferredFullNode != null) {
+                                    fullNode = preferredFullNode
+                                    println(
+                                            "✨ Set preferred Full Node peer: ${preferredFullNode.address}"
+                                    )
+                                }
+                            } else {
+                                println("ℹ️ No other Full Nodes found yet. You are the first!")
                             }
-                        } else {
-                            println("⚠️ No Fuel Nodes found in blockchain")
+                        } catch (e: Exception) {
+                            println("⚠️ Could not fetch other Full Nodes: ${e.message}")
                         }
-                    } catch (e: Exception) {
-                        println("⚠️ Could not auto-discover Fuel Node: ${e.message}")
                     }
-                }
-                else -> {
-                    println("⚠️ Could not determine peer type, proceeding with standard bootstrap")
-                    bootstrapFromPeer(peerAddress)
-                    knownPeer = peerAddress
+                    "FULL" -> {
+                        println("✅ Detected FULL Node: $peerAddress")
+                        // Bootstrap from FullNode
+                        bootstrapFromPeer(peerAddress)
+
+                        // Try to discover FuelNode from the blockchain
+                        try {
+                            val fuelNodes = getFuelNodes()
+                            if (fuelNodes.isNotEmpty()) {
+                                val fuelNodeAddress = fuelNodes.first().address
+                                knownPeer = fuelNodeAddress
+                                println("✨ Auto-discovered Fuel Node: $fuelNodeAddress")
+
+                                // Also discover other FullNodes from FuelNode
+                                try {
+                                    val otherFullNodes = URL(fuelNodeAddress).getFullNodes()
+                                    if (otherFullNodes.isNotEmpty()) {
+                                        println(
+                                                "🔗 Found ${otherFullNodes.size} Full Node(s) via Fuel Node"
+                                        )
+                                    }
+                                } catch (e: Exception) {
+                                    println(
+                                            "⚠️ Could not fetch Full Nodes from Fuel Node: ${e.message}"
+                                    )
+                                }
+                            } else {
+                                println("⚠️ No Fuel Nodes found in blockchain")
+                            }
+                        } catch (e: Exception) {
+                            println("⚠️ Could not auto-discover Fuel Node: ${e.message}")
+                        }
+                    }
+                    else -> {
+                        println(
+                                "⚠️ Could not determine peer type, proceeding with standard bootstrap"
+                        )
+                        bootstrapFromPeer(peerAddress)
+                        knownPeer = peerAddress
+                    }
                 }
             }
         }
