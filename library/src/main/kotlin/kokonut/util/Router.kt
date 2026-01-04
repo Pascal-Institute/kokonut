@@ -8,23 +8,23 @@ import io.ktor.server.plugins.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.utils.io.*
 import java.io.File
+import java.net.HttpURLConnection
 import java.net.URL
-import java.nio.file.Paths
 import java.security.PublicKey
-import kokonut.Policy
+import java.text.SimpleDateFormat
+import java.util.Date
 import kokonut.core.Block
 import kokonut.core.BlockChain
-import kokonut.core.BlockChain.Companion.fullNode
-import kokonut.core.BlockChain.Companion.loadFullNodes
 import kokonut.core.BlockDataType
 import kokonut.core.Data
 import kokonut.core.FuelNodeInfo
-import kokonut.state.MiningState
+import kokonut.core.Policy
+import kokonut.core.Transaction
+import kokonut.core.ValidatorOnboardingInfo
+import kokonut.state.ValidatorState
 import kokonut.util.API.Companion.getFullNodes
-import kokonut.util.API.Companion.getPolicy
-import kokonut.util.API.Companion.propagate
-import kokonut.util.Utility.Companion.protocolVersion
 import kotlinx.html.*
 import kotlinx.serialization.json.Json
 
@@ -32,7 +32,68 @@ class Router {
 
     companion object {
 
-        var miners: MutableSet<Miner> = mutableSetOf()
+        var validatorSessions: MutableSet<ValidatorSession> = mutableSetOf()
+        private val onboardingLock = Any()
+
+        private fun advertisedSelfAddress(call: ApplicationCall): String {
+            val configured =
+                    System.getenv("KOKONUT_ADVERTISE_ADDRESS")?.trim().orEmpty().ifBlank {
+                        System.getenv("KOKONUT_FULLNODE_REWARD_RECEIVER")?.trim().orEmpty()
+                    }
+            if (configured.isNotEmpty()) return configured
+
+            val forwardedProto = call.request.headers["X-Forwarded-Proto"]?.trim()
+            val scheme = forwardedProto?.takeIf { it.isNotBlank() } ?: call.request.origin.scheme
+            val host = call.request.host()
+            val port = call.request.port()
+
+            return if ((scheme == "http" && port == 80) || (scheme == "https" && port == 443)) {
+                "$scheme://$host"
+            } else {
+                "$scheme://$host:$port"
+            }
+        }
+
+        private fun propagateToPeer(
+                peerAddress: String,
+                size: Long,
+                id: String,
+                sourceAddress: String
+        ) {
+            val url = URL("$peerAddress/propagate?size=$size&id=$id&address=$sourceAddress")
+            val conn = (url.openConnection() as HttpURLConnection)
+            try {
+                conn.requestMethod = "POST"
+                conn.connectTimeout = 2_000
+                conn.readTimeout = 3_000
+                conn.doOutput = true
+                conn.outputStream.use {}
+                conn.inputStream.use {}
+            } catch (_: Exception) {
+                // best-effort
+            } finally {
+                conn.disconnect()
+            }
+        }
+
+        private fun notifyFullNodesToSyncFrom(sourceAddress: String) {
+            try {
+                val fuelNode = BlockChain.getPrimaryFuelNode()
+                val fuelNodeAddress = fuelNode.toString().trimEnd('/')
+                val peers =
+                        (fuelNode.getFullNodes().map { it.address } + fuelNodeAddress).filter {
+                            it.isNotBlank()
+                        }
+                val size = BlockChain.getChainSize()
+                val id = Utility.calculateHash(sourceAddress.hashCode().toLong())
+
+                peers.filter { it != sourceAddress }.distinct().forEach { peer ->
+                    propagateToPeer(peer, size, id, sourceAddress)
+                }
+            } catch (_: Exception) {
+                // best-effort
+            }
+        }
 
         fun Route.root(node: NodeType) {
             if (node == NodeType.FULL) {
@@ -56,43 +117,21 @@ class Router {
                                             font-size: 18px;
                                             margin: 10px 0;
                                         }
-                                        .status {
-                                            font-weight: bold;
-                                            color: ${if (BlockChain.isRegistered()) "#28a745" else "#dc3545"};
-                                        }
-                                        .register-btn {
-                                            background-color: #007bff;
-                                            color: white;
-                                            padding: 15px 30px;
-                                            border: none;
-                                            border-radius: 5px;
-                                            font-size: 16px;
-                                            cursor: pointer;
+                                        .status-box {
+                                            background-color: #e7f3ff;
+                                            border-left: 4px solid #007bff;
+                                            padding: 15px;
                                             margin: 20px 0;
-                                            display: ${if (BlockChain.isRegistered()) "none" else "inline-block"};
-                                        }
-                                        .register-btn:hover {
-                                            background-color: #0056b3;
-                                        }
-                                        .register-btn:disabled {
-                                            background-color: #6c757d;
-                                            cursor: not-allowed;
-                                        }
-                                        #message {
-                                            padding: 10px;
-                                            margin: 10px 0;
                                             border-radius: 5px;
-                                            display: none;
                                         }
-                                        .success {
-                                            background-color: #d4edda;
-                                            color: #155724;
-                                            border: 1px solid #c3e6cb;
+                                        .status-box h2 {
+                                            margin: 0 0 10px 0;
+                                            color: #007bff;
+                                            font-size: 16px;
                                         }
-                                        .error {
-                                            background-color: #f8d7da;
-                                            color: #721c24;
-                                            border: 1px solid #f5c6cb;
+                                        .status-box p {
+                                            margin: 5px 0;
+                                            font-size: 14px;
                                         }
                                     """
                                     )
@@ -100,42 +139,23 @@ class Router {
                             }
                         }
                         body {
-                            h1 {
-                                +"Full Node Registration : "
-                                span("status") { +BlockChain.isRegistered().toString() }
+                            h1 { +"🥥 Kokonut Full Node" }
+
+                            div(classes = "status-box") {
+                                h2 { +"🔄 Automatic Registration Status" }
+                                p { +"✅ Heartbeat-based registration is active" }
+                                p { +"💓 Sending heartbeat every 10 minutes" }
+                                p { +"🌐 Peer: ${BlockChain.knownPeer ?: "Not configured"}" }
                             }
-                            button(classes = "register-btn") {
-                                id = "registerBtn"
-                                onClick = "registerNode()"
-                                +"Register to Fuel Node"
-                            }
-                            div { id = "message" }
-                            h1 { +"Kokonut Protocol Version : $protocolVersion" }
+
                             h1 { +"Timestamp : ${System.currentTimeMillis()}" }
                             h1 { +"Get Chain : /getChain" }
-                            h1 { +"Get Miners : /getMiners" }
+                            h1 { +"Get Connected Validators : /getConnectedValidators" }
+                            h1 { +"Get Active Validators : /getValidators" }
                             h1 { +"Get Last Block : /getLastBlock" }
                             h1 { +"Chain Validation : /isValid" }
                             h1 { +"Get Total Currency Volume : /getTotalCurrencyVolume" }
                             h1 { +"Get Reward : /getReward?index=index" }
-
-                            script {
-                                unsafe {
-                                    raw(
-                                            """
-                                        function registerNode() {
-                                            const btn = document.getElementById('registerBtn');
-                                            const msg = document.getElementById('message');
-                                            
-                                            btn.disabled = true;
-                                            btn.textContent = 'Registering...';
-                                            
-                                            window.location.href = '/register';
-                                        }
-                                    """
-                                    )
-                                }
-                            }
                         }
                     }
                 }
@@ -144,41 +164,196 @@ class Router {
                     call.respondHtml(HttpStatusCode.OK) {
                         head { title("Kokonut Full Node") }
                         body {
-                            h1 { +"Kokonut protocol version : $protocolVersion" }
                             h1 { +"Timestamp : ${System.currentTimeMillis()}" }
                             h1 { +"Get policy : /getPolicy" }
                             h1 { +"Get genesis block : /getGenesisBlock" }
                             h1 { +"Get full nodes : /getFullNodes" }
+                            h1 { +"Transactions dashboard : /transactions" }
                         }
                     }
                 }
             }
         }
 
-        fun Route.register() {
-            get("/register") {
-                call.respondHtml(HttpStatusCode.OK) {
-                    head { title { +"Service Configuration" } }
-                    body {
-                        h1 { +"Configure Your Service" }
-                        form(
-                                action = "${BlockChain.getPrimaryFuelNode()}/submit",
-                                method = FormMethod.post,
-                                encType = FormEncType.multipartFormData
-                        ) {
-                            p {
-                                label { +"Service ID: " }
-                                label { +"Public Key (.pem) : " }
-                                input(type = InputType.file, name = "publicKey") {
-                                    placeholder = "Enter Directory your Wallet Public Key file"
+        fun Route.transactionsDashboard() {
+            get("/transactions") {
+                val limit =
+                        call.request.queryParameters["limit"]?.toIntOrNull()?.coerceIn(1, 2000)
+                                ?: 200
+
+                if (!BlockChain.isValid()) {
+                    // Find which blocks are invalid for debugging
+                    val chain = BlockChain.getChain()
+                    val invalidBlocks = mutableListOf<String>()
+                    
+                    for (i in chain.indices) {
+                        val block = chain[i]
+                        val recalcHash = block.calculateHash()
+                        
+                        if (recalcHash != block.hash) {
+                            invalidBlocks.add(
+                                "Block ${block.index}: hash mismatch (stored=${block.hash.take(16)}..., calculated=${recalcHash.take(16)}...)"
+                            )
+                            // Log detailed debug info
+                            println("❌ Block ${block.index} INVALID:")
+                            println("   Stored Hash: ${block.hash}")
+                            println("   Calculated Hash: $recalcHash")
+                            println("   Timestamp: ${block.timestamp}")
+                            println("   Data: ${block.data}")
+                        }
+                        
+                        if (i > 0 && block.previousHash != chain[i - 1].hash) {
+                            invalidBlocks.add(
+                                "Block ${block.index}: previousHash mismatch"
+                            )
+                        }
+                    }
+                    
+                    val errorDetail = if (invalidBlocks.isNotEmpty()) {
+                        "Invalid blocks: ${invalidBlocks.joinToString("; ")}"
+                    } else {
+                        "Chain validation failed but no specific block error found"
+                    }
+                    
+                    call.respond(
+                            HttpStatusCode.ServiceUnavailable,
+                            "Transactions dashboard unavailable: local chain is invalid. $errorDetail"
+                    )
+                    return@get
+                }
+
+                val chain = BlockChain.getChain().sortedByDescending { it.index }
+                val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+
+                data class TxRow(
+                        val blockIndex: Long,
+                        val timestamp: Long,
+                        val transaction: String,
+                        val sender: String,
+                        val receiver: String,
+                        val remittance: Double,
+                        val commission: Double
+                )
+
+                val rows =
+                        chain
+                                .flatMap { block ->
+                                    val txs = block.data.transactions
+                                    txs.map { tx ->
+                                        TxRow(
+                                                blockIndex = block.index,
+                                                timestamp = block.timestamp,
+                                                transaction = tx.transaction,
+                                                sender = tx.sender,
+                                                receiver = tx.receiver,
+                                                remittance = tx.remittance,
+                                                commission = tx.commission
+                                        )
+                                    }
                                 }
-                                label { +"Private Key (.pem) : " }
-                                input(type = InputType.file, name = "privateKey") {
-                                    placeholder = "Enter Directory your Wallet Public Key file"
+                                .take(limit)
+
+                val totalTx = BlockChain.getChain().sumOf { it.data.transactions.size }
+
+                call.respondHtml(HttpStatusCode.OK) {
+                    head {
+                        title("Kokonut Fuel Node - Transactions")
+                        style {
+                            unsafe {
+                                raw(
+                                        """
+                                    body {
+                                        font-family: Arial, sans-serif;
+                                        max-width: 1200px;
+                                        margin: 50px auto;
+                                        padding: 20px;
+                                        background-color: #f5f5f5;
+                                    }
+                                    h1 {
+                                        color: #333;
+                                        border-bottom: 3px solid #28a745;
+                                        padding-bottom: 10px;
+                                    }
+                                    .summary {
+                                        background-color: #d4edda;
+                                        border-left: 4px solid #28a745;
+                                        padding: 15px;
+                                        margin: 20px 0;
+                                        border-radius: 5px;
+                                    }
+                                    table {
+                                        width: 100%;
+                                        border-collapse: collapse;
+                                        background-color: white;
+                                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                                        margin-top: 20px;
+                                    }
+                                    th {
+                                        background-color: #28a745;
+                                        color: white;
+                                        padding: 12px;
+                                        text-align: left;
+                                        font-weight: bold;
+                                        font-size: 13px;
+                                    }
+                                    td {
+                                        padding: 10px;
+                                        border-bottom: 1px solid #ddd;
+                                        font-size: 13px;
+                                    }
+                                    tr:hover {
+                                        background-color: #f5f5f5;
+                                    }
+                                    .mono {
+                                        font-family: monospace;
+                                        font-size: 12px;
+                                        color: #555;
+                                        word-break: break-all;
+                                    }
+                                """
+                                )
+                            }
+                        }
+                    }
+                    body {
+                        h1 { +"🥥 Fuel Node Transactions" }
+
+                        div(classes = "summary") {
+                            h2 { +"Summary" }
+                            p { +"Chain size: ${BlockChain.getChainSize()} blocks" }
+                            p { +"Total transactions (all blocks): $totalTx" }
+                            p { +"Showing most recent: ${rows.size} (limit=$limit)" }
+                        }
+
+                        if (rows.isEmpty()) {
+                            p { +"No transactions found." }
+                        } else {
+                            table {
+                                thead {
+                                    tr {
+                                        th { +"Block" }
+                                        th { +"Time" }
+                                        th { +"Type" }
+                                        th { +"Sender" }
+                                        th { +"Receiver" }
+                                        th { +"Amount" }
+                                        th { +"Fee" }
+                                    }
+                                }
+                                tbody {
+                                    rows.forEach { row ->
+                                        tr {
+                                            td { +row.blockIndex.toString() }
+                                            td { +dateFormat.format(Date(row.timestamp)) }
+                                            td { +row.transaction }
+                                            td { span(classes = "mono") { +row.sender } }
+                                            td { span(classes = "mono") { +row.receiver } }
+                                            td { +row.remittance.toString() }
+                                            td { +row.commission.toString() }
+                                        }
+                                    }
                                 }
                             }
-
-                            p { submitInput { value = "Submit" } }
                         }
                     }
                 }
@@ -201,8 +376,143 @@ class Router {
             }
         }
 
-        fun Route.getFullNodes(fullNodes: List<FullNode>) {
-            get("/getFullNodes") { call.respond(fullNodes) }
+        fun Route.getFullNodes(fullNodes: MutableMap<String, Long>) {
+            get("/getFullNodes") {
+                call.respondHtml(HttpStatusCode.OK) {
+                    head {
+                        title("Registered Full Nodes")
+                        style {
+                            unsafe {
+                                raw(
+                                        """
+                                    body {
+                                        font-family: Arial, sans-serif;
+                                        max-width: 1000px;
+                                        margin: 50px auto;
+                                        padding: 20px;
+                                        background-color: #f5f5f5;
+                                    }
+                                    h1 {
+                                        color: #333;
+                                        border-bottom: 3px solid #28a745;
+                                        padding-bottom: 10px;
+                                    }
+                                    .summary {
+                                        background-color: #d4edda;
+                                        border-left: 4px solid #28a745;
+                                        padding: 15px;
+                                        margin: 20px 0;
+                                        border-radius: 5px;
+                                    }
+                                    table {
+                                        width: 100%;
+                                        border-collapse: collapse;
+                                        background-color: white;
+                                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                                        margin-top: 20px;
+                                    }
+                                    th {
+                                        background-color: #28a745;
+                                        color: white;
+                                        padding: 12px;
+                                        text-align: left;
+                                        font-weight: bold;
+                                    }
+                                    td {
+                                        padding: 10px;
+                                        border-bottom: 1px solid #ddd;
+                                    }
+                                    tr:hover {
+                                        background-color: #f5f5f5;
+                                    }
+                                    .node-id {
+                                        font-family: monospace;
+                                        font-size: 12px;
+                                        color: #555;
+                                    }
+                                    .node-address {
+                                        color: #007bff;
+                                        font-weight: 500;
+                                    }
+                                    .no-nodes {
+                                        text-align: center;
+                                        padding: 40px;
+                                        color: #999;
+                                        font-style: italic;
+                                    }
+                                    .online-badge {
+                                        background-color: #28a745;
+                                        color: white;
+                                        padding: 3px 8px;
+                                        border-radius: 4px;
+                                        font-size: 12px;
+                                        font-weight: bold;
+                                    }
+                                    .last-seen {
+                                        font-size: 11px;
+                                        color: #666;
+                                    }
+                                """
+                                )
+                            }
+                        }
+                    }
+                    body {
+                        h1 { +"🥥 Registered Full Nodes" }
+
+                        div(classes = "summary") {
+                            h2 { +"Summary" }
+                            p { +"Total Active Full Nodes: ${fullNodes.size}" }
+                            p { +"Network: Kokonut Blockchain" }
+                            p {
+                                +"Last Updated: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(java.util.Date())}"
+                            }
+                        }
+
+                        if (fullNodes.isEmpty()) {
+                            div(classes = "no-nodes") {
+                                +"No Full Nodes registered yet. Full Nodes will appear here after heartbeat registration."
+                            }
+                        } else {
+                            table {
+                                thead {
+                                    tr {
+                                        th { +"#" }
+                                        th { +"Node ID" }
+                                        th { +"Address" }
+                                        th { +"Last Heartbeat" }
+                                        th { +"Status" }
+                                    }
+                                }
+                                tbody {
+                                    fullNodes.entries.sortedBy { it.key }.forEachIndexed {
+                                            index,
+                                            (address, lastSeen) ->
+                                        val timeDiff = System.currentTimeMillis() - lastSeen
+                                        val minutesAgo = timeDiff / 60000
+
+                                        tr {
+                                            td { +"${index + 1}" }
+                                            td {
+                                                span(classes = "node-id") {
+                                                    +address.split("//").last()
+                                                }
+                                            }
+                                            td { span(classes = "node-address") { +address } }
+                                            td {
+                                                span(classes = "last-seen") {
+                                                    +"${minutesAgo}m ago"
+                                                }
+                                            }
+                                            td { span(classes = "online-badge") { +"🟢 Online" } }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         fun Route.getGenesisBlock() {
@@ -226,7 +536,6 @@ class Router {
                 call.respondHtml(HttpStatusCode.OK) {
                     head { title("Get Last Block") }
                     body {
-                        h1 { +"version : ${lastBlock.version}" }
                         h1 { +"index : ${lastBlock.index}" }
                         h1 { +"previousHash : ${lastBlock.previousHash}" }
                         h1 { +"timestamp : ${lastBlock.timestamp}" }
@@ -250,11 +559,11 @@ class Router {
             }
         }
 
-        fun Route.getMiners() {
-            get("/getMiners") {
+        fun Route.getConnectedValidators() {
+            get("/getConnectedValidators") {
                 call.respondHtml(HttpStatusCode.OK) {
                     head { title("Kokonut Full Node") }
-                    body { h1 { +miners.toString() } }
+                    body { h1 { +validatorSessions.toString() } }
                 }
             }
         }
@@ -271,125 +580,676 @@ class Router {
         }
 
         fun Route.getChain() {
-            get("/getChain") {
-                // Check chain
-                if (!BlockChain.isValid()) {
-                    call.respond(
-                            HttpStatusCode.Created,
-                            "Get Chain Failed : Server block chain is invalid"
-                    )
-                }
-                call.respond(BlockChain.getChain())
-            }
+            get("/getChain") { call.respond(BlockChain.getChain()) }
         }
 
         fun Route.getPolicy() {
             get("/getPolicy") {
-                // Default minimum stake is 100.0 KNT
-                call.respond(Policy(protocolVersion, 100.0))
+                val minimumStake = BlockChain.getNetworkRules().minFullStake
+                call.respond(Policy(minimumStake))
             }
         }
 
-        fun Route.startMining() {
-            post("/startMining") {
-                val keyPath = "/app/key"
+        /**
+         * Get balance for a given address Query parameter: address - the wallet address (validator
+         * address) Returns the balance as a Double
+         */
+        fun Route.getBalance() {
+            get("/getBalance") {
+                val address = call.request.queryParameters["address"]
 
-                Utility.createDirectory(keyPath)
-
-                val fileName = call.request.header("fileName") ?: "public_key.pem"
-                val fileBytes = call.receiveStream().use { it.readBytes() }
-                val publicKeyFile = File(keyPath, fileName)
-                publicKeyFile.writeBytes(fileBytes)
-
-                val miner = Utility.calculateHash(Wallet.loadPublicKey(publicKeyFile.path))
-
-                miners.add(Miner(miner, call.request.origin.remoteHost, MiningState.READY))
-
-                println("Miner : $miner start mining...")
-                call.respond("Mining Approved...")
-
-                miners.find { it.miner == miner }!!.miningState = MiningState.MINING
-            }
-        }
-
-        fun Route.submit(fullNodes: MutableList<FullNode>): MutableList<FullNode> {
-            var wallet: Wallet? = null
-
-            post("/submit") {
-                val keyPath = "/app/key"
-                Utility.createDirectory(keyPath)
-
-                var publicKey: File? = null
-                var privateKey: File? = null
-                val multipartData = call.receiveMultipart()
-                val address: String =
-                        call.request.headers["Origin"]
-                                ?: run {
-                                    call.respondText(
-                                            "Missing 'Origin' header",
-                                            status = HttpStatusCode.BadRequest
-                                    )
-                                    return@post
-                                }
-
-                multipartData.forEachPart { part ->
-                    when (part) {
-                        is PartData.FileItem -> {
-                            val fileBytes = part.streamProvider().use { it.readBytes() }
-                            when (part.name) {
-                                "publicKey" -> {
-                                    publicKey =
-                                            File(keyPath, part.originalFileName ?: "publicKey.pem")
-                                                    .apply { writeBytes(fileBytes) }
-                                    println("Uploaded public key: ${part.originalFileName}")
-                                }
-                                "privateKey" -> {
-                                    privateKey =
-                                            File(keyPath, part.originalFileName ?: "privateKey.pem")
-                                                    .apply { writeBytes(fileBytes) }
-                                    println("Uploaded private key: ${part.originalFileName}")
-                                }
-                            }
-                        }
-                        else -> Unit
-                    }
-                    part.dispose()
-                }
-
-                if (publicKey == null || privateKey == null) {
-                    call.respondText(
-                            "Missing keys in the request",
-                            status = HttpStatusCode.BadRequest
-                    )
-                    return@post
+                if (address.isNullOrBlank()) {
+                    call.respond(HttpStatusCode.BadRequest, "Missing 'address' query parameter")
+                    return@get
                 }
 
                 try {
-                    wallet = Wallet(privateKey!!, publicKey!!)
+                    // Ensure chain is up-to-date
+                    BlockChain.refreshFromDatabase()
 
-                    val data = "verify fullnode".toByteArray()
-                    val signatureBytes = Wallet.signData(data, wallet!!.privateKey)
-                    val isValid = Wallet.verifySignature(data, signatureBytes, wallet!!.publicKey)
-                    val id = Utility.calculateHash(wallet!!.publicKey)
+                    val balance = BlockChain.getBalance(address)
+                    println("💰 API /getBalance request for: $address -> Balance: $balance KNT")
 
-                    // Check if the node ID is already present
-                    val nodeExists =
-                            BlockChain.getRandomFuelNode().getFullNodes().any { it.id == id }
-                    if (!isValid || nodeExists) {
-                        call.respondText("Registration failed: ${HttpStatusCode.BadRequest}")
-                        return@post
-                    }
-
-                    call.respondText("Registration succeeded: ${HttpStatusCode.OK}")
-                    fullNodes.add(FullNode(id = id, address = address))
+                    call.respond(kokonut.core.BalanceResponse(address = address, balance = balance))
                 } catch (e: Exception) {
-                    call.respondText(
-                            "An error occurred: ${e.message}",
-                            status = HttpStatusCode.InternalServerError
+                    e.printStackTrace()
+                    call.respond(
+                            HttpStatusCode.InternalServerError,
+                            "Error: ${e.javaClass.simpleName} - ${e.message}"
                     )
                 }
             }
-            return fullNodes
+        }
+
+        fun Route.getValidators() {
+            get("/getValidators") {
+                val validators = BlockChain.validatorPool.getActiveValidators()
+
+                call.respondHtml(HttpStatusCode.OK) {
+                    head {
+                        title("Active Validators")
+                        style {
+                            unsafe {
+                                raw(
+                                        """
+                                    body {
+                                        font-family: Arial, sans-serif;
+                                        max-width: 1000px;
+                                        margin: 50px auto;
+                                        padding: 20px;
+                                        background-color: #f5f5f5;
+                                    }
+                                    h1 {
+                                        color: #333;
+                                        border-bottom: 3px solid #007bff;
+                                        padding-bottom: 10px;
+                                    }
+                                    .summary {
+                                        background-color: #e7f3ff;
+                                        border-left: 4px solid #007bff;
+                                        padding: 15px;
+                                        margin: 20px 0;
+                                        border-radius: 5px;
+                                    }
+                                    table {
+                                        width: 100%;
+                                        border-collapse: collapse;
+                                        background-color: white;
+                                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                                        margin-top: 20px;
+                                    }
+                                    th {
+                                        background-color: #007bff;
+                                        color: white;
+                                        padding: 12px;
+                                        text-align: left;
+                                        font-weight: bold;
+                                    }
+                                    td {
+                                        padding: 10px;
+                                        border-bottom: 1px solid #ddd;
+                                    }
+                                    tr:hover {
+                                        background-color: #f5f5f5;
+                                    }
+                                    .validator-id {
+                                        font-family: monospace;
+                                        font-size: 12px;
+                                        color: #555;
+                                    }
+                                    .no-validators {
+                                        text-align: center;
+                                        padding: 40px;
+                                        color: #999;
+                                        font-style: italic;
+                                    }
+                                """
+                                )
+                            }
+                        }
+                    }
+                    body {
+                        h1 { +"🥥 Active Validators" }
+
+                        div(classes = "summary") {
+                            h2 { +"Summary" }
+                            p { +"Total Active Validators: ${validators.size}" }
+                            p { +"Total Staked: ${BlockChain.validatorPool.getTotalStaked()} KNT" }
+                            p { +"Minimum Stake Required: ${ValidatorPool.MINIMUM_STAKE} KNT" }
+                        }
+
+                        if (validators.isEmpty()) {
+                            div(classes = "no-validators") {
+                                +"No active validators found. Stake KNT to become a validator!"
+                            }
+                        } else {
+                            table {
+                                thead {
+                                    tr {
+                                        th { +"#" }
+                                        th { +"Validator ID (Address)" }
+                                        th { +"Staked Amount" }
+                                        th { +"Blocks Validated" }
+                                        th { +"Total Rewards" }
+                                        th { +"Status" }
+                                    }
+                                }
+                                tbody {
+                                    validators
+                                            .sortedByDescending { it.stakedAmount }
+                                            .forEachIndexed { index, validator ->
+                                                tr {
+                                                    td { +"${index + 1}" }
+                                                    td {
+                                                        span(classes = "validator-id") {
+                                                            +validator.address
+                                                        }
+                                                    }
+                                                    td { +"${validator.stakedAmount} KNT" }
+                                                    td { +"${validator.blocksValidated}" }
+                                                    td { +"${validator.rewardsEarned} KNT" }
+                                                    td {
+                                                        if (validator.isActive) {
+                                                            +"✅ Active"
+                                                        } else {
+                                                            +"❌ Inactive"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        /**
+         * Handshake endpoint for Light Node connection ritual Returns network information for
+         * verification
+         */
+        fun Route.handshake() {
+            post("/handshake") {
+                try {
+                    val request = call.receive<kokonut.core.HandshakeRequest>()
+
+                    println("🤝 Handshake request from ${request.nodeType} node")
+
+                    // Verify public key is provided
+                    if (request.publicKey.isBlank()) {
+                        println("❌ Handshake rejected: Public key is required")
+                        call.respond(
+                                HttpStatusCode.BadRequest,
+                                kokonut.core.HandshakeResponse(
+                                        success = false,
+                                        message =
+                                                "Authentication failed: Public key is required for handshake"
+                                )
+                        )
+                        return@post
+                    }
+
+                    // Gather network information
+                    val genesisBlock = BlockChain.getGenesisBlock()
+                    val networkRules = BlockChain.getNetworkRules()
+                    val fuelNodes = BlockChain.getFuelNodes()
+
+                    var handshakeMessage =
+                            "Handshake successful. Welcome to ${networkRules.networkId}!"
+
+                    // 1-time validator onboarding reward on first successful LIGHT connect
+                    if (request.nodeType.uppercase() == "LIGHT") {
+                        val validatorAddress = Utility.calculateHash(request.publicKey)
+                        synchronized(onboardingLock) {
+                            val alreadyOnboarded =
+                                    BlockChain.getChain().any { block ->
+                                        block.data.type == BlockDataType.VALIDATOR_ONBOARDING &&
+                                                block.data
+                                                        .validatorOnboardingInfo
+                                                        ?.validatorAddress == validatorAddress
+                                    }
+
+                            if (!alreadyOnboarded) {
+                                val treasuryAddress = BlockChain.getTreasuryAddress()
+                                val treasuryBalance = BlockChain.getTreasuryBalance()
+
+                                if (treasuryBalance >= 2.0) {
+                                    val fuelNodeAddress =
+                                            try {
+                                                BlockChain.getPrimaryFuelNode().toString()
+                                            } catch (e: Exception) {
+                                                "FUELNODE"
+                                            }
+
+                                    val fullNodeAddress =
+                                            (System.getenv("KOKONUT_FULLNODE_REWARD_RECEIVER")
+                                                    ?.takeIf { it.isNotBlank() }
+                                                    ?: run {
+                                                        val scheme = call.request.origin.scheme
+                                                        val host = call.request.host()
+                                                        val port = call.request.port()
+                                                        "$scheme://$host:$port"
+                                                    })
+
+                                    val onboardingInfo =
+                                            ValidatorOnboardingInfo(
+                                                    validatorAddress = validatorAddress,
+                                                    fullNodeAddress = fullNodeAddress,
+                                                    fuelNodeAddress = fuelNodeAddress,
+                                                    amountToFullNode = 1.0,
+                                                    amountToValidator = 1.0,
+                                                    totalWithdrawn = 2.0
+                                            )
+
+                                    val lastBlock = BlockChain.getLastBlock()
+                                    val blockTimestamp = System.currentTimeMillis()
+
+                                    // IMPORTANT: Use block timestamp for transactions
+                                    val transactions =
+                                            listOf(
+                                                    Transaction(
+                                                            transaction =
+                                                                    "VALIDATOR_ONBOARDING_FULLNODE",
+                                                            sender = treasuryAddress,
+                                                            receiver = fullNodeAddress,
+                                                            remittance = 1.0,
+                                                            commission = 0.0,
+                                                            timestamp = blockTimestamp
+                                                    ),
+                                                    Transaction(
+                                                            transaction =
+                                                                    "VALIDATOR_ONBOARDING_VALIDATOR",
+                                                            sender = treasuryAddress,
+                                                            receiver = validatorAddress,
+                                                            remittance = 1.0,
+                                                            commission = 0.0,
+                                                            timestamp = blockTimestamp
+                                                    )
+                                            )
+
+                                    val onboardingData =
+                                            Data(
+                                                    reward = 0.0,
+                                                    ticker = "KNT",
+                                                    validator = "ONBOARDING",
+                                                    transactions = transactions,
+                                                    comment =
+                                                            "Validator onboarding: $validatorAddress",
+                                                    type = BlockDataType.VALIDATOR_ONBOARDING,
+                                                    validatorOnboardingInfo = onboardingInfo
+                                            )
+
+                                    val onboardingBlock =
+                                            Block(
+                                                    index = lastBlock.index + 1,
+                                                    previousHash = lastBlock.hash,
+                                                    timestamp = blockTimestamp,
+                                                    data = onboardingData,
+                                                    validatorSignature = "",
+                                                    hash = ""
+                                            )
+
+                                    onboardingBlock.hash = onboardingBlock.calculateHash()
+                                    BlockChain.database.insert(onboardingBlock)
+                                    BlockChain.refreshFromDatabase()
+
+                                    // Best-effort: help other FullNodes converge quickly.
+                                    notifyFullNodesToSyncFrom(advertisedSelfAddress(call))
+
+                                    handshakeMessage =
+                                            "Handshake successful. Onboarding reward granted."
+                                } else {
+                                    handshakeMessage =
+                                            "Handshake successful. Onboarding skipped (insufficient treasury balance)."
+                                }
+                            }
+                        }
+                    }
+
+                    val networkInfo =
+                            kokonut.core.NetworkInfo(
+                                    nodeType = "FULL",
+                                    networkId = networkRules.networkId,
+                                    genesisHash = genesisBlock.hash,
+                                    chainSize = BlockChain.getChainSize(),
+                                    totalValidators =
+                                            BlockChain.validatorPool.getActiveValidators().size,
+                                    totalCurrencyVolume = BlockChain.getTotalCurrencyVolume(),
+                                    connectedFuelNodes = fuelNodes.size
+                            )
+
+                    println("✅ Handshake successful with ${request.nodeType} node")
+                    println("   Client Public Key: ${request.publicKey.take(32)}...")
+
+                    call.respond(
+                            HttpStatusCode.OK,
+                            kokonut.core.HandshakeResponse(
+                                    success = true,
+                                    message = handshakeMessage,
+                                    networkInfo = networkInfo
+                            )
+                    )
+                } catch (e: Exception) {
+                    println("❌ Handshake failed: ${e.message}")
+                    call.respond(
+                            HttpStatusCode.InternalServerError,
+                            kokonut.core.HandshakeResponse(
+                                    success = false,
+                                    message = "Handshake failed: ${e.message}"
+                            )
+                    )
+                }
+            }
+        }
+
+        fun Route.startValidating() {
+            post("/startValidating") {
+                val keyPath = "/app/key"
+                Utility.createDirectory(keyPath)
+                var publicKeyFile: File? = null
+
+                try {
+                    val fileName = call.request.header("fileName") ?: "temp_auth_key.pem"
+                    val fileBytes = call.receiveStream().use { it.readBytes() }
+                    publicKeyFile = File(keyPath, fileName)
+                    publicKeyFile!!.writeBytes(fileBytes)
+
+                    val validatorAddress =
+                            Utility.calculateHash(Wallet.loadPublicKey(publicKeyFile!!.path))
+
+                    // Ensure chain info is fresh before checking stake
+                    BlockChain.refreshFromDatabase()
+
+                    val rules = BlockChain.getNetworkRules()
+                    val validator = BlockChain.validatorPool.getValidator(validatorAddress)
+
+                    // Check if validator exists and has enough stake (isActive checks both)
+                    if (validator == null || validator.stakedAmount < rules.minFullStake) {
+                        call.respond(
+                                HttpStatusCode.BadRequest,
+                                "Insufficient stake. Required: ${rules.minFullStake} KNT. Current: ${validator?.stakedAmount ?: 0.0}"
+                        )
+                        return@post
+                    }
+
+                    // Remove existing session if any
+                    validatorSessions.removeIf { it.validatorAddress == validatorAddress }
+
+                    val session =
+                            ValidatorSession(
+                                    validatorAddress,
+                                    call.request.origin.remoteHost,
+                                    ValidatorState.VALIDATING
+                            )
+                    validatorSessions.add(session)
+
+                    println("✅ Validator started: $validatorAddress")
+                    call.respond(HttpStatusCode.OK, "Validating Started")
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    call.respond(
+                            HttpStatusCode.InternalServerError,
+                            "Error: ${e.javaClass.simpleName} - ${e.message}"
+                    )
+                } finally {
+                    try {
+                        publicKeyFile?.let {
+                            if (it.exists()) {
+                                it.delete()
+                            }
+                        }
+                    } catch (e: Exception) {
+                        // Ignore
+                    }
+                }
+            }
+        }
+
+        fun Route.stakeLock() {
+            post("/stakeLock") {
+                val keyPath = "/app/key"
+                Utility.createDirectory(keyPath)
+                var publicKeyFile: File? = null
+
+                try {
+                    val multipart = call.receiveMultipart()
+                    var amount: Double? = null
+                    var timestamp: Long? = null
+                    var signatureBase64: String? = null
+
+                    multipart.forEachPart { part ->
+                        when (part) {
+                            is PartData.FormItem -> {
+                                when (part.name) {
+                                    "amount" -> amount = part.value.toDoubleOrNull()
+                                    "timestamp" -> timestamp = part.value.toLongOrNull()
+                                    "signature" -> signatureBase64 = part.value
+                                }
+                            }
+                            is PartData.FileItem -> {
+                                if (part.name == "public_key") {
+                                    val fileBytes = part.provider().toByteArray()
+                                    val fileName = part.originalFileName ?: "temp_key.pem"
+                                    publicKeyFile = File(keyPath, fileName)
+                                    publicKeyFile!!.writeBytes(fileBytes)
+                                }
+                            }
+                            else -> {}
+                        }
+                        part.dispose()
+                    }
+
+                    if (publicKeyFile == null ||
+                                    !publicKeyFile!!.exists() ||
+                                    amount == null ||
+                                    timestamp == null ||
+                                    signatureBase64.isNullOrBlank()
+                    ) {
+                        call.respond(
+                                HttpStatusCode.BadRequest,
+                                "Missing public_key, amount, timestamp, or signature"
+                        )
+                        return@post
+                    }
+
+                    // Use NetworkRules from local chain instead of querying Fuel Node
+                    val rules = BlockChain.getNetworkRules()
+                    if (amount!! < rules.minFullStake) {
+                        call.respond(
+                                HttpStatusCode.BadRequest,
+                                "Insufficient stake. Required: ${rules.minFullStake} KNT"
+                        )
+                        return@post
+                    }
+
+                    val publicKey: PublicKey = Wallet.loadPublicKey(publicKeyFile!!.path)
+                    val validatorAddress = Utility.calculateHash(publicKey)
+
+                    val message = "STAKE_LOCK|$validatorAddress|${amount!!}|${timestamp!!}"
+                    val signatureBytes =
+                            try {
+                                java.util.Base64.getDecoder().decode(signatureBase64)
+                            } catch (e: Exception) {
+                                null
+                            }
+
+                    if (signatureBytes == null ||
+                                    !Wallet.verifySignature(
+                                            message.toByteArray(),
+                                            signatureBytes,
+                                            publicKey
+                                    )
+                    ) {
+                        call.respond(HttpStatusCode.Unauthorized, "Invalid signature")
+                        return@post
+                    }
+
+                    // Ensure chain info is fresh
+                    BlockChain.refreshFromDatabase()
+                    val balance = BlockChain.getBalance(validatorAddress)
+                    if (balance < amount!!) {
+                        call.respond(
+                                HttpStatusCode.BadRequest,
+                                "Insufficient balance. Balance: $balance KNT"
+                        )
+                        return@post
+                    }
+
+                    val stakeVault = BlockChain.getStakeVaultAddress()
+                    val lastBlock = BlockChain.getLastBlock()
+                    val blockTimestamp = System.currentTimeMillis()
+                    
+                    // IMPORTANT: Use the same timestamp for transaction and block
+                    val stakeTx =
+                            Transaction(
+                                    transaction = "STAKE_LOCK",
+                                    sender = validatorAddress,
+                                    receiver = stakeVault,
+                                    remittance = amount!!,
+                                    commission = 0.0,
+                                    timestamp = blockTimestamp
+                            )
+                    val stakeData =
+                            Data(
+                                    reward = 0.0,
+                                    ticker = "KNT",
+                                    validator = "STAKE_LOCK",
+                                    transactions = listOf(stakeTx),
+                                    comment = "Stake lock: $validatorAddress",
+                                    type = BlockDataType.STAKE_LOCK
+                            )
+                    val stakeBlock =
+                            Block(
+                                    index = lastBlock.index + 1,
+                                    previousHash = lastBlock.hash,
+                                    timestamp = blockTimestamp,
+                                    data = stakeData,
+                                    validatorSignature = "",
+                                    hash = ""
+                            )
+                    stakeBlock.hash = stakeBlock.calculateHash()
+
+                    // Debug: Log hash calculation details
+                    println("📊 STAKE_LOCK Block Debug:")
+                    println("   Index: ${stakeBlock.index}")
+                    println("   Timestamp: ${stakeBlock.timestamp}")
+                    println("   Tx Timestamp: ${stakeTx.timestamp}")
+                    println("   Calculated Hash: ${stakeBlock.hash}")
+                    println("   IsValid: ${stakeBlock.isValid()}")
+
+                    BlockChain.database.insert(stakeBlock)
+                    BlockChain.refreshFromDatabase()
+
+                    // Verify chain integrity after insertion
+                    if (!BlockChain.isValid()) {
+                        println("⚠️ Chain integrity check failed after stake lock insertion!")
+                        // Debug: Find which block is invalid
+                        val chain = BlockChain.getChain()
+                        chain.forEachIndexed { idx, block ->
+                            val recalcHash = block.calculateHash()
+                            if (recalcHash != block.hash) {
+                                println("❌ Block $idx hash mismatch!")
+                                println("   Stored: ${block.hash}")
+                                println("   Calculated: $recalcHash")
+                            }
+                        }
+                    } else {
+                        println("✅ Chain integrity verified after stake lock insertion")
+                    }
+
+                    // Log the transaction
+                    println(
+                            "📝 STAKE_LOCK recorded: $validatorAddress -> $stakeVault: ${amount!!} KNT"
+                    )
+
+                    // Try to propagate, logging error if fails but not failing the request
+                    try {
+                        notifyFullNodesToSyncFrom(advertisedSelfAddress(call))
+                    } catch (e: Exception) {
+                        println("⚠️ Failed to trigger propagation: ${e.message}")
+                    }
+
+                    call.respond(HttpStatusCode.OK, "Stake locked: ${amount!!} KNT")
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    call.respond(
+                            HttpStatusCode.InternalServerError,
+                            "Error: ${e.javaClass.simpleName} - ${e.message}"
+                    )
+                } finally {
+                    try {
+                        publicKeyFile?.let {
+                            if (it.exists()) {
+                                it.delete()
+                            }
+                        }
+                    } catch (e: Exception) {
+                        // Ignore file delete errors
+                    }
+                }
+            }
+        }
+
+        /**
+         * Heartbeat endpoint for automatic Full Node registration Full Nodes send heartbeat every
+         * 10 minutes to maintain registration Nodes that don't send heartbeat for 15 minutes are
+         * automatically removed
+         */
+        fun Route.heartbeat(fullNodes: MutableMap<String, Long>) {
+            post("/heartbeat") {
+                try {
+                    @kotlinx.serialization.Serializable
+                    data class HeartbeatRequest(val address: String)
+
+                    val request = call.receive<HeartbeatRequest>()
+                    val normalizedAddress =
+                            Utility.normalizeNodeAddress(
+                                    address = request.address,
+                                    remoteHost = call.request.origin.remoteHost,
+                                    forwardedForHeader = call.request.headers["X-Forwarded-For"]
+                            )
+                    val now = System.currentTimeMillis()
+
+                    // Update or add node with current timestamp
+                    val isNewNode = !fullNodes.containsKey(normalizedAddress)
+                    fullNodes[normalizedAddress] = now
+
+                    if (isNewNode) {
+                        println("✅ New Full Node registered: $normalizedAddress")
+                    } else {
+                        println("💓 Heartbeat received from: $normalizedAddress")
+                    }
+
+                    call.respond(
+                            HttpStatusCode.OK,
+                            mapOf(
+                                    "status" to "success",
+                                    "message" to
+                                            if (isNewNode) "Registered successfully"
+                                            else "Heartbeat received",
+                                    "timestamp" to now
+                            )
+                    )
+                } catch (e: Exception) {
+                    println("❌ Heartbeat error: ${e.message}")
+                    call.respond(
+                            HttpStatusCode.BadRequest,
+                            mapOf(
+                                    "status" to "error",
+                                    "message" to "Invalid heartbeat request: ${e.message}"
+                            )
+                    )
+                }
+            }
+        }
+
+        /**
+         * Get active Full Nodes (for backward compatibility) Converts heartbeat map to FullNode
+         * list
+         */
+        fun Route.getFullNodesFromHeartbeat(fullNodes: MutableMap<String, Long>) {
+            get("/getFullNodes") {
+                val activeNodes =
+                        fullNodes.map { (address, _) ->
+                            kokonut.util.FullNode(
+                                    id = Utility.calculateHash(address.hashCode().toLong()),
+                                    address = address
+                            )
+                        }
+                call.respond(activeNodes)
+            }
+        }
+
+        /**
+         * Get known Full Nodes (from local BlockChain cache) Useful for Full Nodes to relay peer
+         * information to Light Nodes.
+         */
+        fun Route.getKnownFullNodes() {
+            get("/getFullNodes") {
+                // Return BlockChain.fullNodes (List<FullNode>)
+                call.respond(BlockChain.fullNodes)
+            }
         }
 
         fun Route.propagate() {
@@ -409,14 +1269,12 @@ class Router {
                 if (BlockChain.getChainSize() < size) {
                     BlockChain.loadChainFromFullNode(URL(address))
                     call.respond(HttpStatusCode.OK, "Propagate Succeed")
-                    BlockChain.fullNodes.forEach {
-                        run {
-                            if (it.address != address && it.address != fullNode.address) {
-                                val response = URL(it.address).propagate()
-                                println(response)
-                            }
-                        }
-                    }
+                    val selfAddress = advertisedSelfAddress(call)
+                    BlockChain.fullNodes
+                            .map { it.address }
+                            .filter { it.isNotBlank() && it != address && it != selfAddress }
+                            .distinct()
+                            .forEach { peer -> propagateToPeer(peer, size, id, address) }
                 } else if (BlockChain.getChainSize() == size) {} else {
 
                     call.respond(HttpStatusCode.Created, "Propagate Failed")
@@ -426,118 +1284,282 @@ class Router {
 
         fun Route.addBlock() {
             post("/addBlock") {
-                loadFullNodes()
-
                 val keyPath = "/app/key"
                 Utility.createDirectory(keyPath)
-
-                val policy = BlockChain.getPrimaryFuelNode().getPolicy()
-
-                if (!BlockChain.isValid()) {
-                    call.respond(
-                            HttpStatusCode.Created,
-                            "Block Add Failed : Server block chain is invalid"
-                    )
-                }
-
-                val multipart = call.receiveMultipart()
-                var block: Block? = null
                 var publicKeyFile: File? = null
 
-                multipart.forEachPart { part ->
-                    when (part) {
-                        is PartData.FormItem -> {
-                            if (part.name == "json") {
-                                block = Json.decodeFromString<Block>(part.value)
-                                println("Received JSON: $block")
+                try {
+                    val multipart = call.receiveMultipart()
+                    var block: Block? = null
+
+                    multipart.forEachPart { part ->
+                        when (part) {
+                            is PartData.FormItem -> {
+                                if (part.name == "json") {
+                                    try {
+                                        block = Json.decodeFromString<Block>(part.value)
+                                        println("Received JSON: $block")
+                                    } catch (e: Exception) {
+                                        println("Error decoding JSON: ${e.message}")
+                                    }
+                                }
                             }
-                        }
-                        is PartData.FileItem -> {
-                            if (part.name == "public_key") {
-                                val fileBytes = part.streamProvider().use { it.readBytes() }
-                                publicKeyFile =
-                                        part.originalFileName?.let { it1 -> File(keyPath, it1) }
-                                publicKeyFile!!.writeBytes(fileBytes)
-                                println("Received file: ${part.originalFileName}")
+                            is PartData.FileItem -> {
+                                if (part.name == "public_key") {
+                                    val fileBytes = part.provider().toByteArray()
+                                    val fileName = part.originalFileName ?: "temp_block_key.pem"
+                                    publicKeyFile = File(keyPath, fileName)
+                                    publicKeyFile!!.writeBytes(fileBytes)
+                                    println("Received file: $fileName")
+                                }
                             }
+                            else -> {}
                         }
-                        else -> {}
-                    }
-                    part.dispose()
-                }
-
-                if (block != null && publicKeyFile != null) {
-
-                    println(block)
-
-                    val publicKey: PublicKey = Wallet.loadPublicKey(publicKeyFile!!.path)
-                    val validator: String = Utility.calculateHash(publicKey)
-
-                    if (block!!.index == BlockChain.getLastBlock().index) {
-                        call.respond(HttpStatusCode.Created, "Block Already Propagated")
+                        part.dispose()
                     }
 
-                    // Check Validator
-                    if (block!!.data.validator != validator) {
-                        call.respond(HttpStatusCode.Created, "Block Add Failed : Invalid validator")
-                    }
+                    if (block != null && publicKeyFile != null && publicKeyFile!!.exists()) {
+                        println(block)
 
-                    // Check Index
-                    if (block!!.index != BlockChain.getLastBlock().index + 1) {
-                        call.respond(
-                                HttpStatusCode.Created,
-                                "Block Add Failed : Invalid index, New Block index : ${block!!.index} / Last Block index ${BlockChain.getLastBlock().index}"
-                        )
-                    }
+                        val publicKey: PublicKey = Wallet.loadPublicKey(publicKeyFile!!.path)
+                        val validatorString: String = Utility.calculateHash(publicKey)
 
-                    // Check Version
-                    if (policy.version != block!!.version) {
-                        call.respond(
-                                HttpStatusCode.Created,
-                                "Block Add Failed : Fuel Node version ${policy.version} and Client version ${block!!.version} is different"
-                        )
-                    }
+                        // Refresh to get latest chain state
+                        BlockChain.refreshFromDatabase()
+                        val lastBlock = BlockChain.getLastBlock()
 
-                    // Check Hash
-                    val calculatedHash = block!!.calculateHash()
-                    if (block!!.hash == calculatedHash) {
+                        // Check Validator
+                        if (block!!.data.validator != validatorString) {
+                            call.respond(
+                                    HttpStatusCode.Created,
+                                    "Block Add Failed : Invalid validator"
+                            )
+                            return@post
+                        }
 
-                        BlockChain.database.insert(block!!)
+                        // Check Index (Using <= to handle potential re-transmissions gracefully)
+                        if (block!!.index <= lastBlock.index) {
+                            if (block!!.hash == lastBlock.hash) {
+                                call.respond(HttpStatusCode.Created, "Block Already Propagated")
+                            } else {
+                                call.respond(
+                                        HttpStatusCode.Created,
+                                        "Block Add Failed: Stale or invalid block index"
+                                )
+                            }
+                            return@post
+                        }
 
-                        call.respond(
-                                HttpStatusCode.Created,
-                                "Block Add Succeed and Reward ${block!!.data.reward} KNT is Recorded..."
-                        )
+                        // Check previousHash for blockchain integrity
+                        if (block!!.previousHash != lastBlock.hash) {
+                            call.respond(
+                                    HttpStatusCode.Created,
+                                    "Block Add Failed: previousHash mismatch. Expected: ${lastBlock.hash}, Got: ${block!!.previousHash}"
+                            )
+                            return@post
+                        }
+
+                        // Check index is exactly lastBlock.index + 1
+                        if (block!!.index != lastBlock.index + 1) {
+                            call.respond(
+                                    HttpStatusCode.Created,
+                                    "Block Add Failed: Invalid block index. Expected: ${lastBlock.index + 1}, Got: ${block!!.index}"
+                            )
+                            return@post
+                        }
+
+                        // Check Hash
+                        val calculatedHash = block!!.calculateHash()
+                        if (block!!.hash == calculatedHash) {
+                            BlockChain.database.insert(block!!)
+                            BlockChain.refreshFromDatabase()
+
+                            // Verify chain integrity after insertion
+                            if (!BlockChain.isValid()) {
+                                println("⚠️ Chain integrity check failed after block insertion!")
+                            }
+
+                            // Best-effort: help other FullNodes converge quickly.
+                            try {
+                                notifyFullNodesToSyncFrom(advertisedSelfAddress(call))
+                            } catch (e: Exception) {
+                                println("⚠️ Failed to trigger propagation: ${e.message}")
+                            }
+
+                            // Log transaction details
+                            block!!.data.transactions.forEach { tx ->
+                                println(
+                                        "📝 Transaction recorded: ${tx.transaction} - ${tx.sender} -> ${tx.receiver}: ${tx.remittance} KNT"
+                                )
+                            }
+
+                            call.respond(
+                                    HttpStatusCode.Created,
+                                    "Block Add Succeed and Reward ${block!!.data.reward} KNT is Recorded..."
+                            )
+                        } else {
+                            call.respond(
+                                    HttpStatusCode.Created,
+                                    "Block Add Failed : Invalid Block, calculatedHash : ${calculatedHash} blockHash : ${block!!.hash}"
+                            )
+                        }
                     } else {
-                        call.respond(
-                                HttpStatusCode.Created,
-                                "Block Add Failed : Invalid Block, calculatedHash : ${calculatedHash} blockHash : ${block!!.hash}"
+                        call.respondText(
+                                "Missing block or validator public key",
+                                status = HttpStatusCode.BadRequest
                         )
                     }
-                } else {
-                    call.respondText(
-                            "Missing block or miner public key",
-                            status = HttpStatusCode.BadRequest
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    call.respond(
+                            HttpStatusCode.InternalServerError,
+                            "Error processing block: ${e.message}"
                     )
+                } finally {
+                    try {
+                        publicKeyFile?.let {
+                            if (it.exists()) {
+                                it.delete()
+                            }
+                        }
+                    } catch (e: Exception) {
+                        // Ignore
+                    }
                 }
-                Paths.get(keyPath).toFile().deleteRecursively()
             }
         }
 
-        fun Route.stopMining() {
-            post("/stopMining") {
+        fun Route.stopValidating() {
+            post("/stopValidating") {
                 val keyPath = "/app/key"
                 Utility.createDirectory(keyPath)
-                val fileName = call.request.header("fileName") ?: "public_key.pem"
-                val fileBytes = call.receiveStream().use { it.readBytes() }
-                val publicKeyFile = File(keyPath, fileName)
-                publicKeyFile.writeBytes(fileBytes)
+                var publicKeyFile: File? = null
 
-                val miner = Utility.calculateHash(Wallet.loadPublicKey(publicKeyFile.path))
+                try {
+                    val fileName = call.request.header("fileName") ?: "temp_auth_key.pem"
+                    val fileBytes = call.receiveStream().use { it.readBytes() }
+                    publicKeyFile = File(keyPath, fileName)
+                    publicKeyFile!!.writeBytes(fileBytes)
 
-                println("Miner : $miner stop mining...")
+                    val publicKey = Wallet.loadPublicKey(publicKeyFile!!.path)
+                    val validatorAddress = Utility.calculateHash(publicKey)
 
-                call.respond("Mining Cancelled...")
+                    println("🛑 Stopping validation for: $validatorAddress")
+
+                    // 1. Remove from active sessions immediately
+                    validatorSessions.removeIf { it.validatorAddress == validatorAddress }
+
+                    // 2. Check staked amount
+                    BlockChain.refreshFromDatabase()
+                    val validator = BlockChain.validatorPool.getValidator(validatorAddress)
+                    val stakedAmount = validator?.stakedAmount ?: 0.0
+
+                    if (stakedAmount > 0) {
+                        // 3. Create UNSTAKE block to return funds
+                        val lastBlock = BlockChain.getLastBlock()
+                        val stakeVault = BlockChain.getStakeVaultAddress()
+                        val blockTimestamp = System.currentTimeMillis()
+
+                        // Create a transaction from Vault to Validator
+                        // IMPORTANT: Use the same timestamp as the block to ensure hash consistency
+                        val unstakeTx =
+                                Transaction(
+                                        transaction = "UNSTAKE",
+                                        sender = stakeVault,
+                                        receiver = validatorAddress,
+                                        remittance = stakedAmount,
+                                        commission = 0.0,
+                                        timestamp = blockTimestamp
+                                )
+
+                        val data =
+                                Data(
+                                        reward = 0.0,
+                                        ticker = "KNT",
+                                        validator = "UNSTAKE_SYSTEM",
+                                        transactions = listOf(unstakeTx),
+                                        comment = "Unstake: $validatorAddress",
+                                        type = BlockDataType.UNSTAKE
+                                )
+
+                        val unstakeBlock =
+                                Block(
+                                        index = lastBlock.index + 1,
+                                        previousHash = lastBlock.hash,
+                                        timestamp = blockTimestamp,
+                                        data = data,
+                                        validatorSignature =
+                                                "", // System block, no validator signature needed
+                                        // typically
+                                        hash = ""
+                                )
+                        unstakeBlock.hash = unstakeBlock.calculateHash()
+
+                        // Debug: Log hash calculation details
+                        println("📊 UNSTAKE Block Debug:")
+                        println("   Index: ${unstakeBlock.index}")
+                        println("   PreviousHash: ${unstakeBlock.previousHash}")
+                        println("   Timestamp: ${unstakeBlock.timestamp}")
+                        println("   Tx Timestamp: ${unstakeTx.timestamp}")
+                        println("   Calculated Hash: ${unstakeBlock.hash}")
+                        println("   IsValid: ${unstakeBlock.isValid()}")
+
+                        // Insert and Refresh
+                        BlockChain.database.insert(unstakeBlock)
+                        BlockChain.refreshFromDatabase()
+
+                        // Verify chain integrity after insertion
+                        if (!BlockChain.isValid()) {
+                            println("⚠️ Chain integrity check failed after unstake insertion!")
+                            // Debug: Find which block is invalid
+                            val chain = BlockChain.getChain()
+                            chain.forEachIndexed { idx, block ->
+                                val recalcHash = block.calculateHash()
+                                if (recalcHash != block.hash) {
+                                    println("❌ Block $idx hash mismatch!")
+                                    println("   Stored: ${block.hash}")
+                                    println("   Calculated: $recalcHash")
+                                }
+                            }
+                        } else {
+                            println("✅ Chain integrity verified after unstake insertion")
+                        }
+
+                        // Log the transaction
+                        println(
+                                "📝 UNSTAKE recorded: $stakeVault -> $validatorAddress: $stakedAmount KNT"
+                        )
+
+                        // Propagate
+                        try {
+                            notifyFullNodesToSyncFrom(advertisedSelfAddress(call))
+                        } catch (e: Exception) {
+                            println("⚠️ Failed to trigger propagation: ${e.message}")
+                        }
+
+                        call.respond(
+                                HttpStatusCode.OK,
+                                "Validation Stopped. Unstaked: $stakedAmount KNT and returned to wallet."
+                        )
+                    } else {
+                        call.respond(
+                                HttpStatusCode.OK,
+                                "Validation Stopped. No stake found to return."
+                        )
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    call.respond(
+                            HttpStatusCode.InternalServerError,
+                            "Error stopping validation: ${e.message}"
+                    )
+                } finally {
+                    try {
+                        publicKeyFile?.let { if (it.exists()) it.delete() }
+                    } catch (e: Exception) {
+                        /* Ignore */
+                    }
+                }
             }
         }
 
@@ -597,7 +1619,6 @@ class Router {
 
                 val registrationBlock =
                         Block(
-                                version = protocolVersion,
                                 index = lastBlock.index + 1,
                                 previousHash = lastBlock.hash,
                                 timestamp = System.currentTimeMillis(),
@@ -610,7 +1631,7 @@ class Router {
 
                 // Add to blockchain
                 BlockChain.database.insert(registrationBlock)
-                BlockChain.scanFuelNodes() // Refresh cache
+                BlockChain.refreshFromDatabase() // Refresh cache
 
                 call.respond(
                         HttpStatusCode.OK,

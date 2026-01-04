@@ -27,7 +27,6 @@ class LibraryTest {
                         )
                 val block =
                         Block(
-                                version = 1,
                                 index = 0,
                                 previousHash = "0",
                                 timestamp = 123456789L,

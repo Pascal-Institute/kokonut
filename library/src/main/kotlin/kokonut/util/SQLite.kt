@@ -7,42 +7,40 @@ import kokonut.util.Utility.Companion.getJarDirectory
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-class SQLite {
+class SQLite(private val customPath: String? = null) {
 
     val tableName = "kovault"
-    val dbPath = getDatabasePath()
-    var connection: Connection = DriverManager.getConnection("jdbc:sqlite:$dbPath")
+    val dbPath = customPath ?: getDatabasePath()
+
+    private fun openConnection(): Connection {
+        val conn = DriverManager.getConnection("jdbc:sqlite:$dbPath")
+        conn.createStatement().use { stmt -> stmt.execute("PRAGMA busy_timeout = 5000;") }
+        return conn
+    }
 
     init {
-        try {
-            if (!tableExists(tableName)) {
-                val createTableSQL =
-                        """
-                CREATE TABLE $tableName (
-                    hash TEXT PRIMARY KEY,
-                    block TEXT NOT NULL
-                );
-                """
-                val statement: Statement = connection.createStatement()
-                statement.execute(createTableSQL)
-                println("Table '$tableName' created.")
-            } else {
-                println("Table '$tableName' already exists.")
-            }
-        } catch (e: Exception) {
-            // 오류 발생 시 롤백
+        openConnection().use { conn ->
             try {
-                connection.rollback()
-            } catch (rollbackException: Exception) {
-                println("Failed to rollback transaction: ${rollbackException.message}")
-            }
-            println("An error occurred: ${e.message}")
-        } finally {
-            // 자원 정리
-            try {
-                connection.close()
-            } catch (closeException: Exception) {
-                println("Failed to close connection: ${closeException.message}")
+                if (!tableExists(tableName)) {
+                    val createTableSQL =
+                            """
+                    CREATE TABLE $tableName (
+                        hash TEXT PRIMARY KEY,
+                        block TEXT NOT NULL
+                    );
+                    """
+                    conn.createStatement().use { statement -> statement.execute(createTableSQL) }
+                    println("Table '$tableName' created.")
+                } else {
+                    println("Table '$tableName' already exists.")
+                }
+            } catch (e: Exception) {
+                try {
+                    conn.rollback()
+                } catch (rollbackException: Exception) {
+                    println("Failed to rollback transaction: ${rollbackException.message}")
+                }
+                println("An error occurred: ${e.message}")
             }
         }
     }
@@ -54,6 +52,32 @@ class SQLite {
         if (dbFile.exists()) {
             dbFile.delete()
             println("Database is deleted...")
+        }
+    }
+
+    /**
+     * Clear all records from the blockchain table Used when resyncing from a different genesis
+     * block
+     */
+    fun clearTable() {
+        openConnection().use { conn ->
+            val deleteSQL = "DELETE FROM $tableName"
+            conn.autoCommit = false
+
+            try {
+                conn.createStatement().use { statement ->
+                    val deletedRows = statement.executeUpdate(deleteSQL)
+                    println("🗑️ Cleared $deletedRows blocks from database")
+                }
+                conn.commit()
+            } catch (e: Exception) {
+                try {
+                    conn.rollback()
+                } catch (rollbackException: SQLException) {
+                    println("Failed to rollback transaction: ${rollbackException.message}")
+                }
+                println("An error occurred while clearing table: ${e.message}")
+            }
         }
     }
 
@@ -87,190 +111,187 @@ class SQLite {
     }
 
     fun tableExists(tableName: String): Boolean {
-        connection = DriverManager.getConnection("jdbc:sqlite:$dbPath")
-        val metaData = connection.metaData
-        val resultSet: ResultSet = metaData.getTables(null, null, tableName, null)
-        val exists = resultSet.next()
-        resultSet.close()
-        return exists
+        openConnection().use { conn ->
+            val metaData = conn.metaData
+            metaData.getTables(null, null, tableName, null).use { resultSet ->
+                return resultSet.next()
+            }
+        }
     }
 
     fun printTableStructure(tableName: String) {
-        connection = DriverManager.getConnection("jdbc:sqlite:$dbPath")
-        val query = "PRAGMA table_info($tableName);"
-        val statement: Statement = connection.createStatement()
-        val resultSet: ResultSet = statement.executeQuery(query)
-
-        while (resultSet.next()) {
-            val columnName = resultSet.getString("name")
-            val columnType = resultSet.getString("type")
-            val isNullable = resultSet.getString("notnull")
-            val defaultValue = resultSet.getString("dflt_value")
-            println(
-                    "Column: $columnName, Type: $columnType, Nullable: $isNullable, Default: $defaultValue"
-            )
+        openConnection().use { conn ->
+            val query = "PRAGMA table_info($tableName);"
+            conn.createStatement().use { statement ->
+                statement.executeQuery(query).use { resultSet ->
+                    while (resultSet.next()) {
+                        val columnName = resultSet.getString("name")
+                        val columnType = resultSet.getString("type")
+                        val isNullable = resultSet.getString("notnull")
+                        val defaultValue = resultSet.getString("dflt_value")
+                        println(
+                                "Column: $columnName, Type: $columnType, Nullable: $isNullable, Default: $defaultValue"
+                        )
+                    }
+                }
+            }
         }
-
-        resultSet.close()
-        statement.close()
-        connection.close()
     }
 
     fun printTableData(tableName: String) {
-        connection = DriverManager.getConnection("jdbc:sqlite:$dbPath")
-        val query = "SELECT * FROM $tableName;"
-        val statement: Statement = connection.createStatement()
-        val resultSet: ResultSet = statement.executeQuery(query)
+        openConnection().use { conn ->
+            val query = "SELECT * FROM $tableName;"
+            conn.createStatement().use { statement ->
+                statement.executeQuery(query).use { resultSet ->
+                    val metaData = resultSet.metaData
+                    val columnCount = metaData.columnCount
+                    for (i in 1..columnCount) {
+                        print("${metaData.getColumnName(i)}\t")
+                    }
+                    println()
 
-        val metaData = resultSet.metaData
-        val columnCount = metaData.columnCount
-        for (i in 1..columnCount) {
-            print("${metaData.getColumnName(i)}\t")
-        }
-        println()
-
-        while (resultSet.next()) {
-            for (i in 1..columnCount) {
-                print("${resultSet.getString(i)}\t")
+                    while (resultSet.next()) {
+                        for (i in 1..columnCount) {
+                            print("${resultSet.getString(i)}\t")
+                        }
+                        println()
+                    }
+                }
             }
-            println()
         }
-
-        resultSet.close()
-        statement.close()
-        connection.close()
     }
 
     fun fetch(): MutableList<Block> {
+        openConnection().use { conn ->
+            val newChain = mutableListOf<Block>()
+            val query = "SELECT hash, block FROM $tableName"
 
-        connection = DriverManager.getConnection("jdbc:sqlite:$dbPath")
-        val newChain = mutableListOf<Block>()
-        val query = "SELECT hash, block FROM $tableName"
+            conn.prepareStatement(query).use { statement ->
+                statement.executeQuery().use { resultSet ->
+                    while (resultSet.next()) {
+                        val serializedBlock = resultSet.getString("block")
+                        val block: Block = Json.decodeFromString(serializedBlock)
+                        newChain.add(block)
+                    }
+                }
+            }
 
-        val statement = connection.prepareStatement(query)
-        val resultSet = statement.executeQuery()
-
-        while (resultSet.next()) {
-            val serializedBlock = resultSet.getString("block")
-            val block: Block = Json.decodeFromString(serializedBlock)
-            newChain.add(block)
+            return newChain
         }
-
-        return newChain
     }
 
     fun fetch(chain: MutableList<Block>): MutableList<Block> {
+        openConnection().use { conn ->
+            val newChain = mutableListOf<Block>()
+            val query = "SELECT hash, block FROM $tableName"
 
-        connection = DriverManager.getConnection("jdbc:sqlite:$dbPath")
-        val newChain = mutableListOf<Block>()
-        val query = "SELECT hash, block FROM tableName"
+            conn.prepareStatement(query).use { statement ->
+                statement.executeQuery().use { resultSet ->
+                    while (resultSet.next()) {
+                        val serializedBlock = resultSet.getString("block") // 직렬화된 블록 데이터
+                        val block = Json.decodeFromString<Block>(serializedBlock)
 
-        val statement = connection.prepareStatement(query)
-        val resultSet = statement.executeQuery()
-
-        while (resultSet.next()) {
-            val serializedBlock = resultSet.getString("block") // 직렬화된 블록 데이터
-            val block = Json.decodeFromString<Block>(serializedBlock)
-
-            if (!chain.contains(block)) {
-                newChain.add(block)
+                        if (!chain.contains(block)) {
+                            newChain.add(block)
+                        }
+                    }
+                }
             }
-        }
 
-        return newChain
+            return newChain
+        }
     }
 
     fun insert(block: Block) {
-        val connection: Connection = DriverManager.getConnection("jdbc:sqlite:$dbPath")
-        val insertSQL = "INSERT INTO $tableName (hash, block) VALUES (?, ?)"
-        val selectSQL = "SELECT COUNT(*) FROM $tableName WHERE hash = ?"
+        openConnection().use { conn ->
+            val insertSQL = "INSERT INTO $tableName (hash, block) VALUES (?, ?)"
+            val selectSQL = "SELECT COUNT(*) FROM $tableName WHERE hash = ?"
 
-        val preparedStatementInsert: PreparedStatement = connection.prepareStatement(insertSQL)
-        val preparedStatementSelect: PreparedStatement = connection.prepareStatement(selectSQL)
+            conn.autoCommit = false
 
-        connection.autoCommit = false
-
-        try {
-            val hash = block.hash
-            val value = Json.encodeToString(block)
-
-            // Check if hash already exists
-            preparedStatementSelect.setString(1, hash)
-            val resultSet: ResultSet = preparedStatementSelect.executeQuery()
-            val count = if (resultSet.next()) resultSet.getInt(1) else 0
-
-            if (count == 0) {
-                preparedStatementInsert.setString(1, hash)
-                // Set the JSON value or NULL if it is null
-                if (value == "null") { // Check if Gson produced "null" string
-                    preparedStatementInsert.setNull(2, Types.NULL)
-                } else {
-                    preparedStatementInsert.setString(2, value)
-                }
-                val rowsAffected = preparedStatementInsert.executeUpdate()
-            } else {
-                println("Hash $hash already exists, skipping insert.")
-            }
-
-            connection.commit()
-            println("All blocks have been processed.")
-        } catch (e: Exception) {
             try {
-                connection.rollback()
-            } catch (rollbackException: SQLException) {
-                println("Failed to rollback transaction: ${rollbackException.message}")
+                val hash = block.hash
+                val value = Json.encodeToString(block)
+
+                conn.prepareStatement(selectSQL).use { preparedStatementSelect ->
+                    conn.prepareStatement(insertSQL).use { preparedStatementInsert ->
+                        // Check if hash already exists
+                        preparedStatementSelect.setString(1, hash)
+                        val count =
+                                preparedStatementSelect.executeQuery().use { rs ->
+                                    if (rs.next()) rs.getInt(1) else 0
+                                }
+
+                        if (count == 0) {
+                            preparedStatementInsert.setString(1, hash)
+                            if (value == "null") {
+                                preparedStatementInsert.setNull(2, Types.NULL)
+                            } else {
+                                preparedStatementInsert.setString(2, value)
+                            }
+                            preparedStatementInsert.executeUpdate()
+                        } else {
+                            println("Hash $hash already exists, skipping insert.")
+                        }
+                    }
+                }
+
+                conn.commit()
+            } catch (e: Exception) {
+                try {
+                    conn.rollback()
+                } catch (rollbackException: SQLException) {
+                    println("Failed to rollback transaction: ${rollbackException.message}")
+                }
+                println("An error occurred while inserting data: ${e.message}")
             }
-            println("An error occurred while inserting data: ${e.message}")
-        } finally {
-            connection.close()
         }
     }
 
     fun insert(chain: MutableList<Block>) {
-        val connection: Connection = DriverManager.getConnection("jdbc:sqlite:$dbPath")
-        val insertSQL = "INSERT INTO $tableName (hash, block) VALUES (?, ?)"
-        val selectSQL = "SELECT COUNT(*) FROM $tableName WHERE hash = ?"
+        openConnection().use { conn ->
+            val insertSQL = "INSERT INTO $tableName (hash, block) VALUES (?, ?)"
+            val selectSQL = "SELECT COUNT(*) FROM $tableName WHERE hash = ?"
 
-        val preparedStatementInsert: PreparedStatement = connection.prepareStatement(insertSQL)
-        val preparedStatementSelect: PreparedStatement = connection.prepareStatement(selectSQL)
+            conn.autoCommit = false
 
-        connection.autoCommit = false
-
-        try {
-            for (block in chain) {
-                val hash = block.hash
-                val value = Json.encodeToString(block)
-
-                // Check if hash already exists
-                preparedStatementSelect.setString(1, hash)
-                val resultSet: ResultSet = preparedStatementSelect.executeQuery()
-                val count = if (resultSet.next()) resultSet.getInt(1) else 0
-
-                if (count == 0) {
-                    // Insert if hash does not exist
-                    preparedStatementInsert.setString(1, hash)
-                    if (value == "null") { // Check if Gson produced "null" string
-                        preparedStatementInsert.setNull(2, Types.NULL)
-                    } else {
-                        preparedStatementInsert.setString(2, value)
-                    }
-                    val rowsAffected = preparedStatementInsert.executeUpdate()
-                } else {
-                    println("Hash $hash already exists, skipping insert.")
-                }
-            }
-
-            connection.commit()
-            println("All blocks have been processed.")
-        } catch (e: Exception) {
             try {
-                connection.rollback()
-            } catch (rollbackException: SQLException) {
-                println("Failed to rollback transaction: ${rollbackException.message}")
+                conn.prepareStatement(selectSQL).use { preparedStatementSelect ->
+                    conn.prepareStatement(insertSQL).use { preparedStatementInsert ->
+                        for (block in chain) {
+                            val hash = block.hash
+                            val value = Json.encodeToString(block)
+
+                            preparedStatementSelect.setString(1, hash)
+                            val count =
+                                    preparedStatementSelect.executeQuery().use { rs ->
+                                        if (rs.next()) rs.getInt(1) else 0
+                                    }
+
+                            if (count == 0) {
+                                preparedStatementInsert.setString(1, hash)
+                                if (value == "null") {
+                                    preparedStatementInsert.setNull(2, Types.NULL)
+                                } else {
+                                    preparedStatementInsert.setString(2, value)
+                                }
+                                preparedStatementInsert.executeUpdate()
+                            } else {
+                                println("Hash $hash already exists, skipping insert.")
+                            }
+                        }
+                    }
+                }
+
+                conn.commit()
+            } catch (e: Exception) {
+                try {
+                    conn.rollback()
+                } catch (rollbackException: SQLException) {
+                    println("Failed to rollback transaction: ${rollbackException.message}")
+                }
+                println("An error occurred while inserting data: ${e.message}")
             }
-            println("An error occurred while inserting data: ${e.message}")
-        } finally {
-            connection.close()
         }
     }
 }

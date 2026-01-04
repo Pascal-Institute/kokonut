@@ -16,8 +16,11 @@ data class FuelNodeInfo(
 @Serializable
 enum class BlockDataType {
     TRANSACTION, // Regular transaction
+    VALIDATOR_ONBOARDING, // 1-time onboarding reward for a validator
+    STAKE_LOCK, // Lock stake into stakeVault (validator registration)
     FUEL_REGISTRATION, // Fuel Node registration
     FUEL_REMOVAL, // Fuel Node removal
     FULL_REGISTRATION, // Full Node registration
-    FULL_REMOVAL // Full Node removal
+    FULL_REMOVAL, // Full Node removal
+    UNSTAKE // Retrieve locked stake (stop validating)
 }

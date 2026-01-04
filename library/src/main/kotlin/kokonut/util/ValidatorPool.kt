@@ -1,64 +1,121 @@
 package kokonut.util
 
+import kokonut.core.BlockChain
+import kokonut.core.Transaction
 import kokonut.core.Validator
 import kotlin.random.Random
 
 /** ValidatorPool manages all validators in the PoS network */
 class ValidatorPool {
-    private val validators = mutableMapOf<String, Validator>()
-
     companion object {
-        const val MINIMUM_STAKE = 100.0 // Minimum KNT to become validator
-        const val VALIDATOR_REWARD_PERCENTAGE = 0.01 // 1% of transaction fees
-    }
+        const val MINIMUM_STAKE = 1.0 // Minimum KNT to become validator
+        const val VALIDATOR_REWARD_PERCENTAGE = 0.01 // Reward ratio (paid from treasury)
+        const val VALIDATOR_REWARD_TX = "VALIDATOR_REWARD"
+        const val SLASH_TX_PREFIX = "SLASH:"
 
-    /** Register a new validator or update existing stake */
-    fun stake(address: String, amount: Double): Boolean {
-        if (amount < MINIMUM_STAKE) {
-            println("Stake amount $amount is below minimum $MINIMUM_STAKE")
-            return false
+        fun createSlashTransaction(victimAddress: String, amount: Double): Transaction {
+            return Transaction(
+                    transaction = SLASH_TX_PREFIX + victimAddress,
+                    sender = BlockChain.getStakeVaultAddress(),
+                    receiver = BlockChain.getTreasuryAddress(),
+                    remittance = amount,
+                    commission = 0.0
+            )
         }
-
-        val validator = validators.getOrPut(address) { Validator(address, 0.0) }
-
-        validator.stakedAmount += amount
-        validator.isActive = true
-
-        println("Validator $address staked $amount KNT (Total: ${validator.stakedAmount})")
-        return true
-    }
-
-    /** Unstake and remove from validator pool */
-    fun unstake(address: String, amount: Double): Boolean {
-        val validator =
-                validators[address]
-                        ?: run {
-                            println("Validator $address not found")
-                            return false
-                        }
-
-        if (amount > validator.stakedAmount) {
-            println("Insufficient staked amount")
-            return false
-        }
-
-        validator.stakedAmount -= amount
-
-        if (validator.stakedAmount < MINIMUM_STAKE) {
-            validator.isActive = false
-            println("Validator $address deactivated (below minimum stake)")
-        }
-
-        return true
     }
 
     /**
-     * Select a validator based on stake-weighted probability Higher stake = higher chance of being
-     * selected
+     * Deprecated: staking is chain-derived via stakeVault transfers. Use the Full Node stake-lock
+     * route to append a STAKE_LOCK block.
      */
-    fun selectValidator(): Validator? {
-        val activeValidators =
-                validators.values.filter { it.isActive && it.stakedAmount >= MINIMUM_STAKE }
+    fun stake(address: String, amount: Double): Boolean {
+        println("stake() is deprecated. Use on-chain stakeVault transfers.")
+        return false
+    }
+
+    /** Deprecated: unstaking is not supported in current on-chain model. */
+    fun unstake(address: String, amount: Double): Boolean {
+        println("unstake() is not supported in current on-chain model.")
+        return false
+    }
+
+    private fun computeStakeByAddress(limitIndex: Long? = null): Map<String, Double> {
+        val stakeVault = BlockChain.getStakeVaultAddress()
+        val chain = BlockChain.getChain()
+        // Filter chain by limitIndex if provided
+        val effectiveChain =
+                if (limitIndex != null) chain.filter { it.index <= limitIndex } else chain
+
+        val stakeByAddress = mutableMapOf<String, Double>()
+        effectiveChain.forEach { block ->
+            block.data.transactions.forEach { tx ->
+                if (tx.receiver == stakeVault && tx.remittance > 0.0) {
+                    // Staking: Add to sender's stake
+                    stakeByAddress[tx.sender] = (stakeByAddress[tx.sender] ?: 0.0) + tx.remittance
+                }
+
+                // Handle standard unstaking (if supported)
+                if (tx.sender == stakeVault &&
+                                tx.remittance > 0.0 &&
+                                !tx.transaction.startsWith(SLASH_TX_PREFIX)
+                ) {
+                    // Unstaking: Subtract from receiver's stake
+                    stakeByAddress[tx.receiver] =
+                            (stakeByAddress[tx.receiver] ?: 0.0) - tx.remittance
+                }
+
+                // Handle Slashing
+                if (tx.sender == stakeVault && tx.transaction.startsWith(SLASH_TX_PREFIX)) {
+                    val victim = tx.transaction.removePrefix(SLASH_TX_PREFIX)
+                    stakeByAddress[victim] = (stakeByAddress[victim] ?: 0.0) - tx.remittance
+                }
+            }
+        }
+        // Filter out negative or zero stakes (floating point safety)
+        return stakeByAddress.filterValues { it > 0.0001 }
+    }
+
+    private fun computeBlocksValidatedByAddress(limitIndex: Long? = null): Map<String, Long> {
+        val chain = BlockChain.getChain()
+        val effectiveChain =
+                if (limitIndex != null) chain.filter { it.index <= limitIndex } else chain
+
+        val countByAddress = mutableMapOf<String, Long>()
+        effectiveChain.forEach { block ->
+            val address = block.data.validator
+            if (address.isNotBlank() && address != "ONBOARDING" && address != "FUEL_REGISTRY") {
+                countByAddress[address] = (countByAddress[address] ?: 0L) + 1L
+            }
+        }
+        return countByAddress
+    }
+
+    private fun computeRewardsEarnedByAddress(limitIndex: Long? = null): Map<String, Double> {
+        val treasury = BlockChain.getTreasuryAddress()
+        val chain = BlockChain.getChain()
+        val effectiveChain =
+                if (limitIndex != null) chain.filter { it.index <= limitIndex } else chain
+
+        val rewardsByAddress = mutableMapOf<String, Double>()
+        effectiveChain.forEach { block ->
+            block.data.transactions.forEach { tx ->
+                if (tx.transaction == VALIDATOR_REWARD_TX && tx.sender == treasury) {
+                    rewardsByAddress[tx.receiver] =
+                            (rewardsByAddress[tx.receiver] ?: 0.0) + tx.remittance
+                }
+            }
+        }
+        return rewardsByAddress
+    }
+
+    /**
+     * Select a validator based on stake-weighted probability. Uses a DETERMINISTIC seed to ensure
+     * consensus (all nodes pick the same validator).
+     * @param seed Random seed (usually previousBlockHash + index)
+     * @param limitIndex Calculate stake based on history up to this index
+     */
+    fun selectValidator(seed: Long, limitIndex: Long? = null): Validator? {
+        val activeValidators = getActiveValidators(limitIndex)
 
         if (activeValidators.isEmpty()) {
             println("No active validators available")
@@ -66,15 +123,16 @@ class ValidatorPool {
         }
 
         val totalStake = activeValidators.sumOf { it.stakedAmount }
-        val randomValue = Random.nextDouble(totalStake)
+        // Use deterministic Random based on seed
+        val random = Random(seed)
+        val randomValue = random.nextDouble(totalStake)
 
         var cumulativeStake = 0.0
         for (validator in activeValidators) {
             cumulativeStake += validator.stakedAmount
             if (randomValue <= cumulativeStake) {
-                println(
-                        "Selected validator: ${validator.address} (Stake: ${validator.stakedAmount})"
-                )
+                // println("Selected validator: ${validator.address} (Stake:
+                // ${validator.stakedAmount})")
                 return validator
             }
         }
@@ -82,26 +140,52 @@ class ValidatorPool {
         return activeValidators.last() // Fallback
     }
 
-    /** Reward the validator for validating a block */
+    /**
+     * Deprecated: rewards are recorded on-chain as a treasury-paid transaction in the validated
+     * block.
+     */
     fun rewardValidator(address: String, reward: Double) {
-        val validator = validators[address] ?: return
-        validator.blocksValidated++
-        validator.rewardsEarned += reward
-        println("Validator $address rewarded $reward KNT (Total: ${validator.rewardsEarned})")
+        return
     }
 
     /** Get all active validators */
-    fun getActiveValidators(): List<Validator> {
-        return validators.values.filter { it.isActive && it.stakedAmount >= MINIMUM_STAKE }
+    fun getActiveValidators(limitIndex: Long? = null): List<Validator> {
+        val stakeByAddress = computeStakeByAddress(limitIndex)
+        val blocksByAddress = computeBlocksValidatedByAddress(limitIndex)
+        val rewardsByAddress = computeRewardsEarnedByAddress(limitIndex)
+
+        return stakeByAddress.entries
+                .map { (address, stake) ->
+                    Validator(
+                            address = address,
+                            stakedAmount = Utility.truncate(stake),
+                            isActive = stake >= MINIMUM_STAKE,
+                            blocksValidated = blocksByAddress[address] ?: 0L,
+                            rewardsEarned = Utility.truncate(rewardsByAddress[address] ?: 0.0)
+                    )
+                }
+                .filter { it.isActive && it.stakedAmount >= MINIMUM_STAKE }
     }
 
     /** Get validator by address */
-    fun getValidator(address: String): Validator? {
-        return validators[address]
+    fun getValidator(address: String, limitIndex: Long? = null): Validator? {
+        val stake = computeStakeByAddress(limitIndex)[address] ?: 0.0
+        if (stake <= 0.0) return null
+
+        val blocksValidated = computeBlocksValidatedByAddress(limitIndex)[address] ?: 0L
+        val rewardsEarned = computeRewardsEarnedByAddress(limitIndex)[address] ?: 0.0
+
+        return Validator(
+                address = address,
+                stakedAmount = Utility.truncate(stake),
+                isActive = stake >= MINIMUM_STAKE,
+                blocksValidated = blocksValidated,
+                rewardsEarned = Utility.truncate(rewardsEarned)
+        )
     }
 
     /** Get total staked amount in network */
     fun getTotalStaked(): Double {
-        return validators.values.filter { it.isActive }.sumOf { it.stakedAmount }
+        return Utility.truncate(getActiveValidators().sumOf { it.stakedAmount })
     }
 }

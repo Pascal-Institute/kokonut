@@ -10,9 +10,8 @@ import kotlinx.serialization.Serializable
 data class NetworkRules(
         val networkId: String = "kokonut-mainnet",
         val minFuelStake: Double = 1_000_000.0, // Minimum stake to become Fuel Node
-        val minFullStake: Double = 100.0, // Minimum stake to become Full Node
+        val minFullStake: Double = 1.0, // Minimum stake to become Full Node
         val fuelConsensusThreshold: Double = 0.67, // 2/3 consensus required
         val maxFuelNodes: Int = 100, // Maximum number of Fuel Nodes
-        val faucetAmount: Double = 100.0, // Amount given by faucet
-        val protocolVersion: Int = 4
+        val faucetAmount: Double = 100.0 // Amount given by faucet
 )

@@ -2,12 +2,14 @@ package kokonut.util
 
 import java.io.*
 import java.net.URI
+import java.net.URISyntaxException
 import java.net.URL
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.security.*
 import java.util.*
 import kokonut.util.API.Companion.isHealthy
+import kokonut.util.API.Companion.sendHeartbeat
 import kotlin.math.*
 
 class Utility {
@@ -25,9 +27,6 @@ class Utility {
         val libraryVersion: String
             get() = properties.getProperty("kokonut_version", "0.0.0")
 
-        val protocolVersion: Int
-            get() = libraryVersion.split(".")[majorIndex].toInt()
-
         fun checkHealth(fullNodes: MutableList<FullNode>) {
             val timer = Timer()
             timer.scheduleAtFixedRate(
@@ -43,6 +42,125 @@ class Utility {
                     },
                     0,
                     300_000
+            )
+        }
+
+        /**
+         * Start automatic heartbeat to Fuel Node Full Node will automatically register and maintain
+         * its presence in the network
+         * @param myAddress The address of this Full Node
+         * @param fuelNodeAddress The address of the Fuel Node to send heartbeat to
+         */
+        fun startHeartbeat(myAddress: String, fuelNodeAddress: String) {
+            val timer = Timer("Heartbeat-Timer", true)
+
+            // Send initial heartbeat immediately
+            try {
+                val success = URL(fuelNodeAddress).sendHeartbeat(myAddress)
+                if (success) {
+                    println("✅ Registered to Fuel Node: $fuelNodeAddress")
+                } else {
+                    println("⚠️ Initial registration failed, will retry in 10 minutes")
+                }
+            } catch (e: Exception) {
+                println("⚠️ Initial registration error: ${e.message}")
+            }
+
+            // Schedule periodic heartbeat every 10 minutes (600,000 ms)
+            timer.scheduleAtFixedRate(
+                    object : TimerTask() {
+                        override fun run() {
+                            try {
+                                val success = URL(fuelNodeAddress).sendHeartbeat(myAddress)
+                                if (success) {
+                                    println("💓 Heartbeat sent successfully")
+                                } else {
+                                    println("⚠️ Heartbeat failed, will retry in 10 minutes")
+                                }
+                            } catch (e: Exception) {
+                                println("⚠️ Heartbeat error: ${e.message}")
+                            }
+                        }
+                    },
+                    600_000, // Initial delay: 10 minutes
+                    600_000 // Period: 10 minutes
+            )
+
+            println("🔄 Heartbeat service started (interval: 10 minutes)")
+        }
+
+        fun normalizeNodeAddress(
+                address: String,
+                remoteHost: String,
+                forwardedForHeader: String? = null
+        ): String {
+            val clientHost =
+                    forwardedForHeader?.split(',')?.firstOrNull()?.trim()?.takeIf {
+                        it.isNotEmpty()
+                    }
+                            ?: remoteHost
+
+            if (clientHost.isBlank()) return address
+
+            val normalizedInput =
+                    if (address.contains("://")) {
+                        address
+                    } else {
+                        // Accept inputs like "0.0.0.0:80" and normalize to a URL.
+                        "http://$address"
+                    }
+
+            val uri =
+                    try {
+                        URI(normalizedInput)
+                    } catch (_: URISyntaxException) {
+                        return address
+                    }
+
+            val scheme = uri.scheme ?: "http"
+            val originalHost = uri.host ?: return address
+            val originalPort =
+                    if (uri.port >= 0) uri.port
+                    else if (scheme.equals("https", ignoreCase = true)) 443 else 80
+
+            val wildcardOrLoopbackHosts =
+                    setOf("0.0.0.0", "127.0.0.1", "localhost", "::", "0:0:0:0:0:0:0:0")
+
+            val hostToUse =
+                    if (wildcardOrLoopbackHosts.contains(originalHost.lowercase())) clientHost
+                    else originalHost
+
+            val path = uri.rawPath ?: ""
+            val query = uri.rawQuery?.let { "?$it" } ?: ""
+
+            return "$scheme://$hostToUse:$originalPort$path$query"
+        }
+
+        fun resolveAdvertiseAddress(
+                bindHost: String,
+                bindPort: Int,
+                advertiseUrlEnv: String?,
+                advertiseHostEnv: String?
+        ): String {
+            val url = advertiseUrlEnv?.trim().orEmpty()
+            if (url.isNotEmpty()) {
+                return if (url.contains("://")) url else "http://$url"
+            }
+
+            val host = advertiseHostEnv?.trim().orEmpty()
+            if (host.isNotEmpty()) {
+                return "http://$host:$bindPort"
+            }
+
+            return "http://$bindHost:$bindPort"
+        }
+
+        fun getAdvertiseAddress(bindHost: String, bindPort: Int): String {
+            return resolveAdvertiseAddress(
+                    bindHost = bindHost,
+                    bindPort = bindPort,
+                    advertiseUrlEnv = System.getenv("KOKONUT_ADVERTISE_URL"),
+                    advertiseHostEnv = System.getenv("KOKONUT_ADVERTISE_HOST")
             )
         }
 
@@ -98,6 +216,15 @@ class Utility {
 
         fun calculateHash(publicKey: PublicKey): String {
             val input = "$publicKey"
+            return MessageDigest.getInstance("SHA-256").digest(input.toByteArray()).fold("") {
+                    str,
+                    it ->
+                str + "%02x".format(it)
+            }
+        }
+
+        fun calculateHash(publicKeyString: String): String {
+            val input = publicKeyString
             return MessageDigest.getInstance("SHA-256").digest(input.toByteArray()).fold("") {
                     str,
                     it ->

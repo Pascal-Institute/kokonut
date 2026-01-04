@@ -5,7 +5,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Block(
-        val version: Int,
         val index: Long,
         val previousHash: String,
         var timestamp: Long,
@@ -22,13 +21,11 @@ data class Block(
 
     fun calculateHash(): String {
         // PoS: Hash includes validator signature instead of nonce/difficulty
-        val input = "$version$index$previousHash$timestamp$data$validatorSignature"
-        hash =
-                MessageDigest.getInstance("SHA-256").digest(input.toByteArray()).fold("") { str, it
-                    ->
-                    str + "%02x".format(it)
-                }
-        return hash
+        val input = "$index$previousHash$timestamp$data$validatorSignature"
+        return MessageDigest.getInstance("SHA-256").digest(input.toByteArray()).fold("") { str, it
+            ->
+            str + "%02x".format(it)
+        }
     }
 
     fun isValid(): Boolean {

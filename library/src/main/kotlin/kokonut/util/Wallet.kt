@@ -1,16 +1,16 @@
 package kokonut.util
 
-import kokonut.state.MiningState
-import kokonut.util.Utility.Companion.calculateHash
 import java.io.File
 import java.security.*
 import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
 import java.util.*
+import kokonut.state.ValidatorState
+import kokonut.util.Utility.Companion.calculateHash
 
-class Wallet(val privateKeyFile : File, val publicKeyFile: File) {
+class Wallet(val privateKeyFile: File, val publicKeyFile: File) {
 
-    var miningState = MiningState.READY
+    var validationState = ValidatorState.READY
 
     companion object {
 
@@ -28,7 +28,11 @@ class Wallet(val privateKeyFile : File, val publicKeyFile: File) {
             return signature.sign()
         }
 
-        fun verifySignature(data: ByteArray, signatureBytes: ByteArray, publicKey: PublicKey): Boolean {
+        fun verifySignature(
+                data: ByteArray,
+                signatureBytes: ByteArray,
+                publicKey: PublicKey
+        ): Boolean {
             val signature = Signature.getInstance("SHA256withRSA")
             signature.initVerify(publicKey)
             signature.update(data)
@@ -36,12 +40,13 @@ class Wallet(val privateKeyFile : File, val publicKeyFile: File) {
         }
 
         fun readPemFile(filePath: String): String {
-            return File(filePath).readText()
-                .replace("-----BEGIN PUBLIC KEY-----", "")
-                .replace("-----END PUBLIC KEY-----", "")
-                .replace("-----BEGIN PRIVATE KEY-----", "")
-                .replace("-----END PRIVATE KEY-----", "")
-                .replace("\n", "")
+            return File(filePath)
+                    .readText()
+                    .replace("-----BEGIN PUBLIC KEY-----", "")
+                    .replace("-----END PUBLIC KEY-----", "")
+                    .replace("-----BEGIN PRIVATE KEY-----", "")
+                    .replace("-----END PRIVATE KEY-----", "")
+                    .replace("\n", "")
         }
 
         fun loadPublicKey(pemPath: String): PublicKey {
@@ -58,38 +63,48 @@ class Wallet(val privateKeyFile : File, val publicKeyFile: File) {
             return keyFactory.generatePrivate(keySpec)
         }
 
-        fun saveKeyPairToFile(keyPair: KeyPair, privateKeyFilePath: String, publicKeyFilePath: String) {
+        fun saveKeyPairToFile(
+                keyPair: KeyPair,
+                privateKeyFilePath: String,
+                publicKeyFilePath: String
+        ) {
             val publicKeyEncoded = Base64.getEncoder().encodeToString(keyPair.public.encoded)
-            File(publicKeyFilePath).writeText("-----BEGIN PUBLIC KEY-----\n$publicKeyEncoded\n-----END PUBLIC KEY-----")
+            File(publicKeyFilePath)
+                    .writeText(
+                            "-----BEGIN PUBLIC KEY-----\n$publicKeyEncoded\n-----END PUBLIC KEY-----"
+                    )
 
             val privateKeyEncoded = Base64.getEncoder().encodeToString(keyPair.private.encoded)
-            File(privateKeyFilePath).writeText("-----BEGIN PRIVATE KEY-----\n$privateKeyEncoded\n-----END PRIVATE KEY-----")
+            File(privateKeyFilePath)
+                    .writeText(
+                            "-----BEGIN PRIVATE KEY-----\n$privateKeyEncoded\n-----END PRIVATE KEY-----"
+                    )
         }
     }
 
-    var privateKey : PrivateKey = loadPrivateKey(privateKeyFile.path)
-    var publicKey : PublicKey = loadPublicKey(publicKeyFile.path)
+    var privateKey: PrivateKey = loadPrivateKey(privateKeyFile.path)
+    var publicKey: PublicKey = loadPublicKey(publicKeyFile.path)
     private var isValid = false
 
-    var miner = "0000000000000000000000000000000000000000000000000000000000000000"
+    var validatorAddress = "0000000000000000000000000000000000000000000000000000000000000000"
 
     init {
-        val data = miner.toByteArray()
+        val data = validatorAddress.toByteArray()
         val signature = signData(data, privateKey)
 
         isValid = verifySignature(data, signature, publicKey)
 
-        if(isValid){
-            miner = calculateHash(publicKey)
+        if (isValid) {
+            validatorAddress = calculateHash(publicKey)
             println("Wallet is Valid")
-            println("Miner : $miner")
-        }else{
+            println("Validator Address : $validatorAddress")
+        } else {
             println("Wallet is Invalid")
-            println("Miner : $miner")
+            println("Validator Address : $validatorAddress")
         }
     }
 
-    fun isValid() : Boolean{
+    fun isValid(): Boolean {
         return isValid
     }
 }
